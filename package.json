@@ -1,0 +1,21 @@
+{
+  "name": "huellitas",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Plataforma hibrida de adopcion y trazabilidad animal para Cali - UNIAJC",
+  "workspaces": [
+    "packages/*",
+    "apps/*"
+  ],
+  "scripts": {
+    "web": "npm run dev --workspace=@huellitas/web",
+    "mobile": "npm run start --workspace=@huellitas/mobile",
+    "build:shared": "npm run build --workspace=@huellitas/shared",
+    "build:web": "npm run build --workspace=@huellitas/web",
+    "typecheck": "npm run typecheck --workspaces --if-present",
+    "lint": "npm run lint --workspaces --if-present"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}
