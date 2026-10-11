@@ -10,36 +10,36 @@ import {
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useColorScheme } from 'react-native';
 import { tokens } from '@huellitas/shared';
-import type { PaletaColores, PreferenciaTema, Tema } from '@huellitas/shared/tokens';
+import type { PaletaColores, Tema } from '@huellitas/shared/tokens';
 
-export type { PreferenciaTema, Tema } from '@huellitas/shared/tokens';
+export type { Tema } from '@huellitas/shared/tokens';
 
 interface ValorTema {
-  /** Lo que el usuario eligió: 'sistema', 'claro' u 'oscuro'. */
-  readonly preferencia: PreferenciaTema;
   /** El tema que se está pintando ahora mismo. */
   readonly tema: Tema;
   readonly paleta: PaletaColores;
-  readonly cambiarTema: (preferencia: PreferenciaTema) => void;
-  /** Avanza el ciclo sistema → claro → oscuro → sistema. */
+  readonly cambiarTema: (tema: Tema) => void;
+  /** Pasa de claro a oscuro y al revés. */
   readonly alternarTema: () => void;
 }
 
 const ContextoTema = createContext<ValorTema | null>(null);
 
 export function ProveedorTema({ children }: { children: ReactNode }) {
-  // useColorScheme sigue en vivo el ajuste del teléfono, que es justo lo
-  // que debe pasar mientras la preferencia sea 'sistema'.
+  // useColorScheme sigue el ajuste del telefono. Vale como punto de
+  // partida: en cuanto el usuario toca el boton manda su eleccion, por eso
+  // no hay un tercer estado "automatico" en la interfaz.
   const esquemaSistema = useColorScheme();
   const temaSistema: Tema = esquemaSistema === 'dark' ? 'oscuro' : 'claro';
-  const [preferencia, setPreferencia] = useState<PreferenciaTema>('sistema');
+  const [elegido, setElegido] = useState<Tema | null>(null);
+  const tema = elegido ?? temaSistema;
 
   useEffect(() => {
     let vigente = true;
     void (async () => {
       try {
         const guardado = await AsyncStorage.getItem(tokens.CLAVE_TEMA);
-        if (vigente && tokens.esPreferenciaTema(guardado)) setPreferencia(guardado);
+        if (vigente && tokens.esTema(guardado)) setElegido(guardado);
       } catch {
         /* sin almacenamiento: manda el ajuste del telefono */
       }
@@ -49,32 +49,31 @@ export function ProveedorTema({ children }: { children: ReactNode }) {
     };
   }, []);
 
-  const cambiarTema = useCallback((siguiente: PreferenciaTema) => {
+  const cambiarTema = useCallback((siguiente: Tema) => {
     // Se pinta ya y se guarda despues: el boton no debe esperar al disco.
-    setPreferencia(siguiente);
+    setElegido(siguiente);
     void AsyncStorage.setItem(tokens.CLAVE_TEMA, siguiente).catch(() => {
       /* el cambio vale mientras la app siga abierta */
     });
   }, []);
 
   const alternarTema = useCallback(() => {
-    setPreferencia((actual) => {
-      const siguiente = tokens.siguientePreferenciaTema(actual);
+    setElegido((actual) => {
+      const siguiente = tokens.temaOpuesto(actual ?? temaSistema);
       void AsyncStorage.setItem(tokens.CLAVE_TEMA, siguiente).catch(() => {});
       return siguiente;
     });
-  }, []);
+  }, [temaSistema]);
 
-  const valor = useMemo<ValorTema>(() => {
-    const tema = tokens.resolverTema(preferencia, temaSistema);
-    return {
-      preferencia,
+  const valor = useMemo<ValorTema>(
+    () => ({
       tema,
       paleta: tokens.colores[tema],
       cambiarTema,
       alternarTema,
-    };
-  }, [preferencia, temaSistema, cambiarTema, alternarTema]);
+    }),
+    [tema, cambiarTema, alternarTema],
+  );
 
   return <ContextoTema.Provider value={valor}>{children}</ContextoTema.Provider>;
 }
@@ -90,7 +89,6 @@ export function usarTema(): ValorTema {
 
   const tema: Tema = esquemaSistema === 'dark' ? 'oscuro' : 'claro';
   return {
-    preferencia: 'sistema',
     tema,
     paleta: tokens.colores[tema],
     cambiarTema: () => {},

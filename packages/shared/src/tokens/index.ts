@@ -107,60 +107,36 @@ export function colorInsignia(
 }
 
 /* ------------------------------------------------------------------ *
- * Preferencia de tema
+ * Tema claro / oscuro
  *
- * El tema tiene tres estados, no dos: ademas de claro y oscuro, el
- * usuario puede dejar que manden los ajustes del telefono o del
- * navegador. Es el valor inicial, y conviene poder volver a el.
+ * Solo dos estados. La primera vez que se abre la app se toma el ajuste
+ * del sistema; a partir de que el usuario toca el boton, manda su
+ * eleccion y se guarda.
  * ------------------------------------------------------------------ */
 
-/** Lo que el usuario elige. 'sistema' delega en el sistema operativo. */
-export type PreferenciaTema = 'sistema' | Tema;
-
-/** Clave con la que las dos apps guardan la preferencia. */
+/** Clave con la que las dos apps guardan el tema elegido. */
 export const CLAVE_TEMA = 'huellitas.tema';
 
-/** Orden del ciclo del boton: sistema, claro, oscuro, y vuelve. */
-export const CICLO_TEMA: readonly PreferenciaTema[] = ['sistema', 'claro', 'oscuro'];
-
 /** Valida lo que viene del almacenamiento, que puede traer cualquier cosa. */
-export function esPreferenciaTema(valor: unknown): valor is PreferenciaTema {
-  return typeof valor === 'string' && (CICLO_TEMA as readonly string[]).includes(valor);
+export function esTema(valor: unknown): valor is Tema {
+  return valor === 'claro' || valor === 'oscuro';
 }
 
-/** Resuelve la preferencia contra lo que reporta el sistema. */
-export function resolverTema(
-  preferencia: PreferenciaTema,
-  temaDelSistema: Tema,
-): Tema {
-  return preferencia === 'sistema' ? temaDelSistema : preferencia;
+/** El otro tema: lo que se aplica al tocar el boton. */
+export function temaOpuesto(tema: Tema): Tema {
+  return tema === 'oscuro' ? 'claro' : 'oscuro';
 }
 
-/** Siguiente paso del ciclo. */
-export function siguientePreferenciaTema(actual: PreferenciaTema): PreferenciaTema {
-  const posicion = CICLO_TEMA.indexOf(actual);
-  return CICLO_TEMA[(posicion + 1) % CICLO_TEMA.length] ?? 'sistema';
-}
-
-/** Nombre corto del estado, para la etiqueta visible del control. */
-export function nombrePreferenciaTema(preferencia: PreferenciaTema): string {
-  switch (preferencia) {
-    case 'claro':
-      return 'Claro';
-    case 'oscuro':
-      return 'Oscuro';
-    default:
-      return 'Automático';
-  }
+/** Nombre del tema, para la etiqueta visible del boton. */
+export function nombreTema(tema: Tema): string {
+  return tema === 'oscuro' ? 'Oscuro' : 'Claro';
 }
 
 /**
  * Etiqueta accesible del boton. El design system pide que un control con
- * solo icono lleve texto accesible, y conviene que diga en que estado
- * esta y a cual pasa, porque el icono solo no distingue 'oscuro' de
- * 'automatico de noche'.
+ * solo icono lleve texto accesible, y conviene que diga en que tema esta
+ * y a cual pasa.
  */
-export function etiquetaBotonTema(preferencia: PreferenciaTema): string {
-  const siguiente = siguientePreferenciaTema(preferencia);
-  return `Tema: ${nombrePreferenciaTema(preferencia).toLowerCase()}. Cambiar a ${nombrePreferenciaTema(siguiente).toLowerCase()}.`;
+export function etiquetaBotonTema(tema: Tema): string {
+  return `Tema ${nombreTema(tema).toLowerCase()}. Cambiar a ${nombreTema(temaOpuesto(tema)).toLowerCase()}.`;
 }

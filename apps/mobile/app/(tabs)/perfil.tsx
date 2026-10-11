@@ -58,7 +58,8 @@ export default function PantallaPerfil() {
         <Text style={[estilos.titulo, { color: paleta.ink }]}>Apariencia</Text>
         <View style={estilos.filaApariencia}>
           <Text style={{ color: paleta.inkMuted, fontSize: 14, flex: 1 }}>
-            En automático sigue el ajuste de tu teléfono.
+            Elige cómo se ve la app. Se queda así la próxima vez que
+            entres.
           </Text>
           <BotonTema conEtiqueta />
         </View>

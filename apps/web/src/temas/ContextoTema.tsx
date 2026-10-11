@@ -8,44 +8,44 @@ import {
   type ReactNode,
 } from 'react';
 import { tokens } from '@huellitas/shared';
-import type { PreferenciaTema, Tema } from '@huellitas/shared/tokens';
+import type { Tema } from '@huellitas/shared/tokens';
 
 const CONSULTA_OSCURO = '(prefers-color-scheme: dark)';
 
 interface ValorTema {
-  /** Lo que el usuario eligió: 'sistema', 'claro' u 'oscuro'. */
-  readonly preferencia: PreferenciaTema;
   /** El tema que se está pintando ahora mismo. */
   readonly tema: Tema;
-  readonly cambiarTema: (preferencia: PreferenciaTema) => void;
-  /** Avanza el ciclo sistema → claro → oscuro → sistema. */
+  readonly cambiarTema: (tema: Tema) => void;
+  /** Pasa de claro a oscuro y al revés. */
   readonly alternarTema: () => void;
 }
 
 const ContextoTema = createContext<ValorTema | null>(null);
 
-/** Lo que el navegador tiene configurado, sin tocar la preferencia. */
+/** Lo que el navegador tiene configurado. */
 function temaDelSistema(): Tema {
   if (typeof window === 'undefined' || !window.matchMedia) return 'claro';
   return window.matchMedia(CONSULTA_OSCURO).matches ? 'oscuro' : 'claro';
 }
 
-function preferenciaGuardada(): PreferenciaTema {
+function temaGuardado(): Tema | null {
   try {
     const valor = window.localStorage.getItem(tokens.CLAVE_TEMA);
-    return tokens.esPreferenciaTema(valor) ? valor : 'sistema';
+    return tokens.esTema(valor) ? valor : null;
   } catch {
     // Modo privado o cookies bloqueadas: el tema dura lo que dure la pestana.
-    return 'sistema';
+    return null;
   }
 }
 
 export function ProveedorTema({ children }: { children: ReactNode }) {
-  const [preferencia, setPreferencia] = useState<PreferenciaTema>(preferenciaGuardada);
+  const [elegido, setElegido] = useState<Tema | null>(temaGuardado);
   const [sistema, setSistema] = useState<Tema>(temaDelSistema);
+  const tema = elegido ?? sistema;
 
-  // Con la preferencia en 'sistema', hay que seguir al navegador en vivo:
-  // el usuario puede cambiar el ajuste del sistema con la pestana abierta.
+  // Mientras el usuario no haya elegido, la pagina sigue al navegador en
+  // vivo. Desde que toca el boton, manda su eleccion y esto deja de
+  // importar: por eso no hay un tercer estado "automatico" en la interfaz.
   useEffect(() => {
     if (!window.matchMedia) return;
     const consulta = window.matchMedia(CONSULTA_OSCURO);
@@ -56,24 +56,16 @@ export function ProveedorTema({ children }: { children: ReactNode }) {
     return () => consulta.removeEventListener('change', alCambiar);
   }, []);
 
-  const tema = tokens.resolverTema(preferencia, sistema);
-
-  // tokens.css define el tema oscuro en dos sitios: dentro de una media
-  // query para :root:not([data-tema='claro']), y en :root[data-tema='oscuro'].
-  // Por eso con 'sistema' hay que QUITAR el atributo, no escribir el tema
-  // resuelto: si lo escribieramos, dejaria de seguir al navegador.
   useEffect(() => {
     const raiz = document.documentElement;
-    if (preferencia === 'sistema') raiz.removeAttribute('data-tema');
-    else raiz.dataset.tema = preferencia;
-
-    // Pinta de su color la barra del navegador en movil y los controles
-    // nativos (scrollbars, campos de fecha), que no leen las variables.
+    raiz.dataset.tema = tema;
+    // Pinta de su color los controles nativos (scrollbars, campos de
+    // fecha), que no leen las variables CSS.
     raiz.style.colorScheme = tema === 'oscuro' ? 'dark' : 'light';
-  }, [preferencia, tema]);
+  }, [tema]);
 
-  const cambiarTema = useCallback((siguiente: PreferenciaTema) => {
-    setPreferencia(siguiente);
+  const cambiarTema = useCallback((siguiente: Tema) => {
+    setElegido(siguiente);
     try {
       window.localStorage.setItem(tokens.CLAVE_TEMA, siguiente);
     } catch {
@@ -82,8 +74,8 @@ export function ProveedorTema({ children }: { children: ReactNode }) {
   }, []);
 
   const alternarTema = useCallback(() => {
-    setPreferencia((actual) => {
-      const siguiente = tokens.siguientePreferenciaTema(actual);
+    setElegido((actual) => {
+      const siguiente = tokens.temaOpuesto(actual ?? temaDelSistema());
       try {
         window.localStorage.setItem(tokens.CLAVE_TEMA, siguiente);
       } catch {
@@ -94,8 +86,8 @@ export function ProveedorTema({ children }: { children: ReactNode }) {
   }, []);
 
   const valor = useMemo<ValorTema>(
-    () => ({ preferencia, tema, cambiarTema, alternarTema }),
-    [preferencia, tema, cambiarTema, alternarTema],
+    () => ({ tema, cambiarTema, alternarTema }),
+    [tema, cambiarTema, alternarTema],
   );
 
   return <ContextoTema.Provider value={valor}>{children}</ContextoTema.Provider>;

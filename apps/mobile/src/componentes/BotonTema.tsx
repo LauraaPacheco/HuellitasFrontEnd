@@ -1,7 +1,7 @@
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import Svg, { Circle, Path } from 'react-native-svg';
 import { tokens } from '@huellitas/shared';
-import type { PreferenciaTema } from '@huellitas/shared/tokens';
+import type { Tema } from '@huellitas/shared/tokens';
 import { AREA_TOCABLE_MINIMA, espaciado, radios, usarTema } from '@/temas';
 
 interface Props {
@@ -9,23 +9,11 @@ interface Props {
   readonly conEtiqueta?: boolean;
 }
 
-/** Sol, luna o mitad y mitad, segun el estado. */
-function IconoTema({ preferencia, color }: { preferencia: PreferenciaTema; color: string }) {
+/** Sol en tema claro, luna en tema oscuro. */
+function IconoTema({ tema, color }: { tema: Tema; color: string }) {
   const comun = { stroke: color, strokeWidth: 1.5, strokeLinecap: 'round' as const };
 
-  if (preferencia === 'claro') {
-    return (
-      <Svg width={20} height={20} viewBox="0 0 24 24" fill="none">
-        <Circle cx={12} cy={12} r={4} {...comun} />
-        <Path
-          d="M12 3v2m0 14v2M3 12h2m14 0h2M5.6 5.6l1.4 1.4m10 10l1.4 1.4m0-12.8l-1.4 1.4m-10 10l-1.4 1.4"
-          {...comun}
-        />
-      </Svg>
-    );
-  }
-
-  if (preferencia === 'oscuro') {
+  if (tema === 'oscuro') {
     return (
       <Svg width={20} height={20} viewBox="0 0 24 24" fill="none">
         <Path d="M20 14.5A8.5 8.5 0 1 1 9.5 4a7 7 0 0 0 10.5 10.5z" {...comun} />
@@ -33,18 +21,20 @@ function IconoTema({ preferencia, color }: { preferencia: PreferenciaTema; color
     );
   }
 
-  // Automatico: circulo medio lleno, para que se lea distinto de los otros dos.
   return (
     <Svg width={20} height={20} viewBox="0 0 24 24" fill="none">
-      <Circle cx={12} cy={12} r={8} {...comun} />
-      <Path d="M12 4a8 8 0 0 0 0 16z" fill={color} />
+      <Circle cx={12} cy={12} r={4} {...comun} />
+      <Path
+        d="M12 3v2m0 14v2M3 12h2m14 0h2M5.6 5.6l1.4 1.4m10 10l1.4 1.4m0-12.8l-1.4 1.4m-10 10l-1.4 1.4"
+        {...comun}
+      />
     </Svg>
   );
 }
 
 export function BotonTema({ conEtiqueta = false }: Props) {
-  const { preferencia, paleta, alternarTema } = usarTema();
-  const etiqueta = tokens.etiquetaBotonTema(preferencia);
+  const { tema, paleta, alternarTema } = usarTema();
+  const etiqueta = tokens.etiquetaBotonTema(tema);
 
   return (
     <Pressable
@@ -62,10 +52,10 @@ export function BotonTema({ conEtiqueta = false }: Props) {
       ]}
     >
       <View style={estilos.contenido}>
-        <IconoTema preferencia={preferencia} color={paleta.ink} />
+        <IconoTema tema={tema} color={paleta.ink} />
         {conEtiqueta && (
           <Text style={[estilos.texto, { color: paleta.ink }]}>
-            {tokens.nombrePreferenciaTema(preferencia)}
+            {tokens.nombreTema(tema)}
           </Text>
         )}
       </View>
