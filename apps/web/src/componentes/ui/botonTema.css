@@ -1,0 +1,36 @@
+/* Area tocable de 44x44 aunque el icono mida 20, como pide el sistema. */
+.boton-tema {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  min-width: 44px;
+  height: 44px;
+  padding: 0 var(--space-3);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-pill);
+  background: var(--surface-100);
+  color: var(--ink);
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 120ms ease, border-color 120ms ease;
+}
+
+.boton-tema:hover {
+  background: var(--surface-200);
+  border-color: var(--brand);
+}
+
+.boton-tema:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 2px;
+}
+
+.boton-tema--con-etiqueta {
+  padding: 0 var(--space-4);
+}
+
+.boton-tema__texto {
+  white-space: nowrap;
+}
