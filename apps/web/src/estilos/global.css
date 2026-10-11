@@ -1,0 +1,60 @@
+@import './tokens.css';
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  background: var(--surface-100);
+  color: var(--ink);
+  font-family: var(--fuente-cuerpo);
+  font-size: 15px;
+  line-height: 23px;
+  -webkit-font-smoothing: antialiased;
+}
+
+h1,
+h2,
+h3 {
+  font-family: var(--fuente-display);
+  letter-spacing: -0.02em;
+  margin: 0;
+}
+
+/* El foco de teclado nunca se elimina (RNF-16). */
+:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 2px;
+}
+
+button,
+input,
+select,
+textarea {
+  font: inherit;
+  color: inherit;
+}
+
+/* Area tocable minima, aunque el icono sea de 24px. */
+button {
+  min-height: 44px;
+  cursor: pointer;
+}
+
+a {
+  color: var(--brand-strong);
+}
+
+table {
+  border-collapse: collapse;
+  width: 100%;
+}

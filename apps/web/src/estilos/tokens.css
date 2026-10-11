@@ -1,0 +1,76 @@
+/*
+ * Variables CSS generadas a partir de los tokens de @huellitas/shared.
+ * Si cambia un valor, cambialo alla y refleja el cambio aqui.
+ */
+
+:root {
+  --surface-100: #ffffff;
+  --surface-200: #f3f7f5;
+  --surface-300: #e5eeeb;
+  --border: #cbd9d5;
+  --ink: #0b1413;
+  --ink-muted: #4a5d5a;
+  --brand-strong: #00694a;
+  --brand: #00a676;
+  --brand-tint: #dcf6ec;
+  --on-brand: #ffffff;
+  --accent: #ff5a36;
+  --accent-tint: #ffe7e0;
+  --warn: #b45309;
+  --danger: #c62828;
+  --focus: #00694a;
+
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 24px;
+  --space-6: 32px;
+  --space-7: 48px;
+
+  --radius-sm: 10px;
+  --radius-md: 16px;
+  --radius-lg: 24px;
+  --radius-pill: 999px;
+
+  --fuente-display: 'Space Grotesk', system-ui, sans-serif;
+  --fuente-cuerpo: Inter, system-ui, -apple-system, 'Segoe UI', sans-serif;
+}
+
+:root:not([data-tema='claro']) {
+  @media (prefers-color-scheme: dark) {
+    --surface-100: #0e1414;
+    --surface-200: #172221;
+    --surface-300: #1f2e2c;
+    --border: #2e403d;
+    --ink: #f2f7f5;
+    --ink-muted: #a9bab6;
+    --brand-strong: #2ed9a5;
+    --brand: #38e3ad;
+    --brand-tint: #0f2c24;
+    --on-brand: #062018;
+    --accent: #ff7a5c;
+    --accent-tint: #331611;
+    --warn: #f5b056;
+    --danger: #ff8a8a;
+    --focus: #38e3ad;
+  }
+}
+
+:root[data-tema='oscuro'] {
+  --surface-100: #0e1414;
+  --surface-200: #172221;
+  --surface-300: #1f2e2c;
+  --border: #2e403d;
+  --ink: #f2f7f5;
+  --ink-muted: #a9bab6;
+  --brand-strong: #2ed9a5;
+  --brand: #38e3ad;
+  --brand-tint: #0f2c24;
+  --on-brand: #062018;
+  --accent: #ff7a5c;
+  --accent-tint: #331611;
+  --warn: #f5b056;
+  --danger: #ff8a8a;
+  --focus: #38e3ad;
+}

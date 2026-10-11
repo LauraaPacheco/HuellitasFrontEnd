@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta
+      name="description"
+      content="Panel de Huellitas para refugios y administradores: adopciones, reportes ciudadanos y seguimiento."
+    />
+    <link rel="icon" type="image/svg+xml" href="/isotipo.svg" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700&family=Inter:wght@400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <title>Huellitas · Panel</title>
+    <script>
+      // Aplica el tema guardado antes del primer pintado. Si esto corriera
+      // dentro de React, la pagina se veria clara un instante y saltaria a
+      // oscura al montar. Va inline a proposito: un archivo aparte llegaria
+      // tarde. La fuente de verdad sigue siendo ContextoTema.
+      (function () {
+        try {
+          var guardado = localStorage.getItem('huellitas.tema');
+          if (guardado === 'claro' || guardado === 'oscuro') {
+            document.documentElement.dataset.tema = guardado;
+            document.documentElement.style.colorScheme =
+              guardado === 'oscuro' ? 'dark' : 'light';
+          }
+        } catch (e) {
+          /* sin almacenamiento: manda el ajuste del navegador */
+        }
+      })();
+    </script>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>
