@@ -1,0 +1,53 @@
+{
+  "expo": {
+    "name": "Huellitas",
+    "slug": "huellitas",
+    "version": "0.1.0",
+    "orientation": "portrait",
+    "scheme": "huellitas",
+    "userInterfaceStyle": "automatic",
+    "splash": {
+      "resizeMode": "contain",
+      "backgroundColor": "#00694a"
+    },
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "co.huellitas.app",
+      "infoPlist": {
+        "NSLocationWhenInUseUsageDescription": "Usamos tu ubicación para marcar dónde está el animal que reportas.",
+        "NSCameraUsageDescription": "Necesitamos la cámara para que tomes la foto del animal que reportas.",
+        "NSPhotoLibraryUsageDescription": "Necesitamos tus fotos para adjuntar la evidencia del reporte o del seguimiento."
+      }
+    },
+    "android": {
+      "package": "co.huellitas.app",
+      "adaptiveIcon": {
+        "backgroundColor": "#00694a"
+      },
+      "permissions": [
+        "ACCESS_COARSE_LOCATION",
+        "ACCESS_FINE_LOCATION",
+        "CAMERA",
+        "READ_MEDIA_IMAGES"
+      ]
+    },
+    "plugins": [
+      "expo-router",
+      [
+        "expo-location",
+        {
+          "locationAlwaysAndWhenInUsePermission": "Usamos tu ubicación para marcar dónde está el animal que reportas."
+        }
+      ],
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "Necesitamos tus fotos para adjuntar la evidencia del reporte."
+        }
+      ]
+    ],
+    "extra": {
+      "urlApi": "https://localhost:7296"
+    }
+  }
+}
