@@ -1,0 +1,36 @@
+.campo {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.campo__etiqueta {
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.campo__control {
+  height: 52px;
+  padding: 0 var(--space-4);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--surface-100);
+  font-size: 16px;
+}
+
+.campo__control--error {
+  border-color: var(--danger);
+}
+
+.campo__ayuda {
+  margin: 0;
+  font-size: 12px;
+  color: var(--ink-muted);
+}
+
+.campo__error {
+  margin: 0;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--danger);
+}
