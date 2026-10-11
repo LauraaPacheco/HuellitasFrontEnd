@@ -1,0 +1,151 @@
+.login {
+  display: grid;
+  grid-template-columns: minmax(360px, 520px) 1fr;
+  min-height: 100vh;
+}
+
+.login__panel {
+  background: var(--brand-strong);
+  color: var(--on-brand);
+  padding: var(--space-7);
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: var(--space-6);
+}
+
+.login__marca {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+.login__nombre {
+  font-family: var(--fuente-display);
+  font-size: 30px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+
+.login__titulo {
+  font-size: 42px;
+  line-height: 1.1;
+  margin-bottom: var(--space-5);
+}
+
+.login__descripcion {
+  font-size: 17px;
+  line-height: 27px;
+  color: var(--brand-tint);
+  max-width: 42ch;
+  margin: 0;
+}
+
+.login__notas {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  font-size: 14px;
+  color: var(--brand-tint);
+}
+
+.login__formulario {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--space-7);
+}
+
+/* Absoluto para que el formulario siga centrado en la columna. */
+.login__tema {
+  position: absolute;
+  top: var(--space-5);
+  right: var(--space-5);
+}
+
+.login__formulario form {
+  width: 100%;
+  max-width: 420px;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.login__encabezado {
+  font-size: 34px;
+  margin: 0;
+}
+
+.login__ayuda {
+  margin: 0 0 var(--space-2);
+  color: var(--ink-muted);
+}
+
+.login__error {
+  margin: 0;
+  color: var(--danger);
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.login__fila {
+  display: flex;
+  justify-content: flex-end;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.login__registro {
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  background: var(--surface-200);
+  padding: var(--space-4);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.login__registro h3 {
+  font-family: var(--fuente-cuerpo);
+  font-size: 15px;
+  font-weight: 600;
+  margin: 0;
+}
+
+.login__registro p {
+  margin: 0;
+  font-size: 14px;
+  color: var(--ink-muted);
+}
+
+@media (max-width: 900px) {
+  .login {
+    grid-template-columns: 1fr;
+  }
+
+  .login__panel {
+    padding: var(--space-5);
+  }
+
+  .login__titulo {
+    font-size: 30px;
+  }
+}
+
+@media (max-width: 900px) {
+  .login__tema {
+    position: static;
+    align-self: flex-end;
+  }
+
+  .login__formulario {
+    flex-direction: column;
+    align-items: stretch;
+    gap: var(--space-4);
+    padding: var(--space-5);
+  }
+}
