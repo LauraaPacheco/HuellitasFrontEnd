@@ -2,6 +2,9 @@ import { createBrowserRouter, Navigate } from 'react-router-dom';
 import { NivelRol } from '@huellitas/shared';
 import { Layout } from '@/componentes/layout/Layout';
 import { PaginaLogin } from '@/modulos/autenticacion/PaginaLogin';
+import { PaginaConfirmarCorreo } from '@/modulos/autenticacion/PaginaConfirmarCorreo';
+import { PaginaOlvideContrasena } from '@/modulos/autenticacion/PaginaOlvideContrasena';
+import { PaginaSolicitarRegistro } from '@/modulos/autenticacion/PaginaSolicitarRegistro';
 import { RutaProtegida } from '@/modulos/autenticacion/RutaProtegida';
 import { PaginaBandeja } from '@/modulos/solicitudes/PaginaBandeja';
 import { PaginaDetalleSolicitud } from '@/modulos/solicitudes/PaginaDetalleSolicitud';
@@ -10,7 +13,11 @@ import { PaginaPendiente } from '@/modulos/PaginaPendiente';
 const REFUGIO_Y_ADMIN = [NivelRol.Refugio, NivelRol.Administrador] as const;
 
 export const rutas = createBrowserRouter([
+  // Publicas: se llega sin sesion, desde un correo o desde el login.
   { path: '/login', element: <PaginaLogin /> },
+  { path: '/confirmar', element: <PaginaConfirmarCorreo /> },
+  { path: '/olvide-contrasena', element: <PaginaOlvideContrasena /> },
+  { path: '/solicitar-registro', element: <PaginaSolicitarRegistro /> },
   {
     path: '/',
     element: (

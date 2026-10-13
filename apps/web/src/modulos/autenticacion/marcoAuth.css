@@ -1,0 +1,94 @@
+.marco-auth {
+  min-height: 100vh;
+  display: flex;
+  justify-content: center;
+  padding: var(--space-7) var(--space-4);
+}
+
+.marco-auth__columna {
+  width: 100%;
+  max-width: 480px;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-5);
+}
+
+.marco-auth__marca {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  align-self: center;
+  color: var(--ink);
+  text-decoration: none;
+}
+
+.marco-auth__nombre {
+  font-family: var(--fuente-display);
+  font-size: 26px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+
+.marco-auth__tarjeta {
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  background: var(--surface-200);
+  padding: var(--space-6);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.marco-auth__titulo {
+  font-size: 26px;
+  line-height: 32px;
+  margin: 0;
+}
+
+.marco-auth__descripcion {
+  margin: 0;
+  color: var(--ink-muted);
+  line-height: 23px;
+}
+
+.marco-auth__pie {
+  text-align: center;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.marco-auth__sello {
+  align-self: center;
+  width: 56px;
+  height: 56px;
+  border-radius: var(--radius-pill);
+  display: grid;
+  place-items: center;
+}
+
+.marco-auth__sello--bien {
+  background: var(--brand-tint);
+  color: var(--brand-strong);
+}
+
+.marco-auth__sello--mal {
+  background: var(--accent-tint);
+  color: var(--danger);
+}
+
+.marco-auth__error {
+  margin: 0;
+  color: var(--danger);
+  font-size: 14px;
+  font-weight: 600;
+}
+
+@media (max-width: 560px) {
+  .marco-auth {
+    padding: var(--space-5) var(--space-4);
+  }
+
+  .marco-auth__tarjeta {
+    padding: var(--space-5);
+  }
+}
