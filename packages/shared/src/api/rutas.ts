@@ -6,6 +6,7 @@ export const RUTAS = {
   autenticacion: {
     registrar: '/api/autenticacion/registrar',
     confirmarCorreo: '/api/autenticacion/confirmar-correo',
+    reenviarVerificacion: '/api/autenticacion/reenviar-verificacion',
     login: '/api/autenticacion/login',
     logout: '/api/autenticacion/logout',
     olvideContrasena: '/api/autenticacion/olvide-contrasena',

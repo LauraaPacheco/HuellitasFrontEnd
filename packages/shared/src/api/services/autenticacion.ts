@@ -20,6 +20,11 @@ export class ServicioAutenticacion {
     return this.api.post<void>(RUTAS.autenticacion.confirmarCorreo, { token });
   }
 
+  /** Vuelve a mandar el enlace de verificacion a un correo sin confirmar. */
+  reenviarVerificacion(correo: string): Promise<void> {
+    return this.api.post<void>(RUTAS.autenticacion.reenviarVerificacion, { correo });
+  }
+
   login(datos: LoginDto): Promise<SesionDto> {
     return this.api.post<SesionDto>(RUTAS.autenticacion.login, datos);
   }

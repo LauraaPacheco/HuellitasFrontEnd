@@ -107,7 +107,30 @@ export class ClienteDemo extends ClienteApi {
       return usuarioDemo(NivelRol.Adoptante);
     }
 
+    // Para poder ver las dos caras de la pantalla de confirmacion sin
+    // backend: cualquier token sirve menos el literal 'vencido'.
+    if (ruta.endsWith('/autenticacion/confirmar-correo')) {
+      const token = (cuerpo as { token?: string } | undefined)?.token ?? '';
+      if (!token || token === 'vencido') {
+        throw new ErrorHttp({
+          titulo: 'El enlace ya no sirve',
+          estadoHttp: 400,
+          detalle: 'El enlace de confirmación venció o ya fue usado.',
+        });
+      }
+      return undefined;
+    }
+
+    // El resto de autenticacion (olvide-contrasena, restablecer) responde
+    // bien sin hacer nada: en demo no hay correo que mandar.
     if (ruta.includes('/autenticacion/')) return undefined;
+
+    /* ---------- Registro de refugio ---------- */
+
+    if (ruta.endsWith('/refugios/solicitar-registro') && metodo === 'POST') {
+      const datos = (cuerpo ?? {}) as { nombre?: string };
+      return { ...REFUGIOS[0], nombre: datos.nombre ?? 'Refugio en revisión' };
+    }
 
     /* ---------- Usuario de la sesion ---------- */
 
