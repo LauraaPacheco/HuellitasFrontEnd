@@ -79,6 +79,18 @@ export default function PantallaLogin() {
 
         <Boton titulo="Iniciar sesión" cargando={enviando} alPresionar={() => void entrar()} />
 
+        <Link
+          href="/olvide-contrasena"
+          style={{
+            color: paleta.brandStrong,
+            fontWeight: '600',
+            textAlign: 'center',
+            paddingVertical: espaciado.s2,
+          }}
+        >
+          Olvidé mi contraseña
+        </Link>
+
         <View style={[estilos.aviso, { backgroundColor: paleta.brandTint }]}>
           <Text style={{ color: paleta.ink, fontSize: 13, lineHeight: 20 }}>
             Si aún no confirmas tu correo, puedes entrar y mirar, pero no

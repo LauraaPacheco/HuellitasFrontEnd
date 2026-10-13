@@ -44,6 +44,11 @@ function Navegacion() {
         <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
         <Stack.Screen name="login" options={{ headerShown: false }} />
         <Stack.Screen name="registro" options={{ title: 'Crear cuenta' }} />
+        <Stack.Screen name="confirmar" options={{ title: 'Confirmar correo' }} />
+        <Stack.Screen
+          name="olvide-contrasena"
+          options={{ title: 'Recuperar contraseña' }}
+        />
         <Stack.Screen name="mascota/[id]" options={{ title: 'Mascota' }} />
       </Stack>
     </>

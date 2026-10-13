@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Alert, ScrollView, StyleSheet, Switch, Text, View } from 'react-native';
+import { ScrollView, StyleSheet, Switch, Text, View } from 'react-native';
 import { useRouter } from 'expo-router';
 import {
   ErrorHttp,
@@ -47,11 +47,8 @@ export default function PantallaRegistro() {
         contrasena,
         aceptaPolitica,
       });
-      Alert.alert(
-        'Revisa tu correo',
-        'Te enviamos un enlace para confirmar tu cuenta. Mientras tanto puedes explorar el catálogo.',
-        [{ text: 'Entendido', onPress: () => router.replace('/login') }],
-      );
+      // Se lleva el correo para poder reenviar el enlace sin volver a pedirlo.
+      router.replace({ pathname: '/confirmar', params: { correo } });
     } catch (causa) {
       setError(
         causa instanceof ErrorHttp
