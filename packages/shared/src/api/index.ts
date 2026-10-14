@@ -13,6 +13,7 @@ import {
 
 export * from './client';
 export * from './rutas';
+export * from './sesion';
 export * from './services';
 
 /** Todos los servicios, ya construidos sobre un mismo cliente. */

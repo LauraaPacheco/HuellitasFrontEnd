@@ -1,6 +1,7 @@
 import { crearApi, type AlmacenToken } from '@huellitas/shared';
 
 const CLAVE_TOKEN = 'huellitas.token';
+const CLAVE_SESION = 'huellitas.sesion';
 
 /** Con el demo encendido, la app responde con datos simulados. */
 export const MODO_DEMO = import.meta.env.VITE_MODO_DEMO === 'true';
@@ -9,29 +10,40 @@ export const MODO_DEMO = import.meta.env.VITE_MODO_DEMO === 'true';
  * En la web el token vive en localStorage. Toda lectura va en try/catch
  * porque en modo privado o con las cookies bloqueadas puede lanzar.
  */
-const almacenWeb: AlmacenToken = {
-  async obtener() {
-    try {
-      return window.localStorage.getItem(CLAVE_TOKEN);
-    } catch {
-      return null;
-    }
-  },
-  async guardar(token) {
-    try {
-      window.localStorage.setItem(CLAVE_TOKEN, token);
-    } catch {
-      /* sin almacenamiento: la sesion dura lo que dure la pestana */
-    }
-  },
-  async limpiar() {
-    try {
-      window.localStorage.removeItem(CLAVE_TOKEN);
-    } catch {
-      /* nada que limpiar */
-    }
-  },
-};
+function almacenDe(clave: string): AlmacenToken {
+  return {
+    async obtener() {
+      try {
+        return window.localStorage.getItem(clave);
+      } catch {
+        return null;
+      }
+    },
+    async guardar(valor) {
+      try {
+        window.localStorage.setItem(clave, valor);
+      } catch {
+        /* sin almacenamiento: la sesion dura lo que dure la pestana */
+      }
+    },
+    async limpiar() {
+      try {
+        window.localStorage.removeItem(clave);
+      } catch {
+        /* nada que limpiar */
+      }
+    },
+  };
+}
+
+const almacenWeb = almacenDe(CLAVE_TOKEN);
+
+/**
+ * La sesion completa (usuario y refresh token) va aparte del access token.
+ * Hace falta porque el backend todavia no expone GET /usuarios/yo: sin
+ * esto, al recargar la pagina no habria forma de saber quien entro.
+ */
+const almacenSesionWeb = almacenDe(CLAVE_SESION);
 
 export const api = crearApi({
   urlBase: import.meta.env.VITE_URL_API ?? '',
@@ -46,3 +58,4 @@ export const api = crearApi({
 });
 
 export const almacen = almacenWeb;
+export const almacenSesion = almacenSesionWeb;

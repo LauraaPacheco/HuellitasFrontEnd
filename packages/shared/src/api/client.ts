@@ -46,6 +46,12 @@ export interface ConfiguracionCliente {
   /** Se dispara cuando la API responde 401, para cerrar sesion en la app. */
   readonly alExpirarSesion?: () => void;
   readonly tiempoLimiteMs?: number;
+  /**
+   * Cabeceras fijas que se mandan en toda peticion. Hoy se usa para el
+   * tunel de desarrollo (X-Tunnel-Authorization), que no tiene nada que
+   * ver con la sesion del usuario y por eso no vive en el almacen.
+   */
+  readonly cabecerasExtra?: Readonly<Record<string, string>>;
 }
 
 type Metodo = 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE';
@@ -85,7 +91,10 @@ export class ClienteApi {
     const { metodo = 'GET', cuerpo, parametros, senal } = opciones;
     const token = await this.config.almacen.obtener();
 
-    const cabeceras: Record<string, string> = { Accept: 'application/json' };
+    const cabeceras: Record<string, string> = {
+      Accept: 'application/json',
+      ...this.config.cabecerasExtra,
+    };
     if (token) cabeceras.Authorization = `Bearer ${token}`;
 
     const esFormData =

@@ -77,7 +77,10 @@ export class ClienteDemo extends ClienteApi {
 
     /* ---------- Autenticacion ---------- */
 
-    if (ruta.endsWith('/autenticacion/login') && metodo === 'POST') {
+    // El demo responde con las MISMAS formas que el backend real, para que
+    // la traduccion de ../api/sesion.ts se ejercite igual en los dos modos.
+
+    if (ruta.endsWith('/Auth/login') && metodo === 'POST') {
       const datos = cuerpo as { correo?: string; contrasena?: string };
       const encontrado = USUARIOS_DEMO.find(
         (u) => u.correo.toLowerCase() === datos.correo?.trim().toLowerCase(),
@@ -91,26 +94,43 @@ export class ClienteDemo extends ClienteApi {
       }
 
       this.nivelActual = encontrado.rol;
+      const usuario = usuarioDemo(encontrado.rol);
       return {
-        token: `demo.${encontrado.rol}.${Date.now()}`,
-        expiraEn: new Date(Date.now() + 86_400_000).toISOString(),
-        usuario: usuarioDemo(encontrado.rol),
+        accessToken: `demo.access.${usuario.id}.${Date.now()}`,
+        refreshToken: `demo.refresh.${Date.now()}`,
+        expiraEnSegundos: 900,
+        nombre: usuario.nombre,
+        rol: usuario.rol.nombre,
       };
     }
 
-    if (ruta.endsWith('/autenticacion/logout')) {
+    if (ruta.endsWith('/Auth/refresh') && metodo === 'POST') {
+      if (this.nivelActual === null) {
+        throw new ErrorHttp({ titulo: 'Sesión no iniciada', estadoHttp: 401 });
+      }
+      const usuario = usuarioDemo(this.nivelActual);
+      return {
+        accessToken: `demo.access.${usuario.id}.${Date.now()}`,
+        refreshToken: `demo.refresh.${Date.now()}`,
+        expiraEnSegundos: 900,
+        nombre: usuario.nombre,
+        rol: usuario.rol.nombre,
+      };
+    }
+
+    if (ruta.endsWith('/Auth/logout')) {
       this.nivelActual = null;
       return undefined;
     }
 
-    if (ruta.endsWith('/autenticacion/registrar')) {
-      return usuarioDemo(NivelRol.Adoptante);
+    if (ruta.endsWith('/v1/Usuarios') && metodo === 'POST') {
+      return { mensaje: 'Usuario registrado. Revisa tu correo.', usuarioId: 99 };
     }
 
     // Para poder ver las dos caras de la pantalla de confirmacion sin
     // backend: cualquier token sirve menos el literal 'vencido'.
-    if (ruta.endsWith('/autenticacion/confirmar-correo')) {
-      const token = (cuerpo as { token?: string } | undefined)?.token ?? '';
+    if (ruta.endsWith('/Usuarios/confirmar')) {
+      const token = String(parametros?.token ?? '');
       if (!token || token === 'vencido') {
         throw new ErrorHttp({
           titulo: 'El enlace ya no sirve',
@@ -121,9 +141,11 @@ export class ClienteDemo extends ClienteApi {
       return undefined;
     }
 
-    // El resto de autenticacion (olvide-contrasena, restablecer) responde
-    // bien sin hacer nada: en demo no hay correo que mandar.
-    if (ruta.includes('/autenticacion/')) return undefined;
+    if (ruta.endsWith('/Usuarios/reenviar-verificacion')) return undefined;
+
+    // olvide-contrasena y restablecer: responden bien sin hacer nada,
+    // en demo no hay correo que mandar.
+    if (ruta.includes('/Auth/')) return undefined;
 
     /* ---------- Registro de refugio ---------- */
 

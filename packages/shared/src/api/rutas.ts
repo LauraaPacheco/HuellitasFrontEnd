@@ -3,15 +3,26 @@
  * renombra un endpoint.
  */
 export const RUTAS = {
+  /**
+   * Estas son las rutas que el backend YA expone, con su version en la
+   * URL: el controlador declara api/v{version}/[controller].
+   */
   autenticacion: {
-    registrar: '/api/autenticacion/registrar',
-    confirmarCorreo: '/api/autenticacion/confirmar-correo',
-    reenviarVerificacion: '/api/autenticacion/reenviar-verificacion',
-    login: '/api/autenticacion/login',
-    logout: '/api/autenticacion/logout',
-    olvideContrasena: '/api/autenticacion/olvide-contrasena',
-    restablecer: '/api/autenticacion/restablecer',
+    registrar: '/api/v1/Usuarios',
+    confirmarCorreo: '/api/v1/Usuarios/confirmar',
+    reenviarVerificacion: '/api/v1/Usuarios/reenviar-verificacion',
+    login: '/api/v1/Auth/login',
+    refrescar: '/api/v1/Auth/refresh',
+    logout: '/api/v1/Auth/logout',
+    // Pendientes en el backend; las pantallas ya existen.
+    olvideContrasena: '/api/v1/Auth/olvide-contrasena',
+    restablecer: '/api/v1/Auth/restablecer',
   },
+  /**
+   * De aqui para abajo todavia no existe nada en el backend. Cuando Mateo
+   * cree cada controlador, la ruta queda /api/v1/<Controlador>; mientras
+   * tanto solo las usa el modo demo.
+   */
   usuarios: {
     base: '/api/usuarios',
     porId: (id: number) => `/api/usuarios/${id}`,

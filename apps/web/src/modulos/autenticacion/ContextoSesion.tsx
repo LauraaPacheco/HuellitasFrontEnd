@@ -7,8 +7,13 @@ import {
   useState,
   type ReactNode,
 } from 'react';
-import { NivelRol, type LoginDto, type Usuario } from '@huellitas/shared';
-import { almacen, api } from '@/lib/api';
+import {
+  NivelRol,
+  type LoginDto,
+  type SesionGuardada,
+  type Usuario,
+} from '@huellitas/shared';
+import { almacen, almacenSesion, api } from '@/lib/api';
 
 interface ValorSesion {
   readonly usuario: Usuario | null;
@@ -24,19 +29,25 @@ export function ProveedorSesion({ children }: { children: ReactNode }) {
   const [usuario, setUsuario] = useState<Usuario | null>(null);
   const [cargando, setCargando] = useState(true);
 
-  // Al abrir la app, si hay token guardado recuperamos al usuario.
+  /**
+   * Al abrir la app recuperamos la sesion de lo que quedo guardado.
+   *
+   * Lo normal seria preguntarle al backend con GET /usuarios/yo, pero ese
+   * endpoint todavia no existe. Mientras tanto confiamos en lo guardado:
+   * si el token ya vencio, la primera llamada protegida respondera 401 y
+   * la app volvera al login sola.
+   */
   useEffect(() => {
     let vigente = true;
     void (async () => {
-      const token = await almacen.obtener();
-      if (!token) {
-        if (vigente) setCargando(false);
-        return;
-      }
       try {
-        const actual = await api.usuarios.yo();
-        if (vigente) setUsuario(actual);
+        const crudo = await almacenSesion.obtener();
+        if (crudo && vigente) {
+          const sesion = JSON.parse(crudo) as SesionGuardada;
+          setUsuario(sesion.usuario);
+        }
       } catch {
+        await almacenSesion.limpiar();
         await almacen.limpiar();
       } finally {
         if (vigente) setCargando(false);
@@ -50,14 +61,21 @@ export function ProveedorSesion({ children }: { children: ReactNode }) {
   const iniciarSesion = useCallback(async (datos: LoginDto) => {
     const sesion = await api.autenticacion.login(datos);
     await almacen.guardar(sesion.token);
+    await almacenSesion.guardar(JSON.stringify(sesion));
     setUsuario(sesion.usuario);
   }, []);
 
   const cerrarSesion = useCallback(async () => {
     try {
-      await api.autenticacion.logout();
+      // El backend revoca el refresh token, asi que hay que mandarselo.
+      const crudo = await almacenSesion.obtener();
+      const refresh = crudo ? (JSON.parse(crudo) as SesionGuardada).refreshToken : null;
+      if (refresh) await api.autenticacion.logout(refresh);
+    } catch {
+      /* si falla, igual se cierra del lado del front */
     } finally {
       await almacen.limpiar();
+      await almacenSesion.limpiar();
       setUsuario(null);
     }
   }, []);
