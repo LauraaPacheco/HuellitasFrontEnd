@@ -5,6 +5,8 @@ import { PaginaLogin } from '@/modulos/autenticacion/PaginaLogin';
 import { PaginaConfirmarCorreo } from '@/modulos/autenticacion/PaginaConfirmarCorreo';
 import { PaginaOlvideContrasena } from '@/modulos/autenticacion/PaginaOlvideContrasena';
 import { PaginaSolicitarRegistro } from '@/modulos/autenticacion/PaginaSolicitarRegistro';
+import { PaginaSinPermiso } from '@/modulos/autenticacion/PaginaSinPermiso';
+import { InicioSegunRol } from '@/modulos/autenticacion/InicioSegunRol';
 import { RutaProtegida } from '@/modulos/autenticacion/RutaProtegida';
 import { PaginaBandeja } from '@/modulos/solicitudes/PaginaBandeja';
 import { PaginaDetalleSolicitud } from '@/modulos/solicitudes/PaginaDetalleSolicitud';
@@ -26,7 +28,9 @@ export const rutas = createBrowserRouter([
       </RutaProtegida>
     ),
     children: [
-      { index: true, element: <Navigate to="/solicitudes" replace /> },
+      // A donde llega cada quien depende de su rol: mandar a todos a
+      // /solicitudes dejaba al adoptante rebotando contra sin-permiso.
+      { index: true, element: <InicioSegunRol /> },
       {
         path: 'solicitudes',
         element: (
@@ -99,12 +103,9 @@ export const rutas = createBrowserRouter([
   {
     path: '/sin-permiso',
     element: (
-      <div style={{ padding: 'var(--space-7)' }}>
-        <h1>No tienes permiso para ver esta página</h1>
-        <p style={{ color: 'var(--ink-muted)' }}>
-          Si crees que es un error, contacta al administrador de la plataforma.
-        </p>
-      </div>
+      <RutaProtegida>
+        <PaginaSinPermiso />
+      </RutaProtegida>
     ),
   },
   { path: '*', element: <Navigate to="/" replace /> },

@@ -17,7 +17,8 @@ export function PaginaLogin() {
   const [error, setError] = useState<string | null>(null);
   const [enviando, setEnviando] = useState(false);
 
-  if (usuario) return <Navigate to="/solicitudes" replace />;
+  // El destino depende del rol: la raiz se encarga de repartir.
+  if (usuario) return <Navigate to="/" replace />;
 
   async function alEnviar(evento: FormEvent) {
     evento.preventDefault();
@@ -31,7 +32,7 @@ export function PaginaLogin() {
     setEnviando(true);
     try {
       await iniciarSesion({ correo, contrasena });
-      navegar('/solicitudes');
+      navegar('/');
     } catch (causa) {
       // Mensaje generico a proposito: no revelamos si el correo existe.
       setError(
