@@ -1,4 +1,5 @@
-import { createBrowserRouter, Navigate } from 'react-router-dom';
+import { lazy, Suspense } from 'react';
+import { createBrowserRouter, Navigate, type RouteObject } from 'react-router-dom';
 import { NivelRol } from '@huellitas/shared';
 import { Layout } from '@/componentes/layout/Layout';
 import { PaginaLogin } from '@/modulos/autenticacion/PaginaLogin';
@@ -14,7 +15,37 @@ import { PaginaPendiente } from '@/modulos/PaginaPendiente';
 
 const REFUGIO_Y_ADMIN = [NivelRol.Refugio, NivelRol.Administrador] as const;
 
+/**
+ * Catalogo de componentes, solo en desarrollo.
+ *
+ * El lazy() va DENTRO del condicional a proposito. Si se declara afuera,
+ * el import() queda alcanzable y el empaquetador no puede descartarlo: la
+ * galeria termina viajando al usuario en produccion. Asi, Vite reemplaza
+ * import.meta.env.DEV por false, la rama entera queda muerta y el chunk
+ * no se genera. Comprobado: sin esto salia un PaginaGaleria-*.js en dist.
+ */
+const rutasDesarrollo: RouteObject[] = import.meta.env.DEV
+  ? [
+      {
+        path: '/galeria',
+        element: (() => {
+          const Galeria = lazy(() =>
+            import('@/modulos/galeria/PaginaGaleria').then((m) => ({
+              default: m.PaginaGaleria,
+            })),
+          );
+          return (
+            <Suspense fallback={<p style={{ padding: 'var(--space-7)' }}>Cargando…</p>}>
+              <Galeria />
+            </Suspense>
+          );
+        })(),
+      },
+    ]
+  : [];
+
 export const rutas = createBrowserRouter([
+  ...rutasDesarrollo,
   // Publicas: se llega sin sesion, desde un correo o desde el login.
   { path: '/login', element: <PaginaLogin /> },
   { path: '/confirmar', element: <PaginaConfirmarCorreo /> },
