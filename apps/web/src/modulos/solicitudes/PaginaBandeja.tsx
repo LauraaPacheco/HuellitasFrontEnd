@@ -9,6 +9,7 @@ import {
 } from '@huellitas/shared';
 import { api } from '@/lib/api';
 import { Encabezado } from '@/componentes/layout/Encabezado';
+import { Boton } from '@/componentes/ui/Boton';
 import { EstadoVacio } from '@/componentes/ui/EstadoVacio';
 import { Insignia } from '@/componentes/ui/Insignia';
 import './bandeja.css';
@@ -77,10 +78,31 @@ export function PaginaBandeja() {
         />
       )}
 
-      {data && data.items.length === 0 && (
+      {/* Dos vacios que no son lo mismo: que no haya llegado nada todavia
+          no es un problema; que el filtro no encuentre nada si tiene una
+          salida, que es quitarlo. */}
+      {data && data.items.length === 0 && filtro.estado === undefined && (
         <EstadoVacio
+          ilustracion="durmiendo"
           titulo="Todavía no hay solicitudes"
           descripcion="Cuando alguien se postule a una de tus mascotas, la verás aquí."
+        />
+      )}
+
+      {data && data.items.length === 0 && filtro.estado !== undefined && (
+        <EstadoVacio
+          ilustracion="confundido"
+          titulo="Ninguna solicitud en ese estado"
+          descripcion="Prueba con otro estado o mira todas las solicitudes."
+          accion={
+            <Boton
+              onClick={() =>
+                setFiltro((previo) => ({ ...previo, pagina: 1, estado: undefined }))
+              }
+            >
+              Ver todas
+            </Boton>
+          }
         />
       )}
 

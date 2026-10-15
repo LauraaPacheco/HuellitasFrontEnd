@@ -1,14 +1,20 @@
 import bloqueo from '@/assets/bloqueo.webp';
+import confundido from '@/assets/confundido.webp';
+import durmiendo from '@/assets/durmiendo.webp';
 import trio from '@/assets/trio.webp';
 import './ilustracion.css';
 
-export type VarianteIlustracion = 'trio' | 'bloqueo';
+export type VarianteIlustracion = 'trio' | 'bloqueo' | 'confundido' | 'durmiendo';
 
 const FUENTES: Record<VarianteIlustracion, string> = {
   /** Las tres mascotas tranquilas: para una pantalla sin datos. */
   trio,
   /** Las tres con un candado: para un acceso denegado de verdad. */
   bloqueo,
+  /** Con signos de pregunta: la busqueda no encontro nada. */
+  confundido,
+  /** Dormidas: todavia no ha pasado nada, no hay error. */
+  durmiendo,
 };
 
 interface Props {
