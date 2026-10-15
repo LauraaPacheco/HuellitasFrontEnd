@@ -1,10 +1,14 @@
+import bloqueo from '@/assets/bloqueo.webp';
 import trio from '@/assets/trio.webp';
 import './ilustracion.css';
 
-export type VarianteIlustracion = 'trio';
+export type VarianteIlustracion = 'trio' | 'bloqueo';
 
 const FUENTES: Record<VarianteIlustracion, string> = {
+  /** Las tres mascotas tranquilas: para una pantalla sin datos. */
   trio,
+  /** Las tres con un candado: para un acceso denegado de verdad. */
+  bloqueo,
 };
 
 interface Props {
