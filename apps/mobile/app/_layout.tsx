@@ -39,9 +39,16 @@ function Navegacion() {
           headerTintColor: paleta.ink,
           headerTitleStyle: { fontWeight: '700' },
           contentStyle: { backgroundColor: paleta.surface100 },
+          // iOS pone de texto del boton atras el titulo de la pantalla
+          // anterior. Como (tabs) va sin encabezado ni titulo, caia al
+          // nombre de la carpeta y se leia "(tabs)". 'minimal' deja solo
+          // la flecha. Ojo: expo-router 57 trae su propia copia de
+          // react-navigation con la API v7, asi que headerBackTitleVisible
+          // (la de v6) no existe aqui aunque el paquete v6 este instalado.
+          headerBackButtonDisplayMode: 'minimal',
         }}
       >
-        <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+        <Stack.Screen name="(tabs)" options={{ headerShown: false, title: 'Huellitas' }} />
         <Stack.Screen name="login" options={{ headerShown: false }} />
         <Stack.Screen name="registro" options={{ title: 'Crear cuenta' }} />
         <Stack.Screen name="confirmar" options={{ title: 'Confirmar correo' }} />
