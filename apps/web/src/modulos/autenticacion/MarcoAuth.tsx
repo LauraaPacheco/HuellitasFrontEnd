@@ -7,7 +7,7 @@ import './marcoAuth.css';
 interface Props {
   readonly titulo: string;
   readonly descripcion?: string;
-  /** Icono de resultado; va arriba del titulo, que es donde se busca. */
+  /** Icono o ilustracion; va arriba del titulo, que es donde se busca. */
   readonly sello?: ReactNode;
   readonly children: ReactNode;
   /** Pie opcional; si no se pasa, va el enlace de vuelta al login. */

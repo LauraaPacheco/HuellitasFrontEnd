@@ -1,6 +1,7 @@
 import { useNavigate } from 'react-router-dom';
 import { NivelRol } from '@huellitas/shared';
 import { Boton } from '@/componentes/ui/Boton';
+import { Ilustracion } from '@/componentes/ui/Ilustracion';
 import { MarcoAuth } from './MarcoAuth';
 import { useSesion } from './ContextoSesion';
 
@@ -25,6 +26,7 @@ export function PaginaSinPermiso() {
 
   return (
     <MarcoAuth
+      sello={<Ilustracion variante="perro-triste" tamano={168} />}
       titulo={esAdoptante ? 'Esta cuenta es de adoptante' : 'No tienes permiso para ver esta página'}
       descripcion={
         esAdoptante
