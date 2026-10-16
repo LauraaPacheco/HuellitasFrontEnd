@@ -48,8 +48,9 @@ cp apps/mobile/.env.example apps/mobile/.env
 ## Levantar los proyectos
 
 ```bash
-npm run web      # panel web en http://localhost:5173
-npm run mobile   # app móvil: escanea el QR con Expo Go
+npm run web        # panel web en http://localhost:5173, contra el backend
+npm run web:demo   # lo mismo pero con datos simulados (ver más abajo)
+npm run mobile     # app móvil: escanea el QR con Expo Go
 ```
 
 Para que el celular alcance el backend no sirve `localhost`: hay que poner
@@ -58,12 +59,28 @@ la IP de la máquina en `apps/mobile/.env`, por ejemplo
 
 ## Modo demostración
 
-Mientras el backend no esté listo, las dos apps corren con datos simulados.
-Viene encendido por defecto en los `.env`:
+Las apps pueden correr con datos simulados, sin backend. Sirve para dos
+cosas que hoy no se pueden revisar contra la API:
+
+- Pantallas cuyo endpoint todavía no existe (mascotas, reportes,
+  seguimientos, indicadores).
+- Pantallas que piden un rol que la base de datos no tiene asignado:
+  Solicitudes y Mascotas exigen sesión de refugio.
+
+En la web se levanta con un comando, sin tocar el `.env`:
+
+```bash
+npm run web:demo
+```
+
+Carga `apps/web/.env.demo` encima de `.env`, así que el token del túnel
+sigue en su sitio y no hay que acordarse de devolver ninguna variable.
+`npm run web` sigue yendo contra el backend de verdad.
+
+En la móvil todavía se hace a mano, porque Expo no tiene modos:
 
 ```
-VITE_MODO_DEMO=true          # web
-EXPO_PUBLIC_MODO_DEMO=true   # móvil
+EXPO_PUBLIC_MODO_DEMO=true   # en apps/mobile/.env
 ```
 
 Usuarios de prueba, todos con la contraseña `Demo1234`:
@@ -75,8 +92,13 @@ Usuarios de prueba, todos con la contraseña `Demo1234`:
 | `adoptante@huellitas.co` | Adoptante | La app móvil con su solicitud en curso |
 
 Los datos viven en `packages/shared/src/demo/`. Nada se guarda: al recargar
-vuelve al estado inicial. Para conectar contra el backend real basta con
-poner las variables en `false`; ninguna pantalla cambia.
+vuelve al estado inicial. Ninguna pantalla cambia entre un modo y el otro:
+`ClienteDemo` extiende `ClienteApi` y solo sobrescribe `peticion()`, así que
+los servicios y las pantallas no se enteran.
+
+Con el servidor levantado hay además una galería de componentes en
+`/galeria`, con las ilustraciones, los estados vacíos y los botones en los
+dos temas. No existe en ningún build.
 
 
 ## Verificar antes de subir cambios

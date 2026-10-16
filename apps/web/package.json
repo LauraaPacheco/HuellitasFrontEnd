@@ -6,6 +6,7 @@
   "description": "Panel web de Huellitas para refugios y administradores",
   "scripts": {
     "dev": "vite",
+    "dev:demo": "vite --mode demo",
     "build": "tsc -b && vite build",
     "preview": "vite preview",
     "typecheck": "tsc --noEmit"

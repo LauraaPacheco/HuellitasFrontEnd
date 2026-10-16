@@ -9,6 +9,7 @@
   ],
   "scripts": {
     "web": "npm run dev --workspace=@huellitas/web",
+    "web:demo": "npm run dev:demo --workspace=@huellitas/web",
     "mobile": "npm run start --workspace=@huellitas/mobile",
     "build:shared": "npm run build --workspace=@huellitas/shared",
     "build:web": "npm run build --workspace=@huellitas/web",

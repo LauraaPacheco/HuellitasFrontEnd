@@ -17,15 +17,23 @@ import { PaginaPendiente } from '@/modulos/PaginaPendiente';
 const REFUGIO_Y_ADMIN = [NivelRol.Refugio, NivelRol.Administrador] as const;
 
 /**
- * Catalogo de componentes, solo en desarrollo.
+ * Catalogo de componentes, solo con el servidor de desarrollo levantado.
  *
- * El lazy() va DENTRO del condicional a proposito. Si se declara afuera,
- * el import() queda alcanzable y el empaquetador no puede descartarlo: la
- * galeria termina viajando al usuario en produccion. Asi, Vite reemplaza
- * import.meta.env.DEV por false, la rama entera queda muerta y el chunk
- * no se genera. Comprobado: sin esto salia un PaginaGaleria-*.js en dist.
+ * Dos detalles aqui son a proposito y los dos se comprobaron mirando dist:
+ *
+ * 1. El lazy() va DENTRO del condicional. Declarado afuera, el import()
+ *    queda alcanzable y el empaquetador no puede descartarlo: la galeria
+ *    termina viajando al usuario. Asi la rama entera queda muerta y el
+ *    chunk no se genera.
+ * 2. La condicion es import.meta.hot y no import.meta.env.DEV, porque
+ *    DEV mira el modo y no el comando: `vite build --mode demo` lo deja
+ *    en true y la galeria viajaria igual. import.meta.hot solo existe
+ *    con el servidor levantado, y en cualquier build Rollup lo sustituye
+ *    por undefined. Si algun dia dejara de existir, lo que se pierde es
+ *    la galeria en desarrollo, no la app: es un acceso a propiedad, no
+ *    una variable global que al faltar rompe la pagina entera.
  */
-const rutasDesarrollo: RouteObject[] = import.meta.env.DEV
+const rutasDesarrollo: RouteObject[] = import.meta.hot
   ? [
       {
         path: '/galeria',
