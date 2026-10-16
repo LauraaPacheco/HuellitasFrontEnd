@@ -1,5 +1,6 @@
 import { Tabs } from 'expo-router';
 import { Text, type ColorValue } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { usarPaleta } from '@/temas';
 
 /** Icono provisional: se reemplaza por el set de línea de 24px del sistema. */
@@ -9,6 +10,7 @@ function IconoTab({ simbolo, color }: { simbolo: string; color: ColorValue }) {
 
 export default function LayoutTabs() {
   const paleta = usarPaleta();
+  const margenes = useSafeAreaInsets();
 
   return (
     <Tabs
@@ -18,8 +20,10 @@ export default function LayoutTabs() {
         tabBarStyle: {
           backgroundColor: paleta.surface100,
           borderTopColor: paleta.border,
-          height: 64,
-          paddingBottom: 8,
+          // Un alto fijo tapaba el indicador de inicio en los iPhone sin
+          // boton: la barra tiene que crecer con el margen de abajo.
+          height: 56 + margenes.bottom,
+          paddingBottom: Math.max(margenes.bottom, 8),
         },
         headerStyle: { backgroundColor: paleta.surface100 },
         headerTintColor: paleta.ink,

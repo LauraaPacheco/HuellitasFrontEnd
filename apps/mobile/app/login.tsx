@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { ScrollView, StyleSheet, Text, View } from 'react-native';
 import { Link, useRouter } from 'expo-router';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ErrorHttp, esCorreoValido } from '@huellitas/shared';
 import { useSesion } from '@/lib/sesion';
 import { Boton } from '@/componentes/Boton';
@@ -13,6 +14,9 @@ import { espaciado, radios, usarPaleta } from '@/temas';
 export default function PantallaLogin() {
   const paleta = usarPaleta();
   const router = useRouter();
+  // Esta pantalla va sin encabezado, asi que nada la protege de la barra
+  // de estado: el relleno de arriba lo tiene que poner ella.
+  const margenes = useSafeAreaInsets();
   const { iniciarSesion } = useSesion();
   const [correo, setCorreo] = useState('');
   const [contrasena, setContrasena] = useState('');
@@ -43,13 +47,15 @@ export default function PantallaLogin() {
   return (
     <ScrollView
       style={{ backgroundColor: paleta.surface100 }}
-      contentContainerStyle={estilos.contenido}
+      contentContainerStyle={[
+        estilos.contenido,
+        {
+          paddingTop: margenes.top + espaciado.s5,
+          paddingBottom: margenes.bottom + espaciado.s5,
+        },
+      ]}
       keyboardShouldPersistTaps="handled"
     >
-      <View style={estilos.barra}>
-        <BotonTema />
-      </View>
-
       <View style={estilos.marca}>
         <Isotipo tamano={88} />
         <Text style={[estilos.nombre, { color: paleta.ink }]}>Huellitas</Text>
@@ -111,6 +117,13 @@ export default function PantallaLogin() {
             Regístrate
           </Link>
         </Text>
+
+        {/* Cambiar el tema es lo menos importante de un login: va al final,
+            con lo secundario, y no arriba compitiendo con la barra de
+            estado del telefono. */}
+        <View style={estilos.tema}>
+          <BotonTema conEtiqueta />
+        </View>
       </View>
     </ScrollView>
   );
@@ -119,15 +132,13 @@ export default function PantallaLogin() {
 const estilos = StyleSheet.create({
   contenido: {
     flexGrow: 1,
-    padding: espaciado.s5,
-    // La barra del tema ya aporta altura arriba, asi que el relleno baja.
-    paddingTop: espaciado.s5,
+    paddingHorizontal: espaciado.s5,
     gap: espaciado.s6,
   },
-  barra: { alignItems: 'flex-end' },
   marca: { alignItems: 'center', gap: espaciado.s2 },
   nombre: { fontSize: 40, fontWeight: '700', letterSpacing: -1 },
   formulario: { gap: espaciado.s4 },
   aviso: { padding: espaciado.s4, borderRadius: radios.md },
   pie: { marginTop: 'auto', gap: espaciado.s3 },
+  tema: { alignItems: 'center', marginTop: espaciado.s2 },
 });
