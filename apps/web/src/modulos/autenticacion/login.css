@@ -41,6 +41,22 @@
   margin: 0;
 }
 
+.login__ilustracion {
+  display: flex;
+  justify-content: center;
+}
+
+/* El panel se queda sin aire antes que el navegador se angoste: lo que
+   manda aqui es el alto, no el ancho.
+   740 no es un numero al azar: medido, el panel con la ilustracion ocupa
+   718 px, asi que por debajo de 740 quedaria pegada a las notas legales o
+   obligaria a desplazar un login, que no deberia desplazarse nunca. */
+@media (max-height: 739px) {
+  .login__ilustracion {
+    display: none;
+  }
+}
+
 .login__notas {
   list-style: none;
   padding: 0;
@@ -133,6 +149,10 @@
 
   .login__titulo {
     font-size: 30px;
+  }
+
+  .login__ilustracion {
+    display: none;
   }
 }
 

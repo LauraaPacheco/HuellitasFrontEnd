@@ -5,6 +5,7 @@ import { useSesion } from './ContextoSesion';
 import { Isotipo } from '@/componentes/ui/Isotipo';
 import { Boton } from '@/componentes/ui/Boton';
 import { BotonTema } from '@/componentes/ui/BotonTema';
+import { Ilustracion } from '@/componentes/ui/Ilustracion';
 import { Campo } from '@/componentes/ui/Campo';
 import { AvisoDemo } from '@/componentes/ui/AvisoDemo';
 import './login.css';
@@ -63,6 +64,13 @@ export function PaginaLogin() {
             atiende reportes ciudadanos y haz seguimiento a cada adopción
             entregada.
           </p>
+        </div>
+
+        {/* Entre el texto y las notas legales, que es donde el panel tenia
+            aire de sobra. En pantallas bajas se oculta por CSS: antes que
+            apretar el titulo, preferimos que no este. */}
+        <div className="login__ilustracion">
+          <Ilustracion variante="trio" alto={200} />
         </div>
 
         <ul className="login__notas">
