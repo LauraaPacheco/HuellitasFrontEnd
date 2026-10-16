@@ -1,41 +1,39 @@
-import Svg, { Circle, Path } from 'react-native-svg';
+import Svg, { Circle, Ellipse, Path } from 'react-native-svg';
 import { usarPaleta } from '@/temas';
 
 interface Props {
   readonly tamano?: number;
+  /** Para cuando el isotipo va sobre un fondo de color de marca. */
   readonly sobreOscuro?: boolean;
 }
 
-/** Por debajo de 32px el isotipo pasa a su version reducida. */
+/**
+ * Isotipo de Huellitas: pin de ubicacion con una huella recortada.
+ *
+ * Mismo dibujo que en la web (apps/web/src/componentes/ui/Isotipo). Si
+ * cambia uno, cambia el otro: es la misma marca.
+ *
+ * Una sola geometria para todos los tamanos. La version reducida que
+ * habia por debajo de 32px tapaba el circulo entero y solo dejaba un
+ * anillo. El hueco sale de surface100 y no de un blanco fijo, que en
+ * tema oscuro quedaba gris sobre el verde menta.
+ */
 export function Isotipo({ tamano = 32, sobreOscuro = false }: Props) {
   const paleta = usarPaleta();
-  const fondo = sobreOscuro ? '#ffffff' : paleta.brandStrong;
-  const hueco = sobreOscuro ? paleta.brandStrong : '#ffffff';
-  const completo = tamano >= 32;
+  const pin = sobreOscuro ? '#ffffff' : paleta.brandStrong;
+  const hueco = sobreOscuro ? paleta.brandStrong : paleta.surface100;
 
   return (
     <Svg viewBox="0 0 120 120" width={tamano} height={tamano} accessibilityLabel="Huellitas">
       <Path
         d="M60 6 C86 6 106 26 106 52 C106 82 72 106 60 116 C48 106 14 82 14 52 C14 26 34 6 60 6 Z"
-        fill={fondo}
+        fill={pin}
       />
-      <Circle cx="60" cy="50" r={completo ? 26 : 24} fill={hueco} />
-      {completo ? (
-        <>
-          <Circle cx="50" cy="44" r="5" fill={fondo} />
-          <Circle cx="60" cy="40" r="5" fill={fondo} />
-          <Circle cx="70" cy="44" r="5" fill={paleta.accent} />
-          <Path
-            d="M60 52 C67 52 72 57 72 61 C72 66 67 68 60 68 C53 68 48 66 48 61 C48 57 53 52 60 52 Z"
-            fill={fondo}
-          />
-        </>
-      ) : (
-        <Path
-          d="M60 38 C70 38 78 48 78 56 C78 64 70 66 60 66 C50 66 42 64 42 56 C42 48 50 38 60 38 Z"
-          fill={fondo}
-        />
-      )}
+      <Circle cx="60" cy="50" r="26" fill={hueco} />
+      <Circle cx="46" cy="43" r="7.5" fill={pin} />
+      <Circle cx="60" cy="36" r="7.5" fill={pin} />
+      <Circle cx="74" cy="43" r="7.5" fill={pin} />
+      <Ellipse cx="60" cy="60" rx="14" ry="10" fill={pin} />
     </Svg>
   );
 }

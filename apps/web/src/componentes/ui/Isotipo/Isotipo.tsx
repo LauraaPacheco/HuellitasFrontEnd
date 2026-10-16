@@ -1,15 +1,28 @@
 interface Props {
   readonly tamano?: number;
+  /** Para cuando el isotipo va sobre un fondo de color de marca. */
   readonly sobreOscuro?: boolean;
 }
 
 /**
- * Isotipo de Huellitas: pin de ubicacion con huella.
- * Por debajo de 32px usa la version reducida, que es la que se sigue leyendo.
+ * Isotipo de Huellitas: pin de ubicacion con una huella recortada.
+ *
+ * Una sola geometria para todos los tamanos. Antes habia dos versiones y
+ * por debajo de 32px entraba una "simplificada" cuya huella era tan
+ * grande que tapaba el circulo entero: en el sidebar, a 30px, no se veia
+ * una huella sino un anillo. La huella de ahora es mas gruesa y se
+ * sostiene hasta 20px, asi que el umbral sobraba.
+ *
+ * El hueco sale de --surface-100 y no de un blanco fijo. En tema oscuro
+ * un disco blanco sobre el verde menta quedaba gris y sucio; tomando el
+ * fondo de la app el recorte se lee limpio en los dos temas.
+ *
+ * Los tres dedos van del color del pin. El coral esta reservado para
+ * reporte ciudadano y aqui no significaba nada.
  */
 export function Isotipo({ tamano = 32, sobreOscuro = false }: Props) {
-  const fondo = sobreOscuro ? '#ffffff' : 'var(--brand-strong)';
-  const hueco = sobreOscuro ? 'var(--brand-strong)' : '#ffffff';
+  const pin = sobreOscuro ? '#ffffff' : 'var(--brand-strong)';
+  const hueco = sobreOscuro ? 'var(--brand-strong)' : 'var(--surface-100)';
 
   return (
     <svg
@@ -21,25 +34,13 @@ export function Isotipo({ tamano = 32, sobreOscuro = false }: Props) {
     >
       <path
         d="M60 6 C86 6 106 26 106 52 C106 82 72 106 60 116 C48 106 14 82 14 52 C14 26 34 6 60 6 Z"
-        fill={fondo}
+        fill={pin}
       />
-      <circle cx="60" cy="50" r={tamano >= 32 ? 26 : 24} fill={hueco} />
-      {tamano >= 32 ? (
-        <>
-          <circle cx="50" cy="44" r="5" fill={fondo} />
-          <circle cx="60" cy="40" r="5" fill={fondo} />
-          <circle cx="70" cy="44" r="5" fill={sobreOscuro ? '#ff7a5c' : 'var(--accent)'} />
-          <path
-            d="M60 52 C67 52 72 57 72 61 C72 66 67 68 60 68 C53 68 48 66 48 61 C48 57 53 52 60 52 Z"
-            fill={fondo}
-          />
-        </>
-      ) : (
-        <path
-          d="M60 38 C70 38 78 48 78 56 C78 64 70 66 60 66 C50 66 42 64 42 56 C42 48 50 38 60 38 Z"
-          fill={fondo}
-        />
-      )}
+      <circle cx="60" cy="50" r="26" fill={hueco} />
+      <circle cx="46" cy="43" r="7.5" fill={pin} />
+      <circle cx="60" cy="36" r="7.5" fill={pin} />
+      <circle cx="74" cy="43" r="7.5" fill={pin} />
+      <ellipse cx="60" cy="60" rx="14" ry="10" fill={pin} />
     </svg>
   );
 }
