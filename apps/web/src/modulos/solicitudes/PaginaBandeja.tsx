@@ -12,7 +12,7 @@ import { Encabezado } from '@/componentes/layout/Encabezado';
 import { Boton } from '@/componentes/ui/Boton';
 import { EstadoVacio } from '@/componentes/ui/EstadoVacio';
 import { Insignia } from '@/componentes/ui/Insignia';
-import './bandeja.css';
+import '@/estilos/tabla.css';
 
 /** Solicitudes con esta espera o mas se resaltan en ambar. */
 const DIAS_PARA_ALERTA = 5;
@@ -46,7 +46,7 @@ export function PaginaBandeja() {
             </label>
             <select
               id="filtro-estado"
-              className="bandeja__select"
+              className="filtro-select"
               value={filtro.estado ?? ''}
               onChange={(evento) =>
                 setFiltro((previo) => ({
@@ -107,7 +107,7 @@ export function PaginaBandeja() {
       )}
 
       {data && data.items.length > 0 && (
-        <table className="bandeja">
+        <table className="tabla">
           <thead>
             <tr>
               <th scope="col">Adoptante</th>
@@ -123,16 +123,16 @@ export function PaginaBandeja() {
               return (
                 <tr key={solicitud.id}>
                   <td>
-                    <Link to={`/solicitudes/${solicitud.id}`} className="bandeja__nombre">
+                    <Link to={`/solicitudes/${solicitud.id}`} className="tabla__nombre">
                       {solicitud.nombreAdoptante}
                     </Link>
-                    <span className="bandeja__detalle">
+                    <span className="tabla__detalle">
                       {solicitud.perfilCompleto ? 'Perfil completo' : 'Perfil incompleto'}
                     </span>
                   </td>
                   <td>{solicitud.nombreMascota}</td>
-                  <td className="bandeja__detalle">{formatearFecha(solicitud.fechaEnvio)}</td>
-                  <td className={demorada ? 'bandeja__demora' : 'bandeja__detalle'}>
+                  <td className="tabla__detalle">{formatearFecha(solicitud.fechaEnvio)}</td>
+                  <td className={demorada ? 'tabla__alerta' : 'tabla__detalle'}>
                     {solicitud.diasSinRespuesta} {solicitud.diasSinRespuesta === 1 ? 'día' : 'días'}
                   </td>
                   <td>

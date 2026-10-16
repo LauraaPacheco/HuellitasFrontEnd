@@ -1,0 +1,54 @@
+/*
+ * Tabla de datos. Estaba dentro de bandeja.css y la usan ya dos
+ * pantallas, asi que vive aparte: duplicarla era garantizar que se
+ * separen con el tiempo.
+ */
+
+.tabla {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.tabla th {
+  text-align: left;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--ink-muted);
+  padding: 0 var(--space-4) var(--space-2);
+}
+
+.tabla td {
+  padding: var(--space-4);
+  border-top: 1px solid var(--border);
+  vertical-align: middle;
+  font-size: 14px;
+}
+
+.tabla tbody tr:hover {
+  background: var(--surface-200);
+}
+
+/* Lo que identifica la fila: el nombre, y debajo su dato de apoyo. */
+.tabla__nombre {
+  display: block;
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--ink);
+  text-decoration: none;
+}
+
+.tabla__nombre:hover {
+  text-decoration: underline;
+}
+
+.tabla__detalle {
+  font-size: 13px;
+  color: var(--ink-muted);
+}
+
+/* Dato que pide atencion sin ser un error: nunca solo color. */
+.tabla__alerta {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--warn);
+}

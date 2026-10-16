@@ -9,6 +9,7 @@ import { PaginaSolicitarRegistro } from '@/modulos/autenticacion/PaginaSolicitar
 import { PaginaSinPermiso } from '@/modulos/autenticacion/PaginaSinPermiso';
 import { InicioSegunRol } from '@/modulos/autenticacion/InicioSegunRol';
 import { RutaProtegida } from '@/modulos/autenticacion/RutaProtegida';
+import { PaginaMascotas } from '@/modulos/mascotas/PaginaMascotas';
 import { PaginaBandeja } from '@/modulos/solicitudes/PaginaBandeja';
 import { PaginaDetalleSolicitud } from '@/modulos/solicitudes/PaginaDetalleSolicitud';
 import { PaginaPendiente } from '@/modulos/PaginaPendiente';
@@ -82,7 +83,7 @@ export const rutas = createBrowserRouter([
         path: 'mascotas',
         element: (
           <RutaProtegida niveles={REFUGIO_Y_ADMIN}>
-            <PaginaPendiente titulo="Mascotas" historias="HU-MAS-01 a HU-MAS-05" />
+            <PaginaMascotas />
           </RutaProtegida>
         ),
       },
