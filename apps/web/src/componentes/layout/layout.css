@@ -48,7 +48,18 @@
   background: var(--surface-300);
 }
 
-.layout__enlace--activo {
+/*
+ * El hover del activo se repite a proposito.
+ *
+ * .layout__enlace:hover (clase + pseudoclase) pesa mas que
+ * .layout__enlace--activo (una clase), asi que al pasar por encima del
+ * enlace activo ganaba el fondo gris pero se quedaba el color del texto
+ * de --on-brand: blanco sobre gris claro, o casi negro sobre gris
+ * oscuro. En los dos temas el texto desaparecia. Repetir el selector con
+ * :hover lo deja con el mismo peso y, al ir despues, gana.
+ */
+.layout__enlace--activo,
+.layout__enlace--activo:hover {
   background: var(--brand-strong);
   color: var(--on-brand);
   font-weight: 600;
