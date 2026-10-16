@@ -56,6 +56,10 @@ export default function PantallaLogin() {
       ]}
       keyboardShouldPersistTaps="handled"
     >
+      <View style={estilos.barra}>
+        <BotonTema />
+      </View>
+
       <View style={estilos.marca}>
         <Isotipo tamano={88} />
         <Text style={[estilos.nombre, { color: paleta.ink }]}>Huellitas</Text>
@@ -117,13 +121,6 @@ export default function PantallaLogin() {
             Regístrate
           </Link>
         </Text>
-
-        {/* Cambiar el tema es lo menos importante de un login: va al final,
-            con lo secundario, y no arriba compitiendo con la barra de
-            estado del telefono. */}
-        <View style={estilos.tema}>
-          <BotonTema conEtiqueta />
-        </View>
       </View>
     </ScrollView>
   );
@@ -135,10 +132,13 @@ const estilos = StyleSheet.create({
     paddingHorizontal: espaciado.s5,
     gap: espaciado.s6,
   },
+  // El relleno de arriba lo pone la pantalla con los margenes del
+  // telefono, no esta hoja: sin eso el boton quedaba pegado a la barra
+  // de estado y se leia como un control del sistema.
+  barra: { alignItems: 'flex-end' },
   marca: { alignItems: 'center', gap: espaciado.s2 },
   nombre: { fontSize: 40, fontWeight: '700', letterSpacing: -1 },
   formulario: { gap: espaciado.s4 },
   aviso: { padding: espaciado.s4, borderRadius: radios.md },
   pie: { marginTop: 'auto', gap: espaciado.s3 },
-  tema: { alignItems: 'center', marginTop: espaciado.s2 },
 });
