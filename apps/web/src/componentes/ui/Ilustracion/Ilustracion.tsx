@@ -19,7 +19,11 @@ const FUENTES: Record<VarianteIlustracion, string> = {
 
 interface Props {
   readonly variante: VarianteIlustracion;
-  /** Alto en píxeles; el ancho sale solo de la proporción. */
+  /**
+   * Alto fijo en píxeles. Si se omite, manda la hoja de estilos, que es
+   * lo que permite que la ilustración se adapte al alto de la ventana en
+   * vez de aparecer o desaparecer de golpe.
+   */
   readonly alto?: number;
 }
 
@@ -34,14 +38,15 @@ interface Props {
  * decorativas: el texto de al lado dice lo que hay que decir, así que el
  * alt va vacío para no repetirlo en el lector de pantalla.
  */
-export function Ilustracion({ variante, alto = 200 }: Props) {
+export function Ilustracion({ variante, alto }: Props) {
   return (
     <img
       className="ilustracion"
       src={FUENTES[variante]}
       alt=""
-      height={alto}
-      style={{ height: alto }}
+      // Un alto en linea le gana a cualquier regla del CSS, asi que solo
+      // se pone cuando de verdad lo pidieron.
+      style={alto === undefined ? undefined : { height: alto }}
       // Decorativa y pesada: que no bloquee lo que importa de la pantalla.
       loading="lazy"
       decoding="async"

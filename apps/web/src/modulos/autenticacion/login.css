@@ -44,17 +44,20 @@
 .login__ilustracion {
   display: flex;
   justify-content: center;
+  min-height: 0;
 }
 
-/* El panel se queda sin aire antes que el navegador se angoste: lo que
-   manda aqui es el alto, no el ancho.
-   740 no es un numero al azar: medido, el panel con la ilustracion ocupa
-   718 px, asi que por debajo de 740 quedaria pegada a las notas legales o
-   obligaria a desplazar un login, que no deberia desplazarse nunca. */
-@media (max-height: 739px) {
-  .login__ilustracion {
-    display: none;
-  }
+/*
+ * Se encoge con la ventana en vez de aparecer y desaparecer de golpe.
+ *
+ * Antes esto era un display:none por debajo de 740 px de alto, y fue un
+ * error: una ventana de navegador en un portatil de 900 px de pantalla
+ * ronda los 730 una vez descontadas la barra del sistema, las pestanas y
+ * la barra de direcciones. O sea que la ilustracion no se veia justo en
+ * el equipo mas comun.
+ */
+.login__ilustracion .ilustracion {
+  height: clamp(96px, 20vh, 200px);
 }
 
 .login__notas {
@@ -151,8 +154,10 @@
     font-size: 30px;
   }
 
-  .login__ilustracion {
-    display: none;
+  /* En movil el panel pasa arriba y compite con el formulario: la
+     ilustracion se queda, pero pequena. */
+  .login__ilustracion .ilustracion {
+    height: 110px;
   }
 }
 

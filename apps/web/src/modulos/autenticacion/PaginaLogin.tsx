@@ -70,7 +70,9 @@ export function PaginaLogin() {
             aire de sobra. En pantallas bajas se oculta por CSS: antes que
             apretar el titulo, preferimos que no este. */}
         <div className="login__ilustracion">
-          <Ilustracion variante="trio" alto={200} />
+          {/* Sin alto: aqui lo decide login.css, que lo ajusta al alto de
+              la ventana. Un alto en linea le ganaria a esa regla. */}
+          <Ilustracion variante="trio" />
         </div>
 
         <ul className="login__notas">

@@ -8,6 +8,7 @@
 .ilustracion {
   display: block;
   width: auto;
+  height: 200px;
   max-width: 100%;
   align-self: center;
   /* La imagen ya trae su contorno; sin esto el navegador la difumina al
