@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { ScrollView, StyleSheet, Text, View } from 'react-native';
+import { ScrollView, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
 import { Link, useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ErrorHttp, esCorreoValido } from '@huellitas/shared';
@@ -17,6 +17,11 @@ export default function PantallaLogin() {
   // Esta pantalla va sin encabezado, asi que nada la protege de la barra
   // de estado: el relleno de arriba lo tiene que poner ella.
   const margenes = useSafeAreaInsets();
+  const { height } = useWindowDimensions();
+  const altoDisponible = height - margenes.top - margenes.bottom;
+  const escala = Math.min(1, Math.max(0.65, altoDisponible / 950));
+  const separacion = Math.max(4, Math.min(16, (altoDisponible - 580) / 14));
+  const rellenoVertical = Math.max(8, Math.min(24, (altoDisponible - 580) / 8));
   const { iniciarSesion } = useSesion();
   const [correo, setCorreo] = useState('');
   const [contrasena, setContrasena] = useState('');
@@ -46,30 +51,34 @@ export default function PantallaLogin() {
 
   return (
     <ScrollView
-      style={{ backgroundColor: paleta.surface100 }}
+      style={{ flex: 1, backgroundColor: paleta.surface100 }}
       contentContainerStyle={[
         estilos.contenido,
         {
-          paddingTop: margenes.top + espaciado.s5,
-          paddingBottom: margenes.bottom + espaciado.s5,
+          paddingTop: margenes.top + rellenoVertical,
+          paddingBottom: margenes.bottom + rellenoVertical,
+          gap: separacion * 2,
         },
       ]}
       keyboardShouldPersistTaps="handled"
+      automaticallyAdjustKeyboardInsets
+      alwaysBounceVertical={false}
     >
       <View style={estilos.barra}>
-        <BotonTema />
+        <BotonTema escala={escala} />
       </View>
 
-      <View style={estilos.marca}>
-        <Isotipo tamano={88} />
-        <Text style={[estilos.nombre, { color: paleta.ink }]}>Huellitas</Text>
-        <Text style={{ color: paleta.inkMuted, fontSize: 14 }}>Adopta y acompaña</Text>
+      <View style={[estilos.marca, { gap: espaciado.s2 * escala }]}>
+        <Isotipo tamano={88 * escala} />
+        <Text style={[estilos.nombre, { color: paleta.ink, fontSize: 40 * escala }]}>Huellitas</Text>
+        <Text style={{ color: paleta.inkMuted, fontSize: 14 * escala }}>Adopta y acompaña</Text>
       </View>
 
-      <View style={estilos.formulario}>
-        <AvisoDemo conCredenciales />
+      <View style={{ gap: separacion }}>
+        <AvisoDemo conCredenciales escala={escala} />
 
         <Campo
+          escala={escala}
           etiqueta="Correo"
           valor={correo}
           alCambiar={setCorreo}
@@ -78,6 +87,7 @@ export default function PantallaLogin() {
           autoComplete="email"
         />
         <Campo
+          escala={escala}
           etiqueta="Contraseña"
           valor={contrasena}
           alCambiar={setContrasena}
@@ -87,7 +97,7 @@ export default function PantallaLogin() {
           error={error ?? undefined}
         />
 
-        <Boton titulo="Iniciar sesión" cargando={enviando} alPresionar={() => void entrar()} />
+        <Boton escala={escala} titulo="Iniciar sesión" cargando={enviando} alPresionar={() => void entrar()} />
 
         <Link
           href="/olvide-contrasena"
@@ -95,27 +105,29 @@ export default function PantallaLogin() {
             color: paleta.brandStrong,
             fontWeight: '600',
             textAlign: 'center',
-            paddingVertical: espaciado.s2,
+            paddingVertical: espaciado.s2 * escala,
+            fontSize: 14 * escala,
           }}
         >
           Olvidé mi contraseña
         </Link>
 
-        <View style={[estilos.aviso, { backgroundColor: paleta.brandTint }]}>
-          <Text style={{ color: paleta.ink, fontSize: 13, lineHeight: 20 }}>
+        <View style={[estilos.aviso, { backgroundColor: paleta.brandTint, padding: 16 * escala }]}>
+          <Text style={{ color: paleta.ink, fontSize: 13 * escala, lineHeight: 20 * escala }}>
             Si aún no confirmas tu correo, puedes entrar y mirar, pero no
             postularte ni reportar.
           </Text>
         </View>
       </View>
 
-      <View style={estilos.pie}>
+      <View style={[estilos.pie, { gap: separacion }]}>
         <Boton
+          escala={escala}
           titulo="Entrar como visitante"
           variante="secundario"
           alPresionar={() => router.replace('/(tabs)/catalogo')}
         />
-        <Text style={{ color: paleta.inkMuted, textAlign: 'center', fontSize: 14 }}>
+        <Text style={{ color: paleta.inkMuted, textAlign: 'center', fontSize: 14 * escala }}>
           ¿No tienes cuenta?{' '}
           <Link href="/registro" style={{ color: paleta.brandStrong, fontWeight: '600' }}>
             Regístrate
@@ -130,15 +142,13 @@ const estilos = StyleSheet.create({
   contenido: {
     flexGrow: 1,
     paddingHorizontal: espaciado.s5,
-    gap: espaciado.s6,
   },
   // El relleno de arriba lo pone la pantalla con los margenes del
   // telefono, no esta hoja: sin eso el boton quedaba pegado a la barra
   // de estado y se leia como un control del sistema.
   barra: { alignItems: 'flex-end' },
-  marca: { alignItems: 'center', gap: espaciado.s2 },
+  marca: { alignItems: 'center' },
   nombre: { fontSize: 40, fontWeight: '700', letterSpacing: -1 },
-  formulario: { gap: espaciado.s4 },
   aviso: { padding: espaciado.s4, borderRadius: radios.md },
   pie: { marginTop: 'auto', gap: espaciado.s3 },
 });

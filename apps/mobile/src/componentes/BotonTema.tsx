@@ -5,6 +5,7 @@ import type { Tema } from '@huellitas/shared/tokens';
 import { AREA_TOCABLE_MINIMA, espaciado, radios, usarTema } from '@/temas';
 
 interface Props {
+  readonly escala?: number;
   /** Con etiqueta, el botón muestra el nombre del tema al lado del icono. */
   readonly conEtiqueta?: boolean;
 }
@@ -32,7 +33,7 @@ function IconoTema({ tema, color }: { tema: Tema; color: string }) {
   );
 }
 
-export function BotonTema({ conEtiqueta = false }: Props) {
+export function BotonTema({ conEtiqueta = false, escala = 1 }: Props) {
   const { tema, paleta, alternarTema } = usarTema();
   const etiqueta = tokens.etiquetaBotonTema(tema);
 
@@ -45,6 +46,7 @@ export function BotonTema({ conEtiqueta = false }: Props) {
       style={({ pressed }) => [
         estilos.boton,
         {
+          height: Math.max(44, AREA_TOCABLE_MINIMA * escala),
           borderColor: paleta.border,
           backgroundColor: pressed ? paleta.surface300 : paleta.surface100,
           paddingHorizontal: conEtiqueta ? espaciado.s4 : espaciado.s3,

@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { ScrollView, StyleSheet, Text, View } from 'react-native';
+import { ScrollView, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
 import { ErrorHttp, esCorreoValido } from '@huellitas/shared';
 import { api } from '@/lib/api';
 import { Boton } from '@/componentes/Boton';
@@ -16,6 +16,7 @@ import { espaciado, radios, usarPaleta } from '@/temas';
  */
 export default function PantallaOlvideContrasena() {
   const paleta = usarPaleta();
+  const { height } = useWindowDimensions();
   const [correo, setCorreo] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [enviando, setEnviando] = useState(false);
@@ -45,8 +46,11 @@ export default function PantallaOlvideContrasena() {
 
   return (
     <ScrollView
-      style={{ backgroundColor: paleta.surface100 }}
-      contentContainerStyle={estilos.contenido}
+      style={{ flex: 1, backgroundColor: paleta.surface100 }}
+      contentContainerStyle={[
+        estilos.contenido,
+        { paddingBottom: espaciado.s5 + height * 0.18 },
+      ]}
       keyboardShouldPersistTaps="handled"
     >
       <Ilustracion variante="restablecer" />
@@ -88,7 +92,12 @@ export default function PantallaOlvideContrasena() {
 }
 
 const estilos = StyleSheet.create({
-  contenido: { padding: espaciado.s5, gap: espaciado.s4 },
+  contenido: {
+    flexGrow: 1,
+    justifyContent: 'center',
+    padding: espaciado.s5,
+    gap: espaciado.s4,
+  },
   texto: { fontSize: 15, lineHeight: 23 },
   aviso: { padding: espaciado.s4, borderRadius: radios.md, gap: espaciado.s2 },
 });

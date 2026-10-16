@@ -2,6 +2,7 @@ import { StyleSheet, Text, TextInput, View, type KeyboardTypeOptions } from 'rea
 import { espaciado, radios, usarPaleta } from '@/temas';
 
 interface Props {
+  readonly escala?: number;
   readonly etiqueta: string;
   readonly valor: string;
   readonly alCambiar: (valor: string) => void;
@@ -14,6 +15,7 @@ interface Props {
 }
 
 export function Campo({
+  escala = 1,
   etiqueta,
   valor,
   alCambiar,
@@ -27,8 +29,8 @@ export function Campo({
   const paleta = usarPaleta();
 
   return (
-    <View style={estilos.grupo}>
-      <Text style={[estilos.etiqueta, { color: paleta.ink }]}>{etiqueta}</Text>
+    <View style={[estilos.grupo, { gap: espaciado.s1 * escala }]}>
+      <Text style={[estilos.etiqueta, { color: paleta.ink, fontSize: 13 * escala }]}>{etiqueta}</Text>
       <TextInput
         accessibilityLabel={etiqueta}
         value={valor}
@@ -42,6 +44,8 @@ export function Campo({
         style={[
           estilos.control,
           {
+            height: Math.max(44, 52 * escala),
+            fontSize: 16 * escala,
             borderColor: error ? paleta.danger : paleta.border,
             backgroundColor: paleta.surface100,
             color: paleta.ink,

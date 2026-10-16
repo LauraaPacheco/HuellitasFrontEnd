@@ -4,6 +4,7 @@ import { AREA_TOCABLE_MINIMA, espaciado, radios, usarPaleta } from '@/temas';
 type Variante = 'primario' | 'secundario' | 'peligro';
 
 interface Props {
+  readonly escala?: number;
   readonly titulo: string;
   readonly alPresionar: () => void;
   readonly variante?: Variante;
@@ -12,6 +13,7 @@ interface Props {
 }
 
 export function Boton({
+  escala = 1,
   titulo,
   alPresionar,
   variante = 'primario',
@@ -45,6 +47,7 @@ export function Boton({
       style={({ pressed }) => [
         estilos.base,
         {
+          minHeight: Math.max(44, 52 * escala),
           backgroundColor: fondo,
           borderColor: borde,
           opacity: inactivo ? 0.55 : pressed ? 0.85 : 1,
@@ -54,7 +57,7 @@ export function Boton({
       {cargando ? (
         <ActivityIndicator color={texto} />
       ) : (
-        <Text style={[estilos.texto, { color: texto }]}>{titulo}</Text>
+        <Text style={[estilos.texto, { color: texto, fontSize: 16 * escala }]}>{titulo}</Text>
       )}
     </Pressable>
   );
