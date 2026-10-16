@@ -8,15 +8,17 @@
   <style>
     .pin { fill: #00694a }
     .hueco { fill: #ffffff }
+    .dedo-coral { fill: #ff5a36 }
     @media (prefers-color-scheme: dark) {
       .pin { fill: #2ed9a5 }
       .hueco { fill: #0e1414 }
+      .dedo-coral { fill: #ff7a5c }
     }
   </style>
   <path class="pin" d="M60 6 C86 6 106 26 106 52 C106 82 72 106 60 116 C48 106 14 82 14 52 C14 26 34 6 60 6 Z"/>
   <circle class="hueco" cx="60" cy="50" r="26"/>
   <circle class="pin" cx="46" cy="43" r="7.5"/>
   <circle class="pin" cx="60" cy="36" r="7.5"/>
-  <circle class="pin" cx="74" cy="43" r="7.5"/>
+  <circle class="dedo-coral" cx="74" cy="43" r="7.5"/>
   <ellipse class="pin" cx="60" cy="60" rx="14" ry="10"/>
 </svg>

@@ -17,8 +17,7 @@ interface Props {
  * un disco blanco sobre el verde menta quedaba gris y sucio; tomando el
  * fondo de la app el recorte se lee limpio en los dos temas.
  *
- * Los tres dedos van del color del pin. El coral esta reservado para
- * reporte ciudadano y aqui no significaba nada.
+ * El tercer dedo va en coral: es parte de la marca.
  */
 export function Isotipo({ tamano = 32, sobreOscuro = false }: Props) {
   const pin = sobreOscuro ? '#ffffff' : 'var(--brand-strong)';
@@ -39,7 +38,7 @@ export function Isotipo({ tamano = 32, sobreOscuro = false }: Props) {
       <circle cx="60" cy="50" r="26" fill={hueco} />
       <circle cx="46" cy="43" r="7.5" fill={pin} />
       <circle cx="60" cy="36" r="7.5" fill={pin} />
-      <circle cx="74" cy="43" r="7.5" fill={pin} />
+      <circle cx="74" cy="43" r="7.5" fill="var(--accent)" />
       <ellipse cx="60" cy="60" rx="14" ry="10" fill={pin} />
     </svg>
   );

@@ -32,7 +32,7 @@ export function Isotipo({ tamano = 32, sobreOscuro = false }: Props) {
       <Circle cx="60" cy="50" r="26" fill={hueco} />
       <Circle cx="46" cy="43" r="7.5" fill={pin} />
       <Circle cx="60" cy="36" r="7.5" fill={pin} />
-      <Circle cx="74" cy="43" r="7.5" fill={pin} />
+      <Circle cx="74" cy="43" r="7.5" fill={paleta.accent} />
       <Ellipse cx="60" cy="60" rx="14" ry="10" fill={pin} />
     </Svg>
   );
