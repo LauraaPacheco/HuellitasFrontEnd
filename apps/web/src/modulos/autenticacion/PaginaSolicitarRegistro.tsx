@@ -85,10 +85,14 @@ export function PaginaSolicitarRegistro() {
 
   return (
     <MarcoAuth
+      ancho="amplio"
       titulo="Registrar un refugio"
       descripcion="Déjanos los datos del refugio. Un administrador los revisa antes de darte acceso al panel."
     >
-      <form onSubmit={alEnviar} noValidate style={{ display: 'grid', gap: 'var(--space-4)' }}>
+      {/* Los campos van emparejados por tema, no por largo: el refugio y su
+          NIT, dónde queda y cómo llamarlo, a quién escribirle. En una
+          pantalla angosta la rejilla cae sola a una columna. */}
+      <form onSubmit={alEnviar} noValidate className="marco-auth__campos">
         <Campo
           id="nombre"
           etiqueta="Nombre del refugio"
@@ -145,23 +149,27 @@ export function PaginaSolicitarRegistro() {
           marcador="@fundacionpatitas"
           ayuda="Ayuda al administrador a verificar que el refugio existe"
         />
-        <Campo
-          id="descripcion"
-          etiqueta="Cuéntanos del refugio (opcional)"
-          valor={datos.descripcion ?? ''}
-          alCambiar={cambiar('descripcion')}
-          marcador="Cuántos animales atienden, desde cuándo"
-        />
+        <div className="marco-auth__ancho-completo">
+          <Campo
+            id="descripcion"
+            etiqueta="Cuéntanos del refugio (opcional)"
+            valor={datos.descripcion ?? ''}
+            alCambiar={cambiar('descripcion')}
+            marcador="Cuántos animales atienden, desde cuándo"
+          />
+        </div>
 
         {error && (
-          <p className="marco-auth__error" role="alert">
+          <p className="marco-auth__error marco-auth__ancho-completo" role="alert">
             {error}
           </p>
         )}
 
-        <Boton tipo="submit" variante="primario" ancho cargando={enviando}>
-          Enviar solicitud
-        </Boton>
+        <div className="marco-auth__ancho-completo">
+          <Boton tipo="submit" variante="primario" ancho cargando={enviando}>
+            Enviar solicitud
+          </Boton>
+        </div>
       </form>
     </MarcoAuth>
   );

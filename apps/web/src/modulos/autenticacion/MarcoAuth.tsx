@@ -12,6 +12,12 @@ interface Props {
   readonly children: ReactNode;
   /** Pie opcional; si no se pasa, va el enlace de vuelta al login. */
   readonly pie?: ReactNode;
+  /**
+   * 'amplio' para formularios largos, que en una sola columna angosta
+   * obligan a desplazar de más. El de un solo campo se queda estrecho:
+   * ensancharlo no ayudaría a nadie.
+   */
+  readonly ancho?: 'estrecho' | 'amplio';
 }
 
 /**
@@ -22,10 +28,17 @@ interface Props {
  * pantallas de paso, a las que se llega desde un correo o un enlace, así
  * que van centradas y al grano.
  */
-export function MarcoAuth({ titulo, descripcion, sello, children, pie }: Props) {
+export function MarcoAuth({
+  titulo,
+  descripcion,
+  sello,
+  children,
+  pie,
+  ancho = 'estrecho',
+}: Props) {
   return (
     <div className="marco-auth">
-      <main className="marco-auth__columna">
+      <main className={`marco-auth__columna marco-auth__columna--${ancho}`}>
         <Link to="/login" className="marco-auth__marca" aria-label="Huellitas, ir al inicio de sesión">
           <Isotipo tamano={40} />
           <span className="marco-auth__nombre">Huellitas</span>

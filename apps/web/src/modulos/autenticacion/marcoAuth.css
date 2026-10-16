@@ -7,10 +7,25 @@
 
 .marco-auth__columna {
   width: 100%;
-  max-width: 480px;
   display: flex;
   flex-direction: column;
   gap: var(--space-5);
+}
+
+.marco-auth__columna--estrecho {
+  max-width: 480px;
+}
+
+/*
+ * Tope de 1040 px, no el ancho de la pantalla.
+ *
+ * Con dos columnas eso deja cada campo en unos 460 px, que es el ancho
+ * donde la etiqueta y lo escrito se leen de una mirada. A pantalla
+ * completa en un monitor grande, cada campo pasaria de 900 px: un
+ * telefono de diez digitos en una linea de 900 px se lee peor, no mejor.
+ */
+.marco-auth__columna--amplio {
+  max-width: 1040px;
 }
 
 .marco-auth__marca {
@@ -91,4 +106,29 @@
   .marco-auth__tarjeta {
     padding: var(--space-5);
   }
+}
+
+/*
+ * Rejilla de campos. auto-fit con minmax hace el trabajo sin media
+ * queries: mientras quepan dos columnas las usa, y en cuanto no caben,
+ * cae sola a una. Es justo lo que se quiere en un celular.
+ *
+ * El minimo de 360 px no es decorativo: topa la rejilla en DOS columnas.
+ * Con 280 entraban tres en un contenedor de 1040, y tres columnas en un
+ * formulario rompen el orden de lectura: la vista ya no sabe si seguir a
+ * la derecha o hacia abajo.
+ *
+ * El min(100%, ...) evita que la columna se desborde cuando la pantalla
+ * es mas angosta que ese minimo, que es el caso de un celular.
+ */
+.marco-auth__campos {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 360px), 1fr));
+  gap: var(--space-4);
+  align-items: start;
+}
+
+/* Para lo que no debe partirse en columnas: un texto largo, el error, el boton. */
+.marco-auth__ancho-completo {
+  grid-column: 1 / -1;
 }
