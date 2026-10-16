@@ -68,13 +68,35 @@ table {
   clip-path: inset(50%);
 }
 
-/* Control de filtro sobre una tabla. */
+/* Control de filtro sobre una tabla. Lo usan el buscador y los select. */
 .filtro-select {
   height: 44px;
   padding: 0 var(--space-3);
   border: 1px solid var(--border);
   border-radius: var(--radius-md);
-  background: var(--surface-100);
+  background-color: var(--surface-100);
   color: var(--ink);
   font-size: 14px;
+}
+
+/*
+ * La flecha del desplegable la dibujamos nosotros.
+ *
+ * La del sistema la coloca el navegador pegada al borde y no se puede
+ * mover: el padding solo corre el texto, no la flecha. Con
+ * appearance: none se apaga y ponemos la nuestra como fondo, centrada
+ * y a la misma distancia del borde que el texto del otro lado.
+ *
+ * El color viene de --icono-desplegable, que cambia con el tema igual
+ * que los demas tokens: una url() no puede leer una variable por dentro,
+ * asi que la flecha entera se define una vez por tema.
+ */
+select.filtro-select {
+  appearance: none;
+  -webkit-appearance: none;
+  padding-right: calc(var(--space-3) * 2 + 16px);
+  background-image: var(--icono-desplegable);
+  background-repeat: no-repeat;
+  background-position: right var(--space-3) center;
+  background-size: 16px 16px;
 }
