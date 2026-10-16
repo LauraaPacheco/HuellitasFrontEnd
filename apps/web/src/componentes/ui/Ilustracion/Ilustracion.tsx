@@ -1,10 +1,16 @@
 import bloqueo from '@/assets/bloqueo.webp';
 import confundido from '@/assets/confundido.webp';
 import durmiendo from '@/assets/durmiendo.webp';
+import restablecer from '@/assets/restablecer.webp';
 import trio from '@/assets/trio.webp';
 import './ilustracion.css';
 
-export type VarianteIlustracion = 'trio' | 'bloqueo' | 'confundido' | 'durmiendo';
+export type VarianteIlustracion =
+  | 'trio'
+  | 'bloqueo'
+  | 'confundido'
+  | 'durmiendo'
+  | 'restablecer';
 
 const FUENTES: Record<VarianteIlustracion, string> = {
   /** Las tres mascotas tranquilas: para una pantalla sin datos. */
@@ -15,6 +21,8 @@ const FUENTES: Record<VarianteIlustracion, string> = {
   confundido,
   /** Dormidas: todavia no ha pasado nada, no hay error. */
   durmiendo,
+  /** Frente al portatil con el sobre y el campo de contrasena. */
+  restablecer,
 };
 
 interface Props {

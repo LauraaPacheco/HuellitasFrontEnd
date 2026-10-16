@@ -72,6 +72,20 @@
   font-weight: 600;
 }
 
+/*
+ * La ilustracion de la tarjeta se mide en vh, no en pixeles fijos.
+ *
+ * Va aqui y no como alto en linea en el componente a proposito: un alto
+ * en linea gana a cualquier regla de la hoja y deja la imagen clavada
+ * del mismo tamano en una pantalla de portatil que en un monitor. Con
+ * clamp se encoge en vez de desaparecer, que es lo que hacia antes un
+ * max-height con display: none y dejaba el login sin imagen.
+ */
+.marco-auth__tarjeta .ilustracion {
+  height: clamp(88px, 18vh, 170px);
+  margin-bottom: var(--space-2);
+}
+
 .marco-auth__sello {
   align-self: center;
   width: 56px;

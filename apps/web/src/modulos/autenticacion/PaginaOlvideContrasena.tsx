@@ -3,6 +3,7 @@ import { ErrorHttp, esCorreoValido } from '@huellitas/shared';
 import { api } from '@/lib/api';
 import { Boton } from '@/componentes/ui/Boton';
 import { Campo } from '@/componentes/ui/Campo';
+import { Ilustracion } from '@/componentes/ui/Ilustracion';
 import { MarcoAuth } from './MarcoAuth';
 
 /**
@@ -44,7 +45,10 @@ export function PaginaOlvideContrasena() {
 
   if (enviado) {
     return (
-      <MarcoAuth titulo="Revisa tu correo">
+      <MarcoAuth
+        titulo="Revisa tu correo"
+        sello={<Ilustracion variante="restablecer" />}
+      >
         <p style={{ margin: 0, color: 'var(--ink-muted)', lineHeight: '23px' }}>
           Si <strong>{correo}</strong> tiene una cuenta en Huellitas, le
           mandamos un enlace para crear una contraseña nueva. El enlace vence
@@ -61,6 +65,7 @@ export function PaginaOlvideContrasena() {
     <MarcoAuth
       titulo="Recuperar contraseña"
       descripcion="Escribe el correo con el que entras y te mandamos un enlace para cambiarla."
+      sello={<Ilustracion variante="restablecer" />}
     >
       <form onSubmit={alEnviar} noValidate style={{ display: 'grid', gap: 'var(--space-4)' }}>
         <Campo

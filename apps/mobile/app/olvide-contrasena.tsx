@@ -4,6 +4,7 @@ import { ErrorHttp, esCorreoValido } from '@huellitas/shared';
 import { api } from '@/lib/api';
 import { Boton } from '@/componentes/Boton';
 import { Campo } from '@/componentes/Campo';
+import { Ilustracion } from '@/componentes/Ilustracion';
 import { espaciado, radios, usarPaleta } from '@/temas';
 
 /**
@@ -48,6 +49,8 @@ export default function PantallaOlvideContrasena() {
       contentContainerStyle={estilos.contenido}
       keyboardShouldPersistTaps="handled"
     >
+      <Ilustracion variante="restablecer" />
+
       {enviado ? (
         <View style={[estilos.aviso, { backgroundColor: paleta.brandTint }]}>
           <Text style={{ color: paleta.ink, fontSize: 15, lineHeight: 23 }}>
