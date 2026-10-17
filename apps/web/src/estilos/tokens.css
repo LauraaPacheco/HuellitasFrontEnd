@@ -11,6 +11,7 @@
   --ink: #0b1413;
   --ink-muted: #4a5d5a;
   --brand-strong: #00694a;
+  --isotipo-pin: #00694a;
   --brand: #00a676;
   --brand-tint: #dcf6ec;
   --on-brand: #ffffff;
@@ -47,6 +48,7 @@
     --ink: #f2f7f5;
     --ink-muted: #a9bab6;
     --brand-strong: #2ed9a5;
+  --isotipo-pin: #ffffff;
     --brand: #38e3ad;
     --brand-tint: #0f2c24;
     --on-brand: #062018;
@@ -67,6 +69,7 @@
   --ink: #f2f7f5;
   --ink-muted: #a9bab6;
   --brand-strong: #2ed9a5;
+  --isotipo-pin: #ffffff;
   --brand: #38e3ad;
   --brand-tint: #0f2c24;
   --on-brand: #062018;

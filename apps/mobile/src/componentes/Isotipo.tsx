@@ -1,5 +1,5 @@
 import Svg, { Circle, Ellipse, Path } from 'react-native-svg';
-import { usarPaleta } from '@/temas';
+import { usarTema } from '@/temas';
 
 interface Props {
   readonly tamano?: number;
@@ -19,8 +19,8 @@ interface Props {
  * tema oscuro quedaba gris sobre el verde menta.
  */
 export function Isotipo({ tamano = 32, sobreOscuro = false }: Props) {
-  const paleta = usarPaleta();
-  const pin = sobreOscuro ? '#ffffff' : paleta.brandStrong;
+  const { paleta, tema } = usarTema();
+  const pin = sobreOscuro || tema === 'oscuro' ? '#ffffff' : paleta.brandStrong;
   const hueco = sobreOscuro ? paleta.brandStrong : paleta.surface100;
 
   return (

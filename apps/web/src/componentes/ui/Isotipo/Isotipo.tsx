@@ -20,7 +20,7 @@ interface Props {
  * El tercer dedo va en coral: es parte de la marca.
  */
 export function Isotipo({ tamano = 32, sobreOscuro = false }: Props) {
-  const pin = sobreOscuro ? '#ffffff' : 'var(--brand-strong)';
+  const pin = sobreOscuro ? '#ffffff' : 'var(--isotipo-pin)';
   const hueco = sobreOscuro ? 'var(--brand-strong)' : 'var(--surface-100)';
 
   return (
