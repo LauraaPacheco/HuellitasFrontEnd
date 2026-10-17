@@ -2,16 +2,21 @@
 
 Expo SDK 57 + React Native 0.86 + React 19. La usan adoptantes y ciudadanos.
 
-La versión del SDK tiene que coincidir con la de Expo Go del App Store o
-Play Store: Apple solo permite instalar la última, así que si Expo Go se
-actualiza hay que subir el proyecto con `npx expo install --fix`.
+La guía completa para instalar, ejecutar en demo o con backend y compilar
+está en el [README de la raíz](../../README.md).
+
+Desde la raíz del repositorio:
 
 ```bash
-npm run start      # abre el QR para Expo Go
-npm run android    # emulador de Android
-npm run ios        # simulador de iOS (solo macOS)
-npm run typecheck  # revisa tipos
+npm run mobile                   # abre el QR para Expo Go; a/i/w eligen destino
+npm run mobile -- --clear        # reinicia con caché limpia
+npm run typecheck --workspace=@huellitas/mobile
 ```
+
+Configura `apps/mobile/.env`: `EXPO_PUBLIC_MODO_DEMO=true` para datos
+simulados, o `false` y una `EXPO_PUBLIC_URL_API` accesible para usar el backend.
+Reinicia Expo al cambiar estas variables. Expo Go debe ser compatible con
+el SDK del proyecto; no actualices las dependencias automáticamente.
 
 ## Organización
 

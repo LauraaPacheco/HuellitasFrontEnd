@@ -2,14 +2,22 @@
 
 Vite + React + TypeScript. Lo usan refugios y administradores.
 
+La guía completa está en el [README de la raíz](../../README.md).
+Desde la raíz del repositorio:
+
 ```bash
-npm run dev        # desarrollo en http://localhost:5173
-npm run build      # compila a dist/
-npm run typecheck  # revisa tipos sin compilar
+npm run web                         # desarrollo con backend
+npm run web:demo                    # desarrollo sin backend
+npm run build:web                   # compila a apps/web/dist/
+npm run build --workspace=@huellitas/web -- --mode demo
+npm run preview --workspace=@huellitas/web
+npm run typecheck --workspace=@huellitas/web
 ```
 
-El proxy de Vite manda todo `/api` al backend, así que en desarrollo no hay
-problemas de CORS. La URL se configura en `.env` con `VITE_URL_API`.
+Configura `apps/web/.env` antes de usar el backend. Con `VITE_URL_API` vacío,
+el proxy de Vite reenvía `/api` a `URL_API_TUNEL` durante el desarrollo.
+En producción hay que configurar el proxy en el hosting o usar una URL
+pública de API con CORS; el proxy de desarrollo no se incluye en `dist/`.
 
 ## Organización
 

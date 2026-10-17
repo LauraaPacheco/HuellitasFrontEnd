@@ -26,62 +26,136 @@ dos apps se enteran en tiempo de compilación.
 
 ## Requisitos
 
-- Node 20 o superior
-- Para la app móvil: la aplicación **Expo Go** en el celular
+- Git y Node.js 20 o superior, con npm.
+- Para probar en un celular: Expo Go compatible con el SDK 57 del proyecto.
+- Para simuladores: Android Studio con un emulador configurado, o macOS con
+  Xcode y un simulador de iOS.
+- El backend solo hace falta para el modo normal. La demo funciona sin él.
 
-## Primera vez
+## Descargar e instalar
 
 ```bash
-npm install
+git clone https://github.com/LauraaPacheco/HuellitasFrontEnd.git
+cd HuellitasFrontEnd
+npm ci
 ```
 
-Un solo `npm install` en la raíz instala todo: npm workspaces resuelve
-las dependencias de los tres paquetes.
+`npm ci` instala las versiones del `package-lock.json` de los tres paquetes.
+No hay que instalar dependencias por separado dentro de cada app.
 
-Luego copia los archivos de entorno:
+Copia los archivos de entorno una sola vez, sin sobrescribir una configuración
+que ya tengas:
 
 ```bash
 cp apps/web/.env.example apps/web/.env
 cp apps/mobile/.env.example apps/mobile/.env
 ```
 
-## Levantar los proyectos
+En PowerShell puedes usar `Copy-Item` en lugar de `cp`.
+Todos los comandos siguientes se ejecutan desde la **raíz del repositorio**,
+salvo que se indique otra carpeta. Para ejecutar las dos apps a la vez,
+usa una terminal para cada una.
 
-```bash
-npm run web        # panel web en http://localhost:5173, contra el backend
-npm run web:demo   # lo mismo pero con datos simulados (ver más abajo)
-npm run mobile     # app móvil: escanea el QR con Expo Go
-```
+## Probar sin backend: modo demo
 
-Para que el celular alcance el backend no sirve `localhost`: hay que poner
-la IP de la máquina en `apps/mobile/.env`, por ejemplo
-`EXPO_PUBLIC_URL_API=http://192.168.1.20:5001`.
-
-## Modo demostración
-
-Las apps pueden correr con datos simulados, sin backend. Sirve para dos
-cosas que hoy no se pueden revisar contra la API:
-
-- Pantallas cuyo endpoint todavía no existe (mascotas, reportes,
-  seguimientos, indicadores).
-- Pantallas que piden un rol que la base de datos no tiene asignado:
-  Solicitudes y Mascotas exigen sesión de refugio.
-
-En la web se levanta con un comando, sin tocar el `.env`:
+### Panel web
 
 ```bash
 npm run web:demo
 ```
 
-Carga `apps/web/.env.demo` encima de `.env`, así que el token del túnel
-sigue en su sitio y no hay que acordarse de devolver ninguna variable.
-`npm run web` sigue yendo contra el backend de verdad.
+Abre la dirección que muestra Vite, normalmente http://localhost:5173.
+Este comando carga `apps/web/.env.demo`, que activa los datos simulados.
+No hace falta modificar `VITE_MODO_DEMO` en `.env`.
 
-En la móvil todavía se hace a mano, porque Expo no tiene modos:
+### App móvil
 
+En `apps/mobile/.env`, deja:
+
+```dotenv
+EXPO_PUBLIC_MODO_DEMO=true
 ```
-EXPO_PUBLIC_MODO_DEMO=true   # en apps/mobile/.env
+
+El archivo de ejemplo ya trae ese valor. Después ejecuta:
+
+```bash
+npm run mobile
 ```
+
+Conecta el celular y el computador a la misma red y escanea el QR con
+Expo Go (en iPhone, desde Cámara). También puedes pulsar `a` para un
+emulador Android, `i` para el simulador iOS o `w` para abrir la app móvil
+en el navegador. Los simuladores requieren las herramientas de los requisitos.
+La versión móvil en navegador es distinta del panel web de Vite.
+
+## Ejecutar con backend: modo normal
+
+Primero levanta el backend desde su propio repositorio. Confirma con el equipo
+su URL, puerto y credenciales reales: los usuarios demo no crean cuentas en
+la base de datos del backend.
+
+### Panel web
+
+En `apps/web/.env`, configura:
+
+```dotenv
+VITE_MODO_DEMO=false
+VITE_URL_API=
+URL_API_TUNEL=https://localhost:7296
+TUNEL_TOKEN=
+```
+
+Cambia `URL_API_TUNEL` por la dirección real del backend. Aunque se llame
+“túnel”, también acepta una dirección local. Deja `VITE_URL_API` vacío para
+que el navegador pida a `/api` y el proxy de Vite reenvíe al backend.
+Si usas un túnel protegido, completa `TUNEL_TOKEN` con su token vigente;
+para un backend local sin túnel, déjalo vacío.
+
+```bash
+npm run web
+```
+
+### App móvil
+
+En `apps/mobile/.env`, configura, por ejemplo:
+
+```dotenv
+EXPO_PUBLIC_MODO_DEMO=false
+EXPO_PUBLIC_URL_API=http://192.168.1.20:5001
+EXPO_PUBLIC_TUNEL_TOKEN=
+```
+
+Reemplaza la IP y el puerto por los del backend. En un celular físico,
+`localhost` apunta al propio teléfono: usa una dirección accesible desde
+el celular y configura el backend para aceptar conexiones de la red.
+También puedes usar un túnel HTTPS; si está protegido, completa
+`EXPO_PUBLIC_TUNEL_TOKEN`. Un certificado HTTPS local que el teléfono no
+reconoce puede impedir la conexión.
+
+```bash
+npm run mobile
+```
+
+La app móvil en navegador llama directamente a la API y necesita que el
+backend permita su origen mediante CORS; no usa el proxy del panel web.
+
+### Cambiar entre modos
+
+Detén el servidor con `Ctrl+C` y vuelve a iniciarlo después de cambiar los
+archivos `.env`. Para web, usa `npm run web:demo` o `npm run web`. Para móvil,
+cambia `EXPO_PUBLIC_MODO_DEMO` entre `true` y `false` y reinicia Expo.
+Si conserva una sesión anterior, cierra sesión e ingresa con las credenciales
+del modo elegido. Si Expo conserva datos de caché, reinícialo con:
+
+```bash
+npm run mobile -- --clear
+```
+
+## Usuarios y alcance de la demo
+
+Las apps responden con datos simulados sin llamar al backend. Esto permite
+probar pantallas cuyos endpoints todavía no existen o requieren roles que
+no estén asignados en la base de datos real.
 
 Usuarios de prueba, todos con la contraseña `Demo1234`:
 
@@ -101,12 +175,75 @@ Con el servidor levantado hay además una galería de componentes en
 dos temas. No existe en ningún build.
 
 
-## Verificar antes de subir cambios
+## Compilar y revisar
+
+Ejecutar un servidor de desarrollo y generar una compilación son pasos distintos.
+
+### Panel web
+
+```bash
+# Compilación normal: usa la configuración de producción disponible.
+npm run build:web
+
+# Compilación con datos simulados.
+npm run build --workspace=@huellitas/web -- --mode demo
+
+# Servir localmente la última compilación generada.
+npm run preview --workspace=@huellitas/web
+```
+
+El resultado queda en `apps/web/dist/`. Abre la dirección que imprime
+`preview`. El modo demo o normal queda definido al compilar: para cambiarlo,
+genera otra compilación. La última reemplaza el contenido de `dist/`.
+
+El proxy de `/api` configurado en este repositorio es del servidor de
+desarrollo. Para publicar una compilación normal, configura un proxy de
+`/api` en el hosting o una URL pública en `VITE_URL_API` al compilar, con
+CORS habilitado en el backend. El hosting también debe servir `index.html`
+para las rutas de React Router. `preview` sirve para revisar el build;
+no sustituye la configuración de producción ni conecta por sí solo el backend.
+
+### App móvil
+
+Expo Go permite probar el código, pero no genera un APK ni un instalable de iOS.
+Para compilar y ejecutar localmente con las herramientas nativas instaladas:
+
+```bash
+npm exec --workspace=@huellitas/mobile -- expo run:android
+
+# Solo en macOS con Xcode:
+npm exec --workspace=@huellitas/mobile -- expo run:ios
+```
+
+Estos comandos pueden generar las carpetas nativas `android/` e `ios/` y
+compilaciones de desarrollo; no son paquetes listos para publicar.
+El modo de datos depende de `EXPO_PUBLIC_MODO_DEMO` al preparar la compilación.
+
+Este repositorio todavía no incluye `eas.json` ni perfiles de distribución.
+Para entregar un APK, un AAB o distribuir iOS, queda configurar EAS Build o
+la compilación nativa de distribución, sus credenciales y las variables de
+entorno del modo elegido. No hay un comando de publicación listo en este repo.
+
+### Verificación del código
 
 ```bash
 npm run typecheck    # revisa los tres paquetes
 npm run build:web    # compila el panel web
 ```
+
+## Problemas frecuentes al iniciar
+
+- **Faltan dependencias:** ejecuta `npm ci` desde la raíz. `react-native-web`
+  y `@expo/metro-runtime` ya están declarados para la app móvil.
+- **El QR no conecta:** revisa que celular y computador estén en la misma red
+  y que el firewall permita la conexión a Expo.
+- **La demo sigue activa en móvil:** el `.env.example` trae
+  `EXPO_PUBLIC_MODO_DEMO=true`; cámbialo a `false` y reinicia Expo.
+- **La API no responde:** verifica la URL, el backend levantado y, si aplica,
+  el token actualizado del túnel. Desde el celular evita `localhost`.
+- **Expo Go indica un SDK incompatible:** usa un cliente compatible con el
+  SDK del proyecto o una compilación de desarrollo. No actualices todas las
+  dependencias automáticamente para resolverlo.
 
 ## Convenciones
 
