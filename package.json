@@ -14,9 +14,17 @@
     "build:shared": "npm run build --workspace=@huellitas/shared",
     "build:web": "npm run build --workspace=@huellitas/web",
     "typecheck": "npm run typecheck --workspaces --if-present",
-    "lint": "npm run lint --workspaces --if-present"
+    "lint": "npm run lint --workspaces --if-present",
+    "test": "vitest run && node tests/catalogos.test.mjs",
+    "test:watch": "vitest",
+    "test:coverage": "vitest run --coverage && node tests/catalogos.test.mjs",
+    "build:web:demo": "npm run build --workspace=@huellitas/web -- --mode demo"
   },
   "engines": {
     "node": ">=20"
+  },
+  "devDependencies": {
+    "@vitest/coverage-v8": "^2.1.9",
+    "vitest": "^2.1.9"
   }
 }
