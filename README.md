@@ -26,7 +26,8 @@ dos apps se enteran en tiempo de compilación.
 
 ## Requisitos
 
-- Git y Node.js 20 o superior, con npm.
+- Git y Node.js compatible con las dependencias móviles: se recomienda Node
+  22 LTS (22.13 o superior), con npm. Evita Node 23, que React Native 0.86 no soporta.
 - Para probar en un celular: Expo Go compatible con el SDK 57 del proyecto.
 - Para simuladores: Android Studio con un emulador configurado, o macOS con
   Xcode y un simulador de iOS.
@@ -219,14 +220,59 @@ Estos comandos pueden generar las carpetas nativas `android/` e `ios/` y
 compilaciones de desarrollo; no son paquetes listos para publicar.
 El modo de datos depende de `EXPO_PUBLIC_MODO_DEMO` al preparar la compilación.
 
-Este repositorio todavía no incluye `eas.json` ni perfiles de distribución.
-Para entregar un APK, un AAB o distribuir iOS, queda configurar EAS Build o
-la compilación nativa de distribución, sus credenciales y las variables de
-entorno del modo elegido. No hay un comando de publicación listo en este repo.
+#### Compilación demo instalable con EAS
+
+`apps/mobile/eas.json` incluye los perfiles `demo` (APK Android o iPhone
+físico) y `demo-simulador` (simulador iOS). Ambos fijan
+`EXPO_PUBLIC_MODO_DEMO=true` durante el build: no necesitan backend ni Metro
+para abrir la app. Las credenciales de prueba son las de la sección demo.
+
+La primera vez, desde la carpeta móvil, inicia sesión en Expo y vincula el
+proyecto a tu cuenta o al proyecto compartido del equipo:
+
+```bash
+cd apps/mobile
+npx eas-cli@latest login
+npx eas-cli@latest init
+```
+
+Si ya existe un proyecto EAS del equipo, vincúlalo; no crees uno duplicado.
+`init` guarda el identificador del proyecto en la configuración de Expo.
+Revisa esos cambios antes de confirmarlos en Git.
+
+Genera un APK para instalar y compartir en Android:
+
+```bash
+npx eas-cli@latest build --platform android --profile demo
+```
+
+Para el simulador iOS de macOS:
+
+```bash
+npx eas-cli@latest build --platform ios --profile demo-simulador
+```
+
+Para un iPhone físico:
+
+```bash
+npx eas-cli@latest device:create
+npx eas-cli@latest build --platform ios --profile demo
+```
+
+La distribución interna en iPhone requiere cuenta de Apple Developer y
+registrar el dispositivo para la firma. El build de simulador no se instala
+en un iPhone físico. EAS proporciona el enlace al resultado cuando termina.
+Estos perfiles son para pruebas internas; no publican en las tiendas.
+Todavía queda definir un perfil de producción y sus credenciales.
+
+Para probar sin generar instalables, usa el flujo de Expo Go explicado arriba.
 
 ### Verificación del código
 
 ```bash
+npm test             # pruebas automáticas y regresiones de catálogos
+npm run test:coverage # pruebas con informe de cobertura en coverage/
+npm run test:watch    # Vitest en modo observación
 npm run typecheck    # revisa los tres paquetes
 npm run build:web    # compila el panel web
 ```
@@ -272,3 +318,19 @@ ficha, bandeja de solicitudes y reporte ciudadano con ubicación.
 
 Pendiente: formulario de adopción, seguimiento post-adopción, panel de
 indicadores, verificación de refugios y el Match.
+
+## Alcance de las pruebas
+
+Vitest comprueba validaciones compartidas, adaptación de sesión y roles,
+expiración, cliente HTTP (JSON, archivos, errores, autorización y timeout),
+acceso a rutas web y autenticación demo. `npm test` también ejecuta las
+regresiones de catálogos de `tests/catalogos.test.mjs`.
+
+El informe de cobertura de Vitest muestra también servicios compartidos sin
+pruebas; no implica cobertura completa del proyecto. El script separado de
+catálogos no contribuye a ese porcentaje. `test:watch` ejecuta las suites de
+Vitest; para incluir catálogos usa `npm test`.
+
+Estas pruebas no sustituyen la integración con el backend ni pruebas de
+interacción y presentación en dispositivos iOS/Android. Los builds EAS se
+preparan con los perfiles indicados, pero no se han ejecutado en esta tarea.

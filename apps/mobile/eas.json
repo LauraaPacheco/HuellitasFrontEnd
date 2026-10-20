@@ -1,0 +1,17 @@
+{
+  "build": {
+    "demo": {
+      "distribution": "internal",
+      "environment": "preview",
+      "env": {
+        "EXPO_PUBLIC_MODO_DEMO": "true",
+        "EXPO_PUBLIC_TUNEL_TOKEN": ""
+      },
+      "android": { "buildType": "apk" }
+    },
+    "demo-simulador": {
+      "extends": "demo",
+      "ios": { "simulator": true }
+    }
+  }
+}

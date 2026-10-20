@@ -66,3 +66,17 @@ directo del link:
 
 La alternativa, si el aplanado estorba, es quitar el `asChild` y poner el
 `<Pressable>` por fuera con `router.push()` en el `onPress`.
+
+## Generar una demo instalable
+
+Desde `apps/mobile`, con la cuenta y el proyecto EAS vinculados:
+
+```bash
+npx eas-cli@latest build --platform android --profile demo
+npx eas-cli@latest build --platform ios --profile demo-simulador
+```
+
+El primer comando genera un APK para Android; el segundo, una app para el
+simulador iOS en macOS. Para iPhone físico usa `--profile demo`, con cuenta
+Apple Developer y dispositivo registrado. Ambos perfiles activan la demo sin
+backend. Consulta los pasos iniciales y la firma en el README de la raíz.
