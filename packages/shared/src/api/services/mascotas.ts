@@ -4,20 +4,15 @@ import type { Paginado } from '../../types/comun';
 import type { Bitacora } from '../../types/trazabilidad';
 import type {
   CambioEstadoMascotaDto,
-  Color,
   Compatibilidad,
   CrearMascotaDto,
   CrearRegistroClinicoDto,
   EditarMascotaDto,
-  Especie,
   FiltroMascota,
   Mascota,
   MascotaResumen,
   Multimedia,
-  Raza,
   RegistroClinico,
-  Tamano,
-  Temperamento,
 } from '../../types/mascotas';
 
 export class ServicioMascotas {
@@ -92,27 +87,5 @@ export class ServicioMascotas {
     return this.api.get<readonly MascotaResumen[]>(RUTAS.mascotas.recomendadas, {
       cantidad,
     });
-  }
-
-  /* ----- Catalogos ----- */
-
-  especies(): Promise<readonly Especie[]> {
-    return this.api.get<readonly Especie[]>(RUTAS.catalogos.especies);
-  }
-
-  razas(especieId?: number): Promise<readonly Raza[]> {
-    return this.api.get<readonly Raza[]>(RUTAS.catalogos.razas, { especieId });
-  }
-
-  tamanos(): Promise<readonly Tamano[]> {
-    return this.api.get<readonly Tamano[]>(RUTAS.catalogos.tamanos);
-  }
-
-  colores(): Promise<readonly Color[]> {
-    return this.api.get<readonly Color[]>(RUTAS.catalogos.colores);
-  }
-
-  temperamentos(): Promise<readonly Temperamento[]> {
-    return this.api.get<readonly Temperamento[]>(RUTAS.catalogos.temperamentos);
   }
 }

@@ -6,11 +6,13 @@ import {
   tiempoRelativo,
   type FiltroMascota,
 } from '@huellitas/shared';
-import { usarEspecies, usarMascotas } from '@/casos/mascotas';
+import { usarEspecies, usarRazas } from '@/casos/catalogos';
+import { usarMascotas } from '@/casos/mascotas';
 import { Encabezado } from '@/componentes/layout/Encabezado';
 import { Boton } from '@/componentes/ui/Boton';
 import { EstadoVacio } from '@/componentes/ui/EstadoVacio';
 import { Insignia } from '@/componentes/ui/Insignia';
+import { SelectorCatalogo } from '@/componentes/ui/SelectorCatalogo';
 import '@/estilos/tabla.css';
 
 /** Pasados estos días, la ficha se marca como desactualizada. */
@@ -27,12 +29,14 @@ const FILTRO_INICIAL: FiltroMascota = { pagina: 1, tamanoPagina: 20 };
 export function PaginaMascotas() {
   const [filtro, setFiltro] = useState<FiltroMascota>(FILTRO_INICIAL);
   const { data, isLoading, isError } = usarMascotas(filtro);
-  const { data: especies } = usarEspecies();
+  const { data: especies, isFetching: cargandoEspecies, isError: errorEspecies, refetch: recargarEspecies } = usarEspecies();
+  const { data: razas, isFetching: cargandoRazas, isError: errorRazas, refetch: recargarRazas } = usarRazas(filtro.especieId);
 
   const hayFiltro =
     filtro.texto !== undefined ||
     filtro.estado !== undefined ||
-    filtro.especieId !== undefined;
+    filtro.especieId !== undefined ||
+    filtro.razaId !== undefined;
 
   const cambiar = (parcial: Partial<FiltroMascota>) =>
     setFiltro((previo) => ({ ...previo, pagina: 1, ...parcial }));
@@ -47,21 +51,13 @@ export function PaginaMascotas() {
         }
       />
 
-      <div
-        style={{
-          display: 'flex',
-          flexWrap: 'wrap',
-          gap: 'var(--space-2)',
-          marginBottom: 'var(--space-5)',
-        }}
-      >
+      <div className="filtros">
         <label className="visualmente-oculto" htmlFor="buscar-mascota">
           Buscar por nombre
         </label>
         <input
           id="buscar-mascota"
-          className="filtro-select"
-          style={{ flexGrow: 1, minWidth: 220 }}
+          className="filtro-select filtros__busqueda"
           type="search"
           placeholder="Buscar por nombre"
           value={filtro.texto ?? ''}
@@ -70,26 +66,37 @@ export function PaginaMascotas() {
           }
         />
 
-        <label className="visualmente-oculto" htmlFor="filtro-especie">
-          Filtrar por especie
-        </label>
-        <select
+        <SelectorCatalogo
           id="filtro-especie"
-          className="filtro-select"
-          value={filtro.especieId ?? ''}
-          onChange={(evento) =>
-            cambiar({
-              especieId: evento.target.value ? Number(evento.target.value) : undefined,
-            })
+          etiqueta="Filtrar por especie"
+          etiquetaOculta
+          opciones={especies}
+          cargando={cargandoEspecies}
+          errorCarga={errorEspecies}
+          alReintentar={() => void recargarEspecies()}
+          valor={filtro.especieId}
+          textoVacio="Todas las especies"
+          // Al cambiar de especie la raza deja de tener sentido: un
+          // filtro de "Siames" sobre perros no devolveria nada y pareceria
+          // que no hay mascotas.
+          alCambiar={(especieId) => cambiar({ especieId, razaId: undefined })}
+        />
+
+        <SelectorCatalogo
+          id="filtro-raza"
+          etiqueta="Filtrar por raza"
+          etiquetaOculta
+          opciones={razas}
+          cargando={cargandoRazas}
+          errorCarga={errorRazas}
+          alReintentar={() => void recargarRazas()}
+          bloqueadoPor={
+            filtro.especieId === undefined ? 'Elige una especie' : undefined
           }
-        >
-          <option value="">Todas las especies</option>
-          {especies?.map((especie) => (
-            <option key={especie.id} value={especie.id}>
-              {especie.nombre}
-            </option>
-          ))}
-        </select>
+          valor={filtro.razaId}
+          textoVacio="Todas las razas"
+          alCambiar={(razaId) => cambiar({ razaId })}
+        />
 
         <label className="visualmente-oculto" htmlFor="filtro-estado-mascota">
           Filtrar por estado

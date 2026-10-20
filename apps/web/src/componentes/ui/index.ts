@@ -6,3 +6,4 @@ export * from './EstadoVacio';
 export * from './Ilustracion';
 export * from './Insignia';
 export * from './Isotipo';
+export * from './SelectorCatalogo';

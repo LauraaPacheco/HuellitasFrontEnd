@@ -4,6 +4,7 @@ import {
   ServicioAdministracion,
   ServicioAdopcion,
   ServicioAutenticacion,
+  ServicioCatalogos,
   ServicioMascotas,
   ServicioRefugios,
   ServicioReportes,
@@ -23,6 +24,8 @@ export interface ApiHuellitas {
   readonly usuarios: ServicioUsuarios;
   readonly refugios: ServicioRefugios;
   readonly mascotas: ServicioMascotas;
+  /** Listas parametricas compartidas entre modulos (HU-MAS-02). */
+  readonly catalogos: ServicioCatalogos;
   readonly adopcion: ServicioAdopcion;
   readonly trazabilidad: ServicioTrazabilidad;
   readonly reportes: ServicioReportes;
@@ -45,6 +48,7 @@ export function crearApi(config: OpcionesApi): ApiHuellitas {
     usuarios: new ServicioUsuarios(cliente),
     refugios: new ServicioRefugios(cliente),
     mascotas: new ServicioMascotas(cliente),
+    catalogos: new ServicioCatalogos(cliente),
     adopcion: new ServicioAdopcion(cliente),
     trazabilidad: new ServicioTrazabilidad(cliente),
     reportes: new ServicioReportes(cliente),

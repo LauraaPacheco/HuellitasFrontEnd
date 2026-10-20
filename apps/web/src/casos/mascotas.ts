@@ -90,11 +90,5 @@ export function usarCambiarEstadoMascota(id: number) {
   });
 }
 
-/** Catálogos para los filtros y el formulario. Cambian poco. */
-export function usarEspecies() {
-  return useQuery({
-    queryKey: ['catalogos', 'especies'],
-    queryFn: () => api.mascotas.especies(),
-    staleTime: 60 * 60 * 1000,
-  });
-}
+// Los catalogos se fueron a @/casos/catalogos: no son mascotas, y los
+// necesitan tambien reportes y la administracion.

@@ -168,7 +168,7 @@ export class ClienteDemo extends ClienteApi {
     if (ruta.endsWith('/catalogos/especies')) return ESPECIES;
     if (ruta.endsWith('/catalogos/razas')) {
       const especieId = parametros?.especieId;
-      return especieId ? RAZAS.filter((r) => r.especieId === Number(especieId)) : RAZAS;
+      return especieId !== undefined ? RAZAS.filter((r) => r.especieId === Number(especieId)) : RAZAS;
     }
     if (ruta.endsWith('/catalogos/tamanos')) return TAMANOS;
     if (ruta.endsWith('/catalogos/colores')) return COLORES;
@@ -200,9 +200,23 @@ export class ClienteDemo extends ClienteApi {
             m.especie.toLowerCase().includes(texto),
         );
       }
-      if (parametros?.especieId) {
+      if (parametros?.especieId !== undefined) {
         const especie = ESPECIES.find((e) => e.id === Number(parametros.especieId))?.nombre;
         lista = lista.filter((m) => m.especie === especie);
+      }
+      // El resumen trae la raza por nombre, no por id, asi que hay que
+      // traducir el id igual que con la especie.
+      if (parametros?.razaId !== undefined) {
+        const raza = RAZAS.find((r) => r.id === Number(parametros.razaId))?.nombre;
+        const especie = RAZAS.find((r) => r.id === Number(parametros.razaId))?.especieId;
+        const nombreEspecie = ESPECIES.find((e) => e.id === especie)?.nombre;
+        lista = lista.filter((m) => m.raza === raza && m.especie === nombreEspecie);
+      }
+      // !== undefined y no una comprobacion de verdad: EstadoMascota
+      // empieza en Disponible = 0, asi que `if (parametros.estado)` se
+      // saltaba el filtro justo para el estado mas comun.
+      if (parametros?.estado !== undefined) {
+        lista = lista.filter((m) => m.estado === Number(parametros.estado));
       }
       return paginar(lista, pagina, tamano);
     }

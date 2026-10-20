@@ -69,7 +69,8 @@ table {
 }
 
 /* Control de filtro sobre una tabla. Lo usan el buscador y los select. */
-.filtro-select {
+.filtro-select,
+.filtros .campo__control {
   height: 44px;
   padding: 0 var(--space-3);
   border: 1px solid var(--border);
@@ -77,6 +78,8 @@ table {
   background-color: var(--surface-100);
   color: var(--ink);
   font-size: 14px;
+  font-family: inherit;
+  line-height: normal;
 }
 
 /*
@@ -91,7 +94,8 @@ table {
  * que los demas tokens: una url() no puede leer una variable por dentro,
  * asi que la flecha entera se define una vez por tema.
  */
-select.filtro-select {
+select.filtro-select,
+.filtros select.campo__control {
   appearance: none;
   -webkit-appearance: none;
   padding-right: calc(var(--space-3) * 2 + 16px);
@@ -99,4 +103,26 @@ select.filtro-select {
   background-repeat: no-repeat;
   background-position: right var(--space-3) center;
   background-size: 16px 16px;
+}
+
+/*
+ * Barra de filtros sobre una tabla.
+ *
+ * Los selectores de catalogo traen su propia etiqueta y texto de ayuda,
+ * asi que cada uno es un bloque y no un control suelto: align-items al
+ * final los alinea por el borde de abajo del control, que es lo que
+ * hace que queden en linea con el buscador aunque uno lleve ayuda y
+ * otro no.
+ */
+.filtros {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: var(--space-2);
+  margin-bottom: var(--space-5);
+}
+
+.filtros__busqueda {
+  flex-grow: 1;
+  min-width: 220px;
 }

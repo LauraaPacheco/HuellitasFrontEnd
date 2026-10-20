@@ -2,6 +2,7 @@ export * from './autenticacion';
 export * from './usuarios';
 export * from './refugios';
 export * from './mascotas';
+export * from './catalogos';
 export * from './adopcion';
 export * from './trazabilidad';
 export * from './reportes';

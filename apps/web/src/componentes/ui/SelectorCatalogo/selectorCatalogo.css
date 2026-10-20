@@ -1,0 +1,27 @@
+/*
+ * La flecha propia, igual que en .filtro-select de global.css.
+ *
+ * La del sistema la coloca el navegador pegada al borde y no se puede
+ * mover con padding. El color sale de --icono-desplegable, que cambia
+ * con el tema.
+ */
+select.campo__control {
+  appearance: none;
+  -webkit-appearance: none;
+  color: var(--ink);
+  padding-right: calc(var(--space-4) * 2 + 16px);
+  background-image: var(--icono-desplegable);
+  background-repeat: no-repeat;
+  background-position: right var(--space-4) center;
+  background-size: 16px 16px;
+}
+
+/*
+ * Deshabilitado se nota, pero sin llegar a ilegible: el texto dice por
+ * que no se puede usar y hay que poder leerlo.
+ */
+select.campo__control:disabled {
+  background-color: var(--surface-200);
+  color: var(--ink-muted);
+  cursor: not-allowed;
+}
