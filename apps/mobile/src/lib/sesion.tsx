@@ -10,10 +10,12 @@ import {
 import {
   NivelRol,
   type LoginDto,
+  type EditarPerfilDto,
+  type PerfilAdoptanteDto,
   type SesionGuardada,
   type Usuario,
 } from '@huellitas/shared';
-import { almacen, almacenSesion, api, registrarExpiracionSesion } from './api';
+import { almacen, almacenSesion, api, MODO_DEMO, registrarExpiracionSesion } from './api';
 
 interface ValorSesion {
   readonly usuario: Usuario | null;
@@ -22,6 +24,8 @@ interface ValorSesion {
   readonly cerrarSesion: () => Promise<void>;
   /** Un visitante puede ver el catálogo, pero no postularse ni reportar. */
   readonly puedeActuar: boolean;
+  readonly guardarDatosPersonales: (datos: EditarPerfilDto) => Promise<void>;
+  readonly guardarPerfilAdoptante: (datos: PerfilAdoptanteDto) => Promise<void>;
 }
 
 const ContextoSesion = createContext<ValorSesion | null>(null);
@@ -64,8 +68,9 @@ export function ProveedorSesion({ children }: { children: ReactNode }) {
   }, []);
 
   const iniciarSesion = useCallback(async (datos: LoginDto) => {
-    const sesion = await api.autenticacion.login(datos);
-    await almacen.guardar(sesion.token);
+    const respuesta = await api.autenticacion.login(datos);
+    await almacen.guardar(respuesta.token);
+    const sesion = MODO_DEMO ? { ...respuesta, usuario: await api.usuarios.yo() } : respuesta;
     await almacenSesion.guardar(JSON.stringify(sesion));
     setUsuario(sesion.usuario);
   }, []);
@@ -85,15 +90,44 @@ export function ProveedorSesion({ children }: { children: ReactNode }) {
     }
   }, []);
 
+  const guardarDatosPersonales = useCallback(async (datos: EditarPerfilDto) => {
+    const token = await almacen.obtener();
+    if (!token) throw new Error('Inicia sesión para guardar tus datos.');
+    const actualizado = await api.usuarios.editarPerfil(datos);
+    if (await almacen.obtener() !== token) throw new Error('La sesión cambió. Vuelve a ingresar.');
+    const crudo = await almacenSesion.obtener();
+    if (!crudo) throw new Error('La sesión terminó.');
+    const sesion = JSON.parse(crudo) as SesionGuardada;
+    if (sesion.token !== token) throw new Error('La sesión cambió.');
+    await almacenSesion.guardar(JSON.stringify({ ...sesion, usuario: actualizado }));
+    setUsuario(actualizado);
+  }, []);
+
+  const guardarPerfilAdoptante = useCallback(async (datos: PerfilAdoptanteDto) => {
+    const token = await almacen.obtener();
+    if (!token) throw new Error('Inicia sesión para guardar tu perfil.');
+    const perfil = await api.usuarios.guardarPerfilAdoptante(datos);
+    if (await almacen.obtener() !== token) throw new Error('La sesión cambió. Vuelve a ingresar.');
+    const crudo = await almacenSesion.obtener();
+    if (!crudo) throw new Error('La sesión terminó.');
+    const sesion = JSON.parse(crudo) as SesionGuardada;
+    if (sesion.token !== token) throw new Error('La sesión cambió.');
+    const actualizado = { ...sesion.usuario, perfil };
+    await almacenSesion.guardar(JSON.stringify({ ...sesion, usuario: actualizado }));
+    setUsuario(actualizado);
+  }, []);
+
   const valor = useMemo<ValorSesion>(
     () => ({
       usuario,
       cargando,
       iniciarSesion,
       cerrarSesion,
+      guardarDatosPersonales,
+      guardarPerfilAdoptante,
       puedeActuar: usuario?.rol.nivel === NivelRol.Adoptante,
     }),
-    [usuario, cargando, iniciarSesion, cerrarSesion],
+    [usuario, cargando, iniciarSesion, cerrarSesion, guardarDatosPersonales, guardarPerfilAdoptante],
   );
 
   return <ContextoSesion.Provider value={valor}>{children}</ContextoSesion.Provider>;

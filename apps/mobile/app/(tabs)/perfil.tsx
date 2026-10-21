@@ -1,5 +1,6 @@
 import { ScrollView, StyleSheet, Text, View } from 'react-native';
-import { ESTADO_USUARIO } from '@huellitas/shared';
+import { useRouter } from 'expo-router';
+import { ESTADO_USUARIO, NivelRol } from '@huellitas/shared';
 import { useSesion } from '@/lib/sesion';
 import { AvisoSesion } from '@/componentes/AvisoSesion';
 import { Boton } from '@/componentes/Boton';
@@ -9,7 +10,10 @@ import { espaciado, radios, usarPaleta } from '@/temas';
 
 export default function PantallaPerfil() {
   const paleta = usarPaleta();
-  const { usuario, cerrarSesion } = useSesion();
+  const router = useRouter();
+  const { usuario, cerrarSesion, cargando } = useSesion();
+
+  if (cargando) return <Text style={{ color: paleta.ink, padding: 24 }}>Cargando sesión…</Text>;
 
   if (!usuario) {
     return <AvisoSesion mensaje="Inicia sesión para ver y editar tu perfil de adoptante." />;
@@ -28,7 +32,9 @@ export default function PantallaPerfil() {
         <Insignia estado={ESTADO_USUARIO[usuario.estado]} />
       </View>
 
-      <View
+      <Boton titulo="Editar datos personales" variante="secundario" alPresionar={() => router.push('/datos-personales')} />
+
+      {usuario.rol.nivel === NivelRol.Adoptante && <View
         style={[
           estilos.tarjeta,
           { borderColor: paleta.border, backgroundColor: paleta.surface200 },
@@ -43,11 +49,9 @@ export default function PantallaPerfil() {
         <Boton
           titulo={completitud === 100 ? 'Editar perfil' : 'Completar perfil'}
           variante="secundario"
-          alPresionar={() => {
-            /* HU-USU-06: formulario del perfil de adoptante */
-          }}
+          alPresionar={() => router.push('/perfil-adoptante')}
         />
-      </View>
+      </View>}
 
       <View
         style={[

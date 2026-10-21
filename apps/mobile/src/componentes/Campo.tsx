@@ -3,6 +3,8 @@ import { espaciado, radios, usarPaleta } from '@/temas';
 
 interface Props {
   readonly escala?: number;
+  readonly multilinea?: boolean;
+  readonly deshabilitado?: boolean;
   readonly etiqueta: string;
   readonly valor: string;
   readonly alCambiar: (valor: string) => void;
@@ -16,6 +18,8 @@ interface Props {
 
 export function Campo({
   escala = 1,
+  multilinea = false,
+  deshabilitado = false,
   etiqueta,
   valor,
   alCambiar,
@@ -33,6 +37,9 @@ export function Campo({
       <Text style={[estilos.etiqueta, { color: paleta.ink, fontSize: 13 * escala }]}>{etiqueta}</Text>
       <TextInput
         accessibilityLabel={etiqueta}
+        editable={!deshabilitado}
+        multiline={multilinea}
+        textAlignVertical={multilinea ? 'top' : 'center'}
         value={valor}
         onChangeText={alCambiar}
         placeholder={marcador}
@@ -44,7 +51,8 @@ export function Campo({
         style={[
           estilos.control,
           {
-            height: Math.max(44, 52 * escala),
+            height: multilinea ? 104 : Math.max(44, 52 * escala),
+            paddingVertical: multilinea ? espaciado.s3 : 0,
             fontSize: 16 * escala,
             borderColor: error ? paleta.danger : paleta.border,
             backgroundColor: paleta.surface100,
