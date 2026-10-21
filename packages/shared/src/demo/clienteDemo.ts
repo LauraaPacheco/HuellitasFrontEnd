@@ -7,6 +7,8 @@
  */
 
 import { ClienteApi, ErrorHttp, type ConfiguracionCliente } from '../api/client';
+import type { Usuario, PerfilAdoptanteDto, EditarPerfilDto } from '../types/usuarios';
+import { validarDatosPersonales, validarPerfilAdoptante } from '../utils/perfil';
 import { NivelRol } from '../types/enums';
 import type { Paginado } from '../types/comun';
 import {
@@ -55,12 +57,27 @@ interface OpcionesPeticion {
 export class ClienteDemo extends ClienteApi {
   /** Nivel del usuario con sesion iniciada; null si nadie entro. */
   private nivelActual: NivelRol | null = null;
+  private readonly usuariosEditados = new Map<NivelRol, Usuario>();
+  private readonly almacenDemo: ConfiguracionCliente['almacen'];
+
+  private usuarioActual(): Usuario {
+    if (this.nivelActual === null) throw new ErrorHttp({ titulo: 'Sesión no iniciada', estadoHttp: 401 });
+    return this.usuariosEditados.get(this.nivelActual) ?? usuarioDemo(this.nivelActual);
+  }
 
   constructor(config: ConfiguracionCliente) {
     super(config);
+    this.almacenDemo = config.almacen;
   }
 
   override async peticion<T>(ruta: string, opciones: OpcionesPeticion = {}): Promise<T> {
+    // Al reabrir la app, recupera también el contexto del cliente demo.
+    if (this.nivelActual === null && !ruta.includes('/Auth/')) {
+      const token = await this.almacenDemo.obtener();
+      const id = /^demo\.access\.(\d+)\./.exec(token ?? '')?.[1];
+      const cuenta = USUARIOS_DEMO.find(u => usuarioDemo(u.rol).id === Number(id));
+      if (cuenta) this.nivelActual = cuenta.rol;
+    }
     const { metodo = 'GET', cuerpo, parametros } = opciones;
     const respuesta = this.resolver(ruta, metodo, cuerpo, parametros);
     return esperar(respuesta) as Promise<T>;
@@ -94,7 +111,7 @@ export class ClienteDemo extends ClienteApi {
       }
 
       this.nivelActual = encontrado.rol;
-      const usuario = usuarioDemo(encontrado.rol);
+      const usuario = this.usuarioActual();
       return {
         accessToken: `demo.access.${usuario.id}.${Date.now()}`,
         refreshToken: `demo.refresh.${Date.now()}`,
@@ -108,7 +125,7 @@ export class ClienteDemo extends ClienteApi {
       if (this.nivelActual === null) {
         throw new ErrorHttp({ titulo: 'Sesión no iniciada', estadoHttp: 401 });
       }
-      const usuario = usuarioDemo(this.nivelActual);
+      const usuario = this.usuarioActual();
       return {
         accessToken: `demo.access.${usuario.id}.${Date.now()}`,
         refreshToken: `demo.refresh.${Date.now()}`,
@@ -156,11 +173,50 @@ export class ClienteDemo extends ClienteApi {
 
     /* ---------- Usuario de la sesion ---------- */
 
-    if (ruta.endsWith('/usuarios/yo')) {
-      if (this.nivelActual === null) {
-        throw new ErrorHttp({ titulo: 'Sesión no iniciada', estadoHttp: 401 });
+    if (ruta.endsWith('/usuarios/yo/datos-personales') && metodo === 'GET') {
+      return this.usuarioActual();
+    }
+
+    if (ruta.endsWith('/usuarios/yo/perfil-adoptante') && metodo === 'PUT') {
+      const usuario = this.usuarioActual();
+      if (usuario.rol.nivel !== NivelRol.Adoptante) {
+        throw new ErrorHttp({ titulo: 'Solo los adoptantes pueden editar este perfil', estadoHttp: 403 });
       }
-      return usuarioDemo(this.nivelActual);
+      const datos = cuerpo as PerfilAdoptanteDto;
+      const errores = validarPerfilAdoptante(datos);
+      if (Object.keys(errores).length) throw new ErrorHttp({ titulo: 'Revisa tu perfil de adoptante', estadoHttp: 400 });
+      const ahora = new Date().toISOString();
+      const perfil = {
+        id: usuario.perfil?.id ?? usuario.id,
+        usuarioId: usuario.id,
+        activo: true,
+        fechaCreacion: usuario.perfil?.fechaCreacion ?? ahora,
+        fechaModificacion: ahora,
+        ...datos,
+        espacioDisponible: datos.espacioDisponible.trim(),
+        tiempoDisponible: datos.tiempoDisponible.trim(),
+        porcentajeCompletitud: 100,
+      };
+      this.usuariosEditados.set(this.nivelActual!, { ...usuario, perfil, fechaModificacion: ahora });
+      return perfil;
+    }
+
+    if (ruta.endsWith('/usuarios/yo')) {
+      const usuario = this.usuarioActual();
+      if (metodo === 'GET') return usuario;
+      if (metodo === 'PUT') {
+        const datos = cuerpo as EditarPerfilDto;
+        const nuevos = { nombre: datos.nombre ?? usuario.nombre, telefono: datos.telefono ?? usuario.telefono ?? '' };
+        if (Object.keys(validarDatosPersonales(nuevos)).length) throw new ErrorHttp({ titulo: 'Revisa tus datos personales', estadoHttp: 400 });
+        const actualizado = {
+          ...usuario,
+          nombre: nuevos.nombre.trim(),
+          telefono: nuevos.telefono.replace(/\s|-/g, ''),
+          fechaModificacion: new Date().toISOString(),
+        };
+        this.usuariosEditados.set(this.nivelActual!, actualizado);
+        return actualizado;
+      }
     }
 
     /* ---------- Catalogos ---------- */
