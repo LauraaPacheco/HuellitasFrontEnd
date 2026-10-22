@@ -52,7 +52,7 @@ export default function PantallaRegistro() {
     } catch (causa) {
       setError(
         causa instanceof ErrorHttp
-          ? causa.message
+          ? (causa.detalle ?? causa.message)
           : 'No pudimos crear tu cuenta. Inténtalo de nuevo.',
       );
     } finally {

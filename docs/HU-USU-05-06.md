@@ -66,13 +66,12 @@ La conexión existente por túnel se conserva: móvil usa
 con `URL_API_TUNEL` y `TUNEL_TOKEN`. No se cambian estos valores ni se incluyen
 credenciales en esta documentación.
 
-Hallazgos para integrar las HU previas, fuera de estos formularios:
+Actualización de integración de las HU previas:
 
-- Catálogos reales: `/api/v1/Catalogos/...`; el front aún usa `/api/catalogos/...`.
-- Razas sin especieId devuelven una lista vacía en el backend; el servicio demo
-  previo admite todas. Alinear ambos antes de dar la integración por validada.
-- Recuperación real: `POST /api/v1/Usuarios/recuperar` y
-  `POST /api/v1/Usuarios/restablecer`; el front todavía apunta a rutas de Auth.
-
-Estas diferencias de rutas existen independientemente del túnel. No se han
-llamado endpoints reales ni validado envío de correos en esta tarea.
+- El front ya usa `/api/v1/Catalogos/...`; razas sin especie devuelve lista
+  vacía tanto en demo como en el backend revisado.
+- Recuperación usa `POST /api/v1/Usuarios/recuperar` y
+  `POST /api/v1/Usuarios/restablecer`, con formularios para el código en web
+  y móvil. Los detalles están en `HU-USU-03.md`.
+- Se pospuso la prueba HTTP real por petición del usuario: el túnel no está
+  activo. Esto no cambia los pendientes de backend de HU-USU-05/06.

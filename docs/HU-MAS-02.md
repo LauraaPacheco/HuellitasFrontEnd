@@ -4,25 +4,26 @@ Estado: base de consumo del front implementada y probada en demo. Integración
 con backend pendiente; esta HU no se declara cerrada de extremo a extremo.
 El formulario de publicación de HU-MAS-01 todavía no forma parte de este cambio.
 
-## Contrato por confirmar con backend
+## Contrato revisado en backend c703aa0
 
 Las rutas actuales están centralizadas en `packages/shared/src/api/rutas.ts`:
 
 | GET | Respuesta |
 | --- | --- |
-| `/api/catalogos/especies` | `[{ id, nombre, activo }]` |
-| `/api/catalogos/razas?especieId=1` | `[{ id, nombre, activo, especieId }]` |
-| `/api/catalogos/tamanos` | `[{ id, nombre, activo }]` |
-| `/api/catalogos/colores` | `[{ id, nombre, activo }]` |
-| `/api/catalogos/temperamentos` | `[{ id, nombre, activo }]` |
+| `/api/v1/Catalogos/especies` | `[{ id, nombre, activo }]` |
+| `/api/v1/Catalogos/razas?especieId=1` | `[{ id, nombre, activo, especieId }]` |
+| `/api/v1/Catalogos/tamanos` | `[{ id, nombre, activo }]` |
+| `/api/v1/Catalogos/colores` | `[{ id, nombre, activo }]` |
+| `/api/v1/Catalogos/temperamentos` | `[{ id, nombre, activo }]` |
 
 Se esperan arrays sin envoltorio ni paginación; `id` y `especieId` son números,
-`nombre` es texto y `activo` es booleano. Sin `especieId`, el servicio de razas
-admite obtener todas. Con él, el backend debe filtrar por especie.
+`nombre` es texto y `activo` es booleano. Sin `especieId` válido, razas devuelve una lista vacía. Con él, el backend
+filtra por especie. El demo reproduce ese comportamiento.
 
-La variante `/api/v1/Catalogos/...` es una propuesta de coordinación,
-no un endpoint confirmado. Al acordarla, hay que ajustar el mapa de rutas y
-el reconocimiento de esas rutas en el cliente demo, y volver a ejecutar las pruebas.
+Las rutas se alinearon con CatalogosController y los DTO del backend en
+`c703aa0`. Las pruebas automáticas comprueban las rutas y los parámetros.
+La validación HTTP por el túnel se pospuso por petición del usuario porque
+el túnel no está activo; revisar el código no equivale a validar la integración.
 
 Confirmar si el backend devuelve también opciones inactivas. El front no las
 ofrece como selecciones nuevas. Conserva visible, deshabilitado y marcado el
