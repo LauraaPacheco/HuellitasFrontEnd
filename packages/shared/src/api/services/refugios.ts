@@ -3,6 +3,7 @@ import { RUTAS } from '../rutas';
 import type { FiltroPaginado, Paginado } from '../../types/comun';
 import type {
   Apadrinamiento,
+  EditarRefugioDto,
   Calificacion,
   CalificarDto,
   MotivoDto,
@@ -25,6 +26,18 @@ export class ServicioRefugios {
 
   solicitarRegistro(datos: SolicitudRefugioDto): Promise<Refugio> {
     return this.api.post<Refugio>(RUTAS.refugios.solicitarRegistro, datos);
+  }
+
+  editar(id: number, datos: EditarRefugioDto): Promise<Refugio> {
+    return this.api.put<Refugio>(RUTAS.refugios.porId(id), datos);
+  }
+
+  editarRequisito(refugioId: number, requisitoId: number, datos: { descripcion: string; esObligatorio: boolean }): Promise<RequisitoAdopcion> {
+    return this.api.put<RequisitoAdopcion>(`${RUTAS.refugios.requisitos(refugioId)}/${requisitoId}`, datos);
+  }
+
+  eliminarRequisito(refugioId: number, requisitoId: number): Promise<void> {
+    return this.api.delete<void>(`${RUTAS.refugios.requisitos(refugioId)}/${requisitoId}`);
   }
 
   verificar(id: number): Promise<void> {

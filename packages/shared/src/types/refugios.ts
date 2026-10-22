@@ -74,6 +74,9 @@ export interface SolicitudRefugioDto {
   descripcion?: string;
 }
 
+/** Datos editables; NIT y verificación solo se gestionan por su flujo específico. */
+export type EditarRefugioDto = Omit<SolicitudRefugioDto, 'nit'>;
+
 export interface MotivoDto {
   motivo: string;
 }

@@ -8,8 +8,10 @@
 
 import { ClienteApi, ErrorHttp, type ConfiguracionCliente } from '../api/client';
 import type { Usuario, PerfilAdoptanteDto, EditarPerfilDto } from '../types/usuarios';
+import { validarRefugio, normalizarRefugio } from '../utils/refugios';
+import type { Refugio, SolicitudRefugioDto, EditarRefugioDto } from '../types/refugios';
 import { validarDatosPersonales, validarPerfilAdoptante } from '../utils/perfil';
-import { NivelRol } from '../types/enums';
+import { EstadoVerificacion, NivelRol } from '../types/enums';
 import type { Paginado } from '../types/comun';
 import {
   COLORES,
@@ -57,6 +59,7 @@ interface OpcionesPeticion {
 export class ClienteDemo extends ClienteApi {
   /** Nivel del usuario con sesion iniciada; null si nadie entro. */
   private nivelActual: NivelRol | null = null;
+  private readonly refugios: Refugio[] = REFUGIOS.map(r => ({ ...r, requisitos: [...r.requisitos] }));
   private recuperacionSolicitada = false;
   private recuperacionUsada = false;
   private readonly usuariosEditados = new Map<NivelRol, Usuario>();
@@ -182,8 +185,21 @@ export class ClienteDemo extends ClienteApi {
     /* ---------- Registro de refugio ---------- */
 
     if (ruta.endsWith('/refugios/solicitar-registro') && metodo === 'POST') {
-      const datos = (cuerpo ?? {}) as { nombre?: string };
-      return { ...REFUGIOS[0], nombre: datos.nombre ?? 'Refugio en revisión' };
+      const datos = cuerpo as SolicitudRefugioDto;
+      const error = validarRefugio(datos);
+      if (error) throw new ErrorHttp({ titulo: error, estadoHttp: 400 });
+      if (this.refugios.some(r => r.nit.replace(/[^0-9]/g, '') === datos.nit.replace(/[^0-9]/g, ''))) {
+        throw new ErrorHttp({ titulo: 'Ya existe una solicitud con ese NIT.', estadoHttp: 409 });
+      }
+      const nuevo: Refugio = {
+        ...normalizarRefugio(datos), id: Math.max(...this.refugios.map(r => r.id), 0) + 1,
+        activo: true, fechaCreacion: new Date().toISOString(), fechaModificacion: null,
+        redesSociales: datos.redesSociales?.trim() ?? null, descripcion: datos.descripcion?.trim() ?? null,
+        estadoVerificacion: EstadoVerificacion.Pendiente, fechaVerificacion: null,
+        motivoRechazo: null, promedioCalificacion: null, totalAdopciones: 0, requisitos: [],
+      };
+      this.refugios.push(nuevo);
+      return nuevo;
     }
 
     /* ---------- Usuario de la sesion ---------- */
@@ -349,16 +365,78 @@ export class ClienteDemo extends ClienteApi {
 
     /* ---------- Refugios ---------- */
 
-    const coincideRefugio = /\/api\/refugios\/(\d+)$/.exec(ruta);
+    const coincideRefugio = /\/api\/refugios\/(\d+)(?:\/(verificar|rechazar|suspender|requisitos)(?:\/(\d+))?)?$/.exec(ruta);
     if (coincideRefugio) {
-      const refugio = REFUGIOS.find((r) => r.id === Number(coincideRefugio[1]));
-      if (!refugio) {
-        throw new ErrorHttp({ titulo: 'No encontramos ese refugio', estadoHttp: 404 });
+      const indice = this.refugios.findIndex(r => r.id === Number(coincideRefugio[1]));
+      const refugio = this.refugios[indice];
+      if (!refugio) throw new ErrorHttp({ titulo: 'No encontramos ese refugio', estadoHttp: 404 });
+      const accion = coincideRefugio[2];
+      const esAdmin = this.nivelActual === NivelRol.Administrador;
+      const esPropio = this.nivelActual === NivelRol.Refugio && this.usuarioActual().refugioId === refugio.id;
+      if (metodo === 'GET') {
+        if (refugio.estadoVerificacion !== EstadoVerificacion.Verificado && !esAdmin && !esPropio) {
+          throw new ErrorHttp({ titulo: 'Este refugio no tiene un perfil público verificado.', estadoHttp: 403 });
+        }
+        return accion === 'requisitos' ? refugio.requisitos : refugio;
       }
-      return refugio;
+      if (accion && ['verificar', 'rechazar', 'suspender'].includes(accion) && metodo === 'POST') {
+        if (!esAdmin) throw new ErrorHttp({ titulo: 'Solo un administrador puede verificar refugios.', estadoHttp: 403 });
+        const motivo = (cuerpo as { motivo?: string } | undefined)?.motivo?.trim();
+        if (accion !== 'verificar' && !motivo) throw new ErrorHttp({ titulo: 'Escribe el motivo de la decisión.', estadoHttp: 400 });
+        if ((accion === 'suspender' && refugio.estadoVerificacion !== EstadoVerificacion.Verificado) ||
+            (accion !== 'suspender' && refugio.estadoVerificacion !== EstadoVerificacion.Pendiente)) {
+          throw new ErrorHttp({ titulo: 'El estado del refugio cambió. Actualiza la lista.', estadoHttp: 409 });
+        }
+        this.refugios[indice] = {
+          ...refugio, fechaModificacion: new Date().toISOString(),
+          estadoVerificacion: accion === 'verificar' ? EstadoVerificacion.Verificado : accion === 'rechazar' ? EstadoVerificacion.Rechazado : EstadoVerificacion.Suspendido,
+          fechaVerificacion: accion === 'verificar' ? new Date().toISOString() : refugio.fechaVerificacion,
+          motivoRechazo: motivo ?? null,
+        };
+        return undefined;
+      }
+      if (!esAdmin && !esPropio) throw new ErrorHttp({ titulo: 'No puedes editar este refugio.', estadoHttp: 403 });
+      if (!accion && metodo === 'PUT') {
+        const datos = cuerpo as EditarRefugioDto;
+        // Lista explícita: un cuerpo manipulado no puede cambiar NIT o verificación.
+        const { nombre, direccion, telefono, correo, encargado, descripcion, redesSociales } = normalizarRefugio(datos);
+        const error = validarRefugio({ nombre, direccion, telefono, correo, encargado, descripcion, redesSociales });
+        if (error) throw new ErrorHttp({ titulo: error, estadoHttp: 400 });
+        const actualizado = { ...refugio, nombre, direccion, telefono, correo, encargado,
+          descripcion: descripcion ?? null, redesSociales: redesSociales ?? null, fechaModificacion: new Date().toISOString() };
+        this.refugios[indice] = actualizado;
+        return actualizado;
+      }
+      if (accion === 'requisitos') {
+        const id = Number(coincideRefugio[3]);
+        const requisitos = [...refugio.requisitos];
+        const posicion = requisitos.findIndex(r => r.id === id);
+        if (metodo === 'DELETE' || metodo === 'PUT') {
+          if (posicion < 0) throw new ErrorHttp({ titulo: 'No encontramos ese requisito.', estadoHttp: 404 });
+        }
+        if (metodo === 'DELETE') {
+          requisitos.splice(posicion, 1);
+          this.refugios[indice] = { ...refugio, requisitos };
+          return undefined;
+        }
+        const datos = cuerpo as { descripcion: string; esObligatorio: boolean };
+        if (!datos.descripcion?.trim() || typeof datos.esObligatorio !== 'boolean') {
+          throw new ErrorHttp({ titulo: 'Describe el requisito e indica si es obligatorio.', estadoHttp: 400 });
+        }
+        const requisito = metodo === 'PUT' ? { ...requisitos[posicion]!, descripcion: datos.descripcion.trim(), esObligatorio: datos.esObligatorio }
+          : { id: Math.max(...this.refugios.flatMap(r => r.requisitos.map(x => x.id)), 0) + 1,
+              refugioId: refugio.id, descripcion: datos.descripcion.trim(), esObligatorio: datos.esObligatorio,
+              orden: Math.max(...requisitos.map(r => r.orden), 0) + 1, activo: true,
+              fechaCreacion: new Date().toISOString(), fechaModificacion: null };
+        if (metodo === 'PUT') requisitos[posicion] = requisito; else requisitos.push(requisito);
+        this.refugios[indice] = { ...refugio, requisitos };
+        return requisito;
+      }
     }
-
-    if (ruta.endsWith('/api/refugios')) return paginar(REFUGIOS, pagina, tamano);
+    if (ruta.endsWith('/api/refugios') && metodo === 'GET') {
+      const visibles = this.nivelActual === NivelRol.Administrador ? this.refugios : this.refugios.filter(r => r.estadoVerificacion === EstadoVerificacion.Verificado);
+      return paginar(visibles, pagina, tamano);
+    }
 
     /* ---------- Notificaciones y seguimientos ---------- */
 
