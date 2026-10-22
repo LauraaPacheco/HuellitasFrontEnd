@@ -56,7 +56,7 @@ const resultado = await build({
       }
       assert.ok((await catalogos.razas(1)).every(r => r.especieId === 1));
       assert.deepEqual(await catalogos.razas(0), []);
-      assert.ok((await catalogos.razas()).some(r => r.especieId === 2));
+      assert.deepEqual(await catalogos.razas(), []);
       const criollosPerro = await mascotas.buscar({ razaId: 2 });
       assert.ok(criollosPerro.items.length > 0);
       assert.ok(criollosPerro.items.every(m => m.especie === 'Perro' && m.raza === 'Criollo'));

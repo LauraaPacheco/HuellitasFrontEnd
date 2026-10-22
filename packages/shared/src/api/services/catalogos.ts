@@ -27,7 +27,7 @@ export class ServicioCatalogos {
     return this.api.get<readonly Especie[]>(RUTAS.catalogos.especies);
   }
 
-  /** Sin especieId devuelve todas; el backend filtra si se le pasa. */
+  /** El backend devuelve una lista vacía si no hay especie válida. */
   razas(especieId?: number): Promise<readonly Raza[]> {
     return this.api.get<readonly Raza[]>(RUTAS.catalogos.razas, { especieId });
   }

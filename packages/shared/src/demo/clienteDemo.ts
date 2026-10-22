@@ -57,6 +57,8 @@ interface OpcionesPeticion {
 export class ClienteDemo extends ClienteApi {
   /** Nivel del usuario con sesion iniciada; null si nadie entro. */
   private nivelActual: NivelRol | null = null;
+  private recuperacionSolicitada = false;
+  private recuperacionUsada = false;
   private readonly usuariosEditados = new Map<NivelRol, Usuario>();
   private readonly almacenDemo: ConfiguracionCliente['almacen'];
 
@@ -160,9 +162,22 @@ export class ClienteDemo extends ClienteApi {
 
     if (ruta.endsWith('/Usuarios/reenviar-verificacion')) return undefined;
 
-    // olvide-contrasena y restablecer: responden bien sin hacer nada,
-    // en demo no hay correo que mandar.
-    if (ruta.includes('/Auth/')) return undefined;
+    if (ruta.endsWith('/Usuarios/recuperar') && metodo === 'POST') {
+      this.recuperacionSolicitada = true;
+      this.recuperacionUsada = false;
+      return undefined;
+    }
+    if (ruta.endsWith('/Usuarios/restablecer') && metodo === 'POST') {
+      const datos = cuerpo as { token?: string; nuevaContrasena?: string };
+      if (!this.recuperacionSolicitada || this.recuperacionUsada || datos.token !== 'demo-recuperacion') {
+        throw new ErrorHttp({ titulo: 'El token no es válido, venció o ya fue utilizado.', estadoHttp: 400 });
+      }
+      if (!datos.nuevaContrasena || datos.nuevaContrasena.length < 8 || datos.nuevaContrasena.length > 100) {
+        throw new ErrorHttp({ titulo: 'La contraseña debe tener entre 8 y 100 caracteres.', estadoHttp: 400 });
+      }
+      this.recuperacionUsada = true;
+      return undefined;
+    }
 
     /* ---------- Registro de refugio ---------- */
 
@@ -221,14 +236,14 @@ export class ClienteDemo extends ClienteApi {
 
     /* ---------- Catalogos ---------- */
 
-    if (ruta.endsWith('/catalogos/especies')) return ESPECIES;
-    if (ruta.endsWith('/catalogos/razas')) {
+    if (ruta.endsWith('/v1/Catalogos/especies')) return ESPECIES;
+    if (ruta.endsWith('/v1/Catalogos/razas')) {
       const especieId = parametros?.especieId;
-      return especieId !== undefined ? RAZAS.filter((r) => r.especieId === Number(especieId)) : RAZAS;
+      return Number(especieId) > 0 ? RAZAS.filter((r) => r.especieId === Number(especieId)) : [];
     }
-    if (ruta.endsWith('/catalogos/tamanos')) return TAMANOS;
-    if (ruta.endsWith('/catalogos/colores')) return COLORES;
-    if (ruta.endsWith('/catalogos/temperamentos')) return TEMPERAMENTOS;
+    if (ruta.endsWith('/v1/Catalogos/tamanos')) return TAMANOS;
+    if (ruta.endsWith('/v1/Catalogos/colores')) return COLORES;
+    if (ruta.endsWith('/v1/Catalogos/temperamentos')) return TEMPERAMENTOS;
 
     /* ---------- Mascotas ---------- */
 

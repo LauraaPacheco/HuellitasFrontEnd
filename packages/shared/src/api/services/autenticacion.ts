@@ -63,12 +63,12 @@ export class ServicioAutenticacion {
     return this.api.post<void>(RUTAS.autenticacion.logout, { refreshToken });
   }
 
-  /** Pendiente en el backend: hoy solo responde el modo demo. */
+  /** HU-USU-03: token de recuperación enviado por correo. */
   olvideContrasena(datos: RecuperacionDto): Promise<void> {
     return this.api.post<void>(RUTAS.autenticacion.olvideContrasena, datos);
   }
 
-  /** Pendiente en el backend: hoy solo responde el modo demo. */
+  /** HU-USU-03: aplica una contraseña nueva con un token de un solo uso. */
   restablecer(datos: RestablecerDto): Promise<void> {
     return this.api.post<void>(RUTAS.autenticacion.restablecer, datos);
   }

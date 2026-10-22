@@ -14,12 +14,13 @@ export const RUTAS = {
     login: '/api/v1/Auth/login',
     refrescar: '/api/v1/Auth/refresh',
     logout: '/api/v1/Auth/logout',
-    // Pendientes en el backend; las pantallas ya existen.
-    olvideContrasena: '/api/v1/Auth/olvide-contrasena',
-    restablecer: '/api/v1/Auth/restablecer',
+    // Recuperación implementada en UsuariosController.
+    olvideContrasena: '/api/v1/Usuarios/recuperar',
+    restablecer: '/api/v1/Usuarios/restablecer',
   },
   /**
-   * De aqui para abajo todavia no existe nada en el backend. Cuando Mateo
+   * Usuarios, refugios, mascotas y demás módulos siguen pendientes; catálogos
+   * ya usa su controlador versionado. Cuando Mateo
    * cree cada controlador, la ruta queda /api/v1/<Controlador>; mientras
    * tanto solo las usa el modo demo.
    */
@@ -58,11 +59,11 @@ export const RUTAS = {
     recomendadas: '/api/match/recomendadas',
   },
   catalogos: {
-    especies: '/api/catalogos/especies',
-    razas: '/api/catalogos/razas',
-    tamanos: '/api/catalogos/tamanos',
-    colores: '/api/catalogos/colores',
-    temperamentos: '/api/catalogos/temperamentos',
+    especies: '/api/v1/Catalogos/especies',
+    razas: '/api/v1/Catalogos/razas',
+    tamanos: '/api/v1/Catalogos/tamanos',
+    colores: '/api/v1/Catalogos/colores',
+    temperamentos: '/api/v1/Catalogos/temperamentos',
   },
   solicitudes: {
     base: '/api/solicitudes',
