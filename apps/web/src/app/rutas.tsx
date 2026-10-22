@@ -1,3 +1,4 @@
+import { PaginaRestablecerContrasena } from '@/modulos/autenticacion/PaginaRestablecerContrasena';
 import { lazy, Suspense } from 'react';
 import { createBrowserRouter, Navigate, type RouteObject } from 'react-router-dom';
 import { NivelRol } from '@huellitas/shared';
@@ -58,6 +59,7 @@ export const rutas = createBrowserRouter([
   // Publicas: se llega sin sesion, desde un correo o desde el login.
   { path: '/login', element: <PaginaLogin /> },
   { path: '/confirmar', element: <PaginaConfirmarCorreo /> },
+  { path: '/restablecer-contrasena', element: <PaginaRestablecerContrasena /> },
   { path: '/olvide-contrasena', element: <PaginaOlvideContrasena /> },
   { path: '/solicitar-registro', element: <PaginaSolicitarRegistro /> },
   {

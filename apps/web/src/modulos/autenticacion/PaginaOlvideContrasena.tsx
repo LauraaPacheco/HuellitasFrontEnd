@@ -1,3 +1,4 @@
+import { Link } from 'react-router-dom';
 import { useState, type FormEvent } from 'react';
 import { ErrorHttp, esCorreoValido } from '@huellitas/shared';
 import { api } from '@/lib/api';
@@ -6,13 +7,7 @@ import { Campo } from '@/componentes/ui/Campo';
 import { Ilustracion } from '@/componentes/ui/Ilustracion';
 import { MarcoAuth } from './MarcoAuth';
 
-/**
- * Pide el correo y manda el enlace de recuperación.
- *
- * Ojo: el backend todavía no expone /olvide-contrasena. La pantalla queda
- * lista y en modo demo responde bien; al conectar la API hay que crear ese
- * endpoint y el de restablecer.
- */
+/** HU-USU-03: solicita el token de recuperación por correo. */
 export function PaginaOlvideContrasena() {
   const [correo, setCorreo] = useState('');
   const [error, setError] = useState<string | null>(null);
@@ -30,7 +25,7 @@ export function PaginaOlvideContrasena() {
 
     setEnviando(true);
     try {
-      await api.autenticacion.olvideContrasena({ correo });
+      await api.autenticacion.olvideContrasena({ correo: correo.trim() });
       setEnviado(true);
     } catch (causa) {
       setError(
@@ -51,12 +46,13 @@ export function PaginaOlvideContrasena() {
       >
         <p style={{ margin: 0, color: 'var(--ink-muted)', lineHeight: '23px' }}>
           Si <strong>{correo}</strong> tiene una cuenta en Huellitas, le
-          mandamos un enlace para crear una contraseña nueva. El enlace vence
-          en una hora.
+          mandamos un código para crear una contraseña nueva. Vence en 30 minutos.
         </p>
         <p style={{ margin: 0, color: 'var(--ink-muted)', fontSize: 14 }}>
           ¿No llegó? Mira en el correo no deseado antes de volver a pedirlo.
         </p>
+        <Link to="/restablecer-contrasena">Ya tengo el código</Link>
+        <Boton onClick={() => setEnviado(false)}>Solicitar otro código</Boton>
       </MarcoAuth>
     );
   }
@@ -64,7 +60,7 @@ export function PaginaOlvideContrasena() {
   return (
     <MarcoAuth
       titulo="Recuperar contraseña"
-      descripcion="Escribe el correo con el que entras y te mandamos un enlace para cambiarla."
+      descripcion="Escribe el correo con el que entras y te mandamos un código para cambiarla."
       sello={<Ilustracion variante="restablecer" />}
     >
       <form onSubmit={alEnviar} noValidate style={{ display: 'grid', gap: 'var(--space-4)' }}>
@@ -83,7 +79,7 @@ export function PaginaOlvideContrasena() {
           </p>
         )}
         <Boton tipo="submit" variante="primario" ancho cargando={enviando}>
-          Enviar enlace
+          Enviar código
         </Boton>
       </form>
     </MarcoAuth>

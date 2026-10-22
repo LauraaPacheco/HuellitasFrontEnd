@@ -50,6 +50,7 @@ function Navegacion() {
       >
         <Stack.Screen name="(tabs)" options={{ headerShown: false, title: 'Huellitas' }} />
         <Stack.Screen name="login" options={{ headerShown: false }} />
+        <Stack.Screen name="restablecer-contrasena" options={{ title: 'Nueva contraseña' }} />
         <Stack.Screen name="datos-personales" options={{ title: 'Datos personales' }} />
         <Stack.Screen name="perfil-adoptante" options={{ title: 'Perfil de adoptante' }} />
         <Stack.Screen name="registro" options={{ title: 'Crear cuenta' }} />

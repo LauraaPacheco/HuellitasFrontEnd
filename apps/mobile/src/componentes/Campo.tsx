@@ -3,6 +3,7 @@ import { espaciado, radios, usarPaleta } from '@/temas';
 
 interface Props {
   readonly escala?: number;
+  readonly autoCapitalize?: 'none' | 'sentences' | 'words' | 'characters';
   readonly multilinea?: boolean;
   readonly deshabilitado?: boolean;
   readonly etiqueta: string;
@@ -13,11 +14,12 @@ interface Props {
   readonly error?: string;
   readonly esContrasena?: boolean;
   readonly tipoTeclado?: KeyboardTypeOptions;
-  readonly autoComplete?: 'email' | 'tel' | 'password' | 'name' | 'off';
+  readonly autoComplete?: 'email' | 'tel' | 'password' | 'new-password' | 'one-time-code' | 'name' | 'off';
 }
 
 export function Campo({
   escala = 1,
+  autoCapitalize,
   multilinea = false,
   deshabilitado = false,
   etiqueta,
@@ -46,7 +48,8 @@ export function Campo({
         placeholderTextColor={paleta.inkMuted}
         secureTextEntry={esContrasena}
         keyboardType={tipoTeclado}
-        autoCapitalize={tipoTeclado === 'email-address' ? 'none' : 'sentences'}
+        autoCapitalize={autoCapitalize ?? (esContrasena || tipoTeclado === 'email-address' ? 'none' : 'sentences')}
+        autoCorrect={!(esContrasena || autoCapitalize === 'none')}
         autoComplete={autoComplete}
         style={[
           estilos.control,

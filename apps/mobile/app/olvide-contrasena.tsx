@@ -1,3 +1,4 @@
+import { useRouter } from 'expo-router';
 import { useState } from 'react';
 import { ScrollView, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
 import { ErrorHttp, esCorreoValido } from '@huellitas/shared';
@@ -7,15 +8,10 @@ import { Campo } from '@/componentes/Campo';
 import { Ilustracion } from '@/componentes/Ilustracion';
 import { espaciado, radios, usarPaleta } from '@/temas';
 
-/**
- * Pide el correo y manda el enlace para cambiar la contraseña.
- *
- * Ojo: el backend todavía no expone /olvide-contrasena. La pantalla queda
- * lista y en modo demo responde bien; al conectar la API hay que crear ese
- * endpoint y el de restablecer.
- */
+/** HU-USU-03: solicita el token de recuperación por correo. */
 export default function PantallaOlvideContrasena() {
   const paleta = usarPaleta();
+  const router = useRouter();
   const { height } = useWindowDimensions();
   const [correo, setCorreo] = useState('');
   const [error, setError] = useState<string | null>(null);
@@ -31,7 +27,7 @@ export default function PantallaOlvideContrasena() {
 
     setEnviando(true);
     try {
-      await api.autenticacion.olvideContrasena({ correo });
+      await api.autenticacion.olvideContrasena({ correo: correo.trim() });
       setEnviado(true);
     } catch (causa) {
       setError(
@@ -58,17 +54,19 @@ export default function PantallaOlvideContrasena() {
       {enviado ? (
         <View style={[estilos.aviso, { backgroundColor: paleta.brandTint }]}>
           <Text style={{ color: paleta.ink, fontSize: 15, lineHeight: 23 }}>
-            Si {correo} tiene una cuenta en Huellitas, le mandamos un enlace
-            para crear una contraseña nueva. Vence en una hora.
+            Si {correo} tiene una cuenta en Huellitas, le mandamos un código
+            para crear una contraseña nueva. Vence en 30 minutos.
           </Text>
           <Text style={{ color: paleta.inkMuted, fontSize: 13, lineHeight: 20 }}>
             ¿No llegó? Mira en el correo no deseado antes de volver a pedirlo.
           </Text>
+          <Boton titulo="Ya tengo el código" alPresionar={() => router.push('/restablecer-contrasena')} />
+          <Boton titulo="Solicitar otro código" variante="secundario" alPresionar={() => setEnviado(false)} />
         </View>
       ) : (
         <>
           <Text style={[estilos.texto, { color: paleta.inkMuted }]}>
-            Escribe el correo con el que entras y te mandamos un enlace para
+            Escribe el correo con el que entras y te mandamos un código para
             cambiar la contraseña.
           </Text>
           <Campo
@@ -81,7 +79,7 @@ export default function PantallaOlvideContrasena() {
             error={error ?? undefined}
           />
           <Boton
-            titulo="Enviar enlace"
+            titulo="Enviar código"
             cargando={enviando}
             alPresionar={() => void enviar()}
           />
