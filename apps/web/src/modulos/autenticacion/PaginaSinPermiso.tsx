@@ -26,12 +26,7 @@ export function PaginaSinPermiso() {
 
   return (
     <MarcoAuth
-      // Dos tonos distintos para dos situaciones distintas: a un adoptante
-      // no se le esta negando nada, se le esta indicando donde va. El
-      // candado queda para un bloqueo de verdad.
-      sello={
-        <Ilustracion variante={esAdoptante ? 'trio' : 'bloqueo'} alto={190} />
-      }
+      sello={<Ilustracion variante="bloqueo" alto={190} />}
       titulo={esAdoptante ? 'Esta cuenta es de adoptante' : 'No tienes permiso para ver esta página'}
       descripcion={
         esAdoptante
