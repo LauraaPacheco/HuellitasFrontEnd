@@ -57,7 +57,7 @@ export const ESTADO_USUARIO: Record<EstadoUsuario, DescriptorEstado> = {
 };
 
 export const ESTADO_VERIFICACION: Record<EstadoVerificacion, DescriptorEstado> = {
-  [EstadoVerificacion.Pendiente]: { etiqueta: 'Pendiente', tono: 'neutro' },
+  [EstadoVerificacion.Pendiente]: { etiqueta: 'Pendiente', tono: 'advertencia' },
   [EstadoVerificacion.Verificado]: { etiqueta: 'Verificado', tono: 'marca' },
   [EstadoVerificacion.Rechazado]: { etiqueta: 'Rechazado', tono: 'peligro' },
   [EstadoVerificacion.Suspendido]: { etiqueta: 'Suspendido', tono: 'advertencia' },

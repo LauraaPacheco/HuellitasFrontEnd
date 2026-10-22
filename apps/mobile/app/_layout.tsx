@@ -59,6 +59,7 @@ function Navegacion() {
           name="olvide-contrasena"
           options={{ title: 'Recuperar contraseña' }}
         />
+        <Stack.Screen name="refugio/[id]" options={{ title: 'Perfil del refugio' }} />
         <Stack.Screen name="mascota/[id]" options={{ title: 'Mascota' }} />
       </Stack>
     </>

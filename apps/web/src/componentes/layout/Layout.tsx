@@ -14,6 +14,7 @@ interface ItemMenu {
 }
 
 const MENU: readonly ItemMenu[] = [
+  { ruta: '/mi-refugio', etiqueta: 'Mi refugio', niveles: [NivelRol.Refugio] },
   { ruta: '/solicitudes', etiqueta: 'Solicitudes', niveles: [NivelRol.Refugio, NivelRol.Administrador] },
   { ruta: '/mascotas', etiqueta: 'Mascotas', niveles: [NivelRol.Refugio, NivelRol.Administrador] },
   { ruta: '/reportes', etiqueta: 'Reportes ciudadanos', niveles: [NivelRol.Refugio, NivelRol.Administrador] },

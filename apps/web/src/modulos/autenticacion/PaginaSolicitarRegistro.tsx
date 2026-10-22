@@ -1,9 +1,8 @@
 import { useState, type FormEvent } from 'react';
 import {
   ErrorHttp,
-  esCorreoValido,
-  esNitValido,
-  esTelefonoValido,
+  validarRefugio,
+  normalizarRefugio,
   type SolicitudRefugioDto,
 } from '@huellitas/shared';
 import { api } from '@/lib/api';
@@ -37,25 +36,16 @@ export function PaginaSolicitarRegistro() {
     (valor: string) =>
       setDatos((previo) => ({ ...previo, [campo]: valor }));
 
-  function validar(): string | null {
-    if (!datos.nombre.trim()) return 'Escribe el nombre del refugio.';
-    if (!esNitValido(datos.nit)) return 'El NIT no tiene un formato válido.';
-    if (!datos.direccion.trim()) return 'Escribe la dirección del refugio.';
-    if (!esTelefonoValido(datos.telefono)) return 'El teléfono debe tener 10 dígitos.';
-    if (!esCorreoValido(datos.correo)) return 'Escribe un correo válido.';
-    if (!datos.encargado.trim()) return 'Escribe el nombre del encargado.';
-    return null;
-  }
-
   async function alEnviar(evento: FormEvent) {
     evento.preventDefault();
-    const problema = validar();
+    if (enviando) return;
+    const problema = validarRefugio(datos);
     setError(problema);
     if (problema) return;
 
     setEnviando(true);
     try {
-      await api.refugios.solicitarRegistro(datos);
+      await api.refugios.solicitarRegistro(normalizarRefugio(datos));
       setEnviado(true);
     } catch (causa) {
       setError(
@@ -73,8 +63,8 @@ export function PaginaSolicitarRegistro() {
       <MarcoAuth titulo="Solicitud enviada">
         <p style={{ margin: 0, color: 'var(--ink-muted)', lineHeight: '23px' }}>
           Recibimos la solicitud de <strong>{datos.nombre}</strong>. El
-          administrador revisa el NIT y los soportes, y te avisa a{' '}
-          <strong>{datos.correo}</strong> cuando quede verificado.
+          administrador revisará los datos de contacto y el NIT. El correo registrado es{' '}
+          <strong>{datos.correo}</strong>.
         </p>
         <p style={{ margin: 0, color: 'var(--ink-muted)', fontSize: 14 }}>
           Hasta que no esté verificado, el refugio no puede publicar mascotas.
@@ -132,7 +122,7 @@ export function PaginaSolicitarRegistro() {
           valor={datos.correo}
           alCambiar={cambiar('correo')}
           marcador="refugio@ejemplo.com"
-          ayuda="Aquí te avisamos cuando quede verificado"
+          ayuda="Correo para contactar al refugio"
         />
         <Campo
           id="encargado"

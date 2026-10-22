@@ -1,35 +1,18 @@
 .insignia {
   display: inline-flex;
   align-items: center;
+  gap: 7px;
   height: 28px;
   padding: 0 var(--space-3);
+  border: 1px solid color-mix(in srgb, currentColor 32%, transparent);
   border-radius: var(--radius-pill);
   font-size: 13px;
   font-weight: 600;
   white-space: nowrap;
 }
-
-.insignia--neutro {
-  background: var(--surface-300);
-  color: var(--ink);
-}
-
-.insignia--marca {
-  background: var(--brand-tint);
-  color: var(--ink);
-}
-
-.insignia--acento {
-  background: var(--accent-tint);
-  color: var(--ink);
-}
-
-.insignia--advertencia {
-  background: var(--surface-300);
-  color: var(--warn);
-}
-
-.insignia--peligro {
-  background: var(--surface-300);
-  color: var(--danger);
-}
+.insignia::before { content: ''; width: 6px; height: 6px; border-radius: 50%; background: currentColor; flex-shrink: 0; }
+.insignia--neutro { background: var(--surface-200); color: var(--ink-muted); }
+.insignia--marca { background: color-mix(in srgb, var(--brand-strong) 12%, var(--surface-100)); color: var(--brand-strong); }
+.insignia--acento { background: color-mix(in srgb, var(--accent) 12%, var(--surface-100)); color: var(--ink); }
+.insignia--advertencia { background: color-mix(in srgb, var(--warn) 12%, var(--surface-100)); color: var(--warn); }
+.insignia--peligro { background: color-mix(in srgb, var(--danger) 12%, var(--surface-100)); color: var(--danger); }

@@ -1,0 +1,30 @@
+.refugio-panel { padding: var(--space-5); border: 1px solid var(--border); border-radius: var(--radius-md); background: var(--surface-100); margin-top: var(--space-4); }
+.refugio-panel h2 { margin-top: 0; font-size: 20px; }
+.refugio-datos { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 240px), 1fr)); gap: var(--space-4); }
+.refugio-datos dt { color: var(--ink-muted); font-size: 13px; }
+.refugio-datos dd { margin: var(--space-1) 0 0; overflow-wrap: anywhere; white-space: pre-wrap; }
+.refugio-acciones { display: flex; flex-wrap: wrap; gap: var(--space-2); align-items: center; margin-top: var(--space-4); }
+.refugio-form { display: grid; gap: var(--space-4); max-width: 720px; }
+.refugio-form fieldset { border: 0; padding: 0; margin: 0; min-width: 0; display: grid; gap: var(--space-4); }
+.refugio-form textarea { min-height: 104px; height: auto; padding: var(--space-3); resize: vertical; font: inherit; color: var(--ink); }
+.refugio-form label { color: var(--ink); }
+.refugio-error { color: var(--danger); }
+.refugio-lista { padding-left: var(--space-5); }
+.refugio-lista li { padding: var(--space-2) 0; overflow-wrap: anywhere; }
+.refugio-tabla { overflow-x: auto; }
+.refugio-estado { margin-bottom: var(--space-4); }
+
+.refugio-enlace { text-decoration: none; }
+.refugio-revisar { min-width: 120px; height: 44px; padding-inline: var(--space-4); border-radius: var(--radius-sm); }
+.refugio-resumen-modal { display: flex; align-items: center; gap: var(--space-3); color: var(--ink-muted); font-size: 13px; margin-bottom: var(--space-5); }
+.modal .refugio-datos { margin: 0 0 var(--space-5); gap: var(--space-5); }
+.modal .refugio-datos > div:last-child { grid-column: 1 / -1; padding-top: var(--space-4); border-top: 1px solid var(--border); }
+.modal .refugio-datos dt { font-weight: 600; }
+.refugio-perfil { max-width: 1040px; margin: 0 auto; padding: var(--space-5); padding-bottom: var(--space-7); }
+.refugio-perfil__barra { display: flex; justify-content: space-between; align-items: center; gap: var(--space-4); padding-block: var(--space-2) var(--space-5); border-bottom: 1px solid var(--border); }
+.refugio-marca { display: inline-flex; align-items: center; gap: var(--space-2); text-decoration: none; color: var(--ink); font-weight: 700; font-size: 20px; }
+.refugio-perfil__presentacion { padding-block: var(--space-6) var(--space-4); }
+.refugio-perfil__presentacion h1 { font-size: clamp(28px, 4vw, 40px); line-height: 1.2; margin-bottom: var(--space-4); }
+.refugio-sobretitulo { margin: 0 0 var(--space-2); color: var(--ink-muted); font-size: 14px; font-weight: 600; }
+.refugio-perfil .refugio-panel { padding: clamp(20px, 4vw, 32px); }
+@media (max-width: 540px) { .refugio-perfil { padding: var(--space-4); } }

@@ -13,7 +13,7 @@ import {
   type SesionGuardada,
   type Usuario,
 } from '@huellitas/shared';
-import { almacen, almacenSesion, api } from '@/lib/api';
+import { almacen, almacenSesion, api, MODO_DEMO } from '@/lib/api';
 
 interface ValorSesion {
   readonly usuario: Usuario | null;
@@ -59,8 +59,9 @@ export function ProveedorSesion({ children }: { children: ReactNode }) {
   }, []);
 
   const iniciarSesion = useCallback(async (datos: LoginDto) => {
-    const sesion = await api.autenticacion.login(datos);
-    await almacen.guardar(sesion.token);
+    const respuesta = await api.autenticacion.login(datos);
+    await almacen.guardar(respuesta.token);
+    const sesion = MODO_DEMO ? { ...respuesta, usuario: await api.usuarios.yo() } : respuesta;
     await almacenSesion.guardar(JSON.stringify(sesion));
     setUsuario(sesion.usuario);
   }, []);

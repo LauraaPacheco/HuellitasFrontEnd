@@ -1,3 +1,6 @@
+import { PaginaVerificacionRefugios } from '@/modulos/refugios/PaginaVerificacionRefugios';
+import { PaginaPerfilRefugio } from '@/modulos/refugios/PaginaPerfilRefugio';
+import { PaginaEditarRefugio } from '@/modulos/refugios/PaginaEditarRefugio';
 import { PaginaRestablecerContrasena } from '@/modulos/autenticacion/PaginaRestablecerContrasena';
 import { lazy, Suspense } from 'react';
 import { createBrowserRouter, Navigate, type RouteObject } from 'react-router-dom';
@@ -57,6 +60,7 @@ const rutasDesarrollo: RouteObject[] = import.meta.hot
 export const rutas = createBrowserRouter([
   ...rutasDesarrollo,
   // Publicas: se llega sin sesion, desde un correo o desde el login.
+  { path: '/refugios/:id', element: <PaginaPerfilRefugio /> },
   { path: '/login', element: <PaginaLogin /> },
   { path: '/confirmar', element: <PaginaConfirmarCorreo /> },
   { path: '/restablecer-contrasena', element: <PaginaRestablecerContrasena /> },
@@ -121,14 +125,12 @@ export const rutas = createBrowserRouter([
           </RutaProtegida>
         ),
       },
+      { path: 'mi-refugio', element: <RutaProtegida niveles={[NivelRol.Refugio]}><PaginaEditarRefugio /></RutaProtegida> },
       {
         path: 'refugios',
         element: (
           <RutaProtegida niveles={[NivelRol.Administrador]}>
-            <PaginaPendiente
-              titulo="Verificación de refugios"
-              historias="HU-REF-01 y HU-ADM-01"
-            />
+            <PaginaVerificacionRefugios />
           </RutaProtegida>
         ),
       },

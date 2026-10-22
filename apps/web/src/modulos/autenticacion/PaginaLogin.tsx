@@ -132,8 +132,8 @@ export function PaginaLogin() {
           <section className="login__registro">
             <h3>¿Tu refugio todavía no está en Huellitas?</h3>
             <p>
-              Envía la solicitud con el NIT y los soportes. El administrador la
-              revisa y te avisa por correo.
+              Envía la solicitud con el NIT y los datos de contacto para que el
+              administrador la revise.
             </p>
             <Link to="/solicitar-registro">Solicitar registro de refugio</Link>
           </section>

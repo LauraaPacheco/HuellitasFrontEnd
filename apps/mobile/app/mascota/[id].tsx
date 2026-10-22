@@ -81,6 +81,9 @@ export default function PantallaMascota() {
         )}
       </View>
 
+      <Boton titulo="Conocer el refugio y sus requisitos" variante="secundario"
+        alPresionar={() => router.push(`/refugio/${mascota.refugioId}`)} />
+
       <Boton
         titulo={usuario ? 'Postularme para adoptar' : 'Inicia sesión para postularte'}
         alPresionar={() => router.push(usuario ? `/(tabs)/solicitudes` : '/login')}
