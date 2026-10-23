@@ -146,3 +146,4 @@
 .marco-auth__ancho-completo {
   grid-column: 1 / -1;
 }
+@media (max-width: 380px) { .marco-auth__tarjeta { padding: 16px; } .marco-auth__titulo { font-size: 24px; line-height: 1.3; } }

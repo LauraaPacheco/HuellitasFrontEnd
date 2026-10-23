@@ -1,3 +1,4 @@
+import { useRef, useState } from 'react';
 import { NavLink, Outlet } from 'react-router-dom';
 import { NivelRol } from '@huellitas/shared';
 import { useSesion } from '@/modulos/autenticacion/ContextoSesion';
@@ -26,21 +27,29 @@ const MENU: readonly ItemMenu[] = [
 
 export function Layout() {
   const { usuario, cerrarSesion, tieneNivel } = useSesion();
+  const [menuAbierto, setMenuAbierto] = useState(false);
+  const botonMenu = useRef<HTMLButtonElement>(null);
+  function cerrarMenu() {
+    if (menuAbierto) { setMenuAbierto(false); botonMenu.current?.focus(); }
+  }
   const visibles = MENU.filter((item) => tieneNivel(...item.niveles));
 
   return (
     <div className="layout">
-      <nav className="layout__lateral" aria-label="Navegación principal">
-        <div className="layout__marca">
+      <nav className="layout__lateral" aria-label="Navegación principal" onKeyDown={evento => { if (evento.key === 'Escape') cerrarMenu(); }}>
+        <div className="layout__cabecera"><div className="layout__marca">
           <Isotipo tamano={30} />
           <span>Huellitas</span>
         </div>
 
+        <button ref={botonMenu} type="button" className="layout__alternar" aria-expanded={menuAbierto} aria-controls="menu-panel" onClick={() => setMenuAbierto(abierto => !abierto)}>{menuAbierto ? 'Cerrar menú' : 'Menú'} <span aria-hidden="true">{menuAbierto ? '×' : '☰'}</span></button></div>
+        <div id="menu-panel" className={`layout__opciones${menuAbierto ? ' layout__opciones--abiertas' : ''}`}>
         <ul className="layout__menu">
           {visibles.map((item) => (
             <li key={item.ruta}>
               <NavLink
                 to={item.ruta}
+                onClick={cerrarMenu}
                 className={({ isActive }) =>
                   isActive ? 'layout__enlace layout__enlace--activo' : 'layout__enlace'
                 }
@@ -58,6 +67,7 @@ export function Layout() {
           <Boton variante="texto" onClick={() => void cerrarSesion()}>
             Cerrar sesión
           </Boton>
+        </div>
         </div>
       </nav>
 

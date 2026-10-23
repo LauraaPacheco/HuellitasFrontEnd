@@ -52,3 +52,12 @@
   font-weight: 600;
   color: var(--warn);
 }
+
+.tabla-scroll, .mascotas-tabla, .refugio-tabla { max-width: 100%; overflow-x: auto; border-radius: 12px; }
+@media (max-width: 900px) {
+  .tabla-scroll .tabla, .refugio-tabla .tabla { min-width: 620px; }
+  .mascotas-tabla .tabla { min-width: 720px; }
+  .tabla th, .tabla td { padding: 12px; }
+}
+.tabla-scroll, .mascotas-tabla, .refugio-tabla { position: relative; }
+.tabla .boton { white-space: nowrap; overflow-wrap: normal; padding-inline: 16px; }

@@ -52,3 +52,5 @@
   padding: 0 var(--space-2);
   height: 44px;
 }
+
+.boton { max-width: 100%; min-height: 48px; height: auto; padding-block: 10px; text-align: center; text-decoration: none; overflow-wrap: anywhere; }

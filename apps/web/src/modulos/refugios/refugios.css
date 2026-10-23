@@ -28,3 +28,11 @@
 .refugio-sobretitulo { margin: 0 0 var(--space-2); color: var(--ink-muted); font-size: 14px; font-weight: 600; }
 .refugio-perfil .refugio-panel { padding: clamp(20px, 4vw, 32px); }
 @media (max-width: 540px) { .refugio-perfil { padding: var(--space-4); } }
+
+.refugio-form { width: 100%; min-width: 0; }
+.refugio-resumen-modal { flex-wrap: wrap; }
+@media (max-width: 540px) {
+  .refugio-panel { padding: 16px; }
+  .refugio-acciones > .boton, .refugio-acciones > a { flex: 1 1 100%; }
+  .refugio-perfil__barra { flex-wrap: wrap; }
+}

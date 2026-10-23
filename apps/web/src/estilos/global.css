@@ -126,3 +126,14 @@ select.filtro-select,
   flex-grow: 1;
   min-width: 220px;
 }
+
+/* Los campos deben poder reducirse al ancho disponible. */
+.campo { min-width: 0; }
+.campo__control { width: 100%; min-width: 0; max-width: 100%; }
+img, svg { max-width: 100%; }
+p, li { overflow-wrap: anywhere; }
+@media (max-width: 640px) {
+  .filtros { display: grid; grid-template-columns: minmax(0, 1fr); align-items: stretch; }
+  .filtros > :not(.visualmente-oculto), .filtros__busqueda { width: 100%; min-width: 0; }
+}
+@media (min-width: 641px) and (max-width: 900px) { .filtros { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); } }

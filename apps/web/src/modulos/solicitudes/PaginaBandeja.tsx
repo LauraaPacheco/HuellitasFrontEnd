@@ -107,7 +107,7 @@ export function PaginaBandeja() {
       )}
 
       {data && data.items.length > 0 && (
-        <table className="tabla">
+        <div className="tabla-scroll" role="region" aria-label="Solicitudes recibidas, tabla desplazable" tabIndex={0}><table className="tabla">
           <thead>
             <tr>
               <th scope="col">Adoptante</th>
@@ -142,7 +142,7 @@ export function PaginaBandeja() {
               );
             })}
           </tbody>
-        </table>
+        </table></div>
       )}
     </>
   );

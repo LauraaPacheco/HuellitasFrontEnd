@@ -48,6 +48,8 @@ export function PaginaDetalleSolicitud() {
               key={etapa.etiqueta}
               style={{
                 display: 'flex',
+                flexWrap: 'wrap',
+                gap: '8px 24px',
                 justifyContent: 'space-between',
                 padding: 'var(--space-2) 0',
                 color: etapa.estado === 'pendiente' ? 'var(--ink-muted)' : 'var(--ink)',
