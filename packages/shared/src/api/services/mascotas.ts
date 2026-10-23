@@ -30,6 +30,14 @@ export class ServicioMascotas {
     return this.api.post<Mascota>(RUTAS.mascotas.base, datos);
   }
 
+  crearBorrador(datos: CrearMascotaDto): Promise<Mascota> {
+    return this.api.post<Mascota>(`${RUTAS.mascotas.base}/borradores`, datos);
+  }
+
+  publicar(id: number): Promise<Mascota> {
+    return this.api.post<Mascota>(`${RUTAS.mascotas.porId(id)}/publicar`);
+  }
+
   editar(id: number, datos: EditarMascotaDto): Promise<Mascota> {
     return this.api.put<Mascota>(RUTAS.mascotas.porId(id), datos);
   }
@@ -50,6 +58,14 @@ export class ServicioMascotas {
       metodo: 'POST',
       cuerpo: archivo,
     });
+  }
+
+  marcarFotoPrincipal(id: number, multimediaId: number): Promise<void> {
+    return this.api.put<void>(`${RUTAS.mascotas.multimedia(id)}/${multimediaId}/principal`);
+  }
+
+  eliminarMultimedia(id: number, multimediaId: number): Promise<void> {
+    return this.api.delete<void>(`${RUTAS.mascotas.multimedia(id)}/${multimediaId}`);
   }
 
   agregarRegistroClinico(datos: CrearRegistroClinicoDto): Promise<RegistroClinico> {

@@ -63,3 +63,35 @@ describe('HU-MAS-01 gestión de mascotas', () => {
     await expect(api.mascotas.obtener(9999)).rejects.toMatchObject({ estadoHttp: 404 });
   });
 });
+
+describe('Publicación por pasos', () => {
+  it('guarda un borrador privado y solo lo hace disponible al publicar', async () => {
+    const api = nueva(); await login(api);
+    const borrador = await api.mascotas.crearBorrador(datos);
+    expect(borrador.estado).toBe(EstadoMascota.Borrador);
+    expect((await api.mascotas.buscar({ estado: EstadoMascota.Borrador })).items.some(m => m.id === borrador.id)).toBe(true);
+    await api.autenticacion.logout('demo');
+    await expect(api.mascotas.obtener(borrador.id)).rejects.toMatchObject({ estadoHttp: 404 });
+    expect((await api.mascotas.buscar({ texto: 'Coco' })).total).toBe(0);
+    await login(api, 'adoptante@huellitas.co');
+    expect((await api.mascotas.buscar({ estado: EstadoMascota.Borrador })).total).toBe(0);
+    await expect(api.mascotas.obtener(borrador.id)).rejects.toMatchObject({ estadoHttp: 404 });
+    await expect(api.mascotas.publicar(borrador.id)).rejects.toMatchObject({ estadoHttp: 403 });
+    await login(api);
+    await api.mascotas.editar(borrador.id, { nombre: 'Coco actualizado' });
+    expect((await api.mascotas.obtener(borrador.id)).estado).toBe(EstadoMascota.Borrador);
+    await api.mascotas.publicar(borrador.id);
+    await expect(api.mascotas.publicar(borrador.id)).rejects.toMatchObject({ estadoHttp: 409 });
+    await api.autenticacion.logout('demo');
+    expect(await api.mascotas.obtener(borrador.id)).toMatchObject({ nombre: 'Coco actualizado', estado: EstadoMascota.Disponible });
+  });
+  it('rechaza la publicación de un refugio suspendido y los saltos de estado de un borrador', async () => {
+    const api = nueva(); await login(api); const borrador = await api.mascotas.crearBorrador(datos);
+    await expect(api.mascotas.cambiarEstado(borrador.id, { nuevoEstado: EstadoMascota.Disponible })).rejects.toMatchObject({ estadoHttp: 409 });
+    await login(api, 'admin@huellitas.co');
+    await expect(api.mascotas.publicar(borrador.id)).rejects.toMatchObject({ estadoHttp: 403 });
+    await api.refugios.suspender(1, { motivo: 'Revisión' }); await login(api);
+    await expect(api.mascotas.publicar(borrador.id)).rejects.toMatchObject({ estadoHttp: 403 });
+    expect((await api.mascotas.obtener(borrador.id)).estado).toBe(EstadoMascota.Borrador);
+  });
+});

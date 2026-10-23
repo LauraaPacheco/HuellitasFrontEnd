@@ -76,6 +76,8 @@ export enum EstadoMascota {
   EnProceso = 1,
   Adoptada = 2,
   NoDisponible = 3,
+  /** Propuesto para el flujo de publicación; pendiente de acordar con backend. */
+  Borrador = 4,
 }
 
 export enum Procedencia {

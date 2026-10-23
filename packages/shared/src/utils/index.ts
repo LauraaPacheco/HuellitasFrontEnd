@@ -5,3 +5,5 @@ export * from './recuperacion';
 export * from './refugios';
 
 export * from './mascotas';
+
+export * from './multimedia';

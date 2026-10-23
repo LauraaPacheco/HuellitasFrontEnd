@@ -11,7 +11,8 @@ import type { Usuario, PerfilAdoptanteDto, EditarPerfilDto } from '../types/usua
 import { validarRefugio, normalizarRefugio } from '../utils/refugios';
 import type { Refugio, SolicitudRefugioDto, EditarRefugioDto } from '../types/refugios';
 import { validarDatosPersonales, validarPerfilAdoptante } from '../utils/perfil';
-import { EstadoMascota, EstadoVerificacion, NivelRol } from '../types/enums';
+import { EstadoMascota, EstadoVerificacion, NivelRol, TipoMultimedia } from '../types/enums';
+import { validarArchivoMascota, coincideFirmaArchivo, esFoto, MAX_ARCHIVOS_MASCOTA } from '../utils/multimedia';
 import { validarMascota, estadosManualesMascota } from '../utils/mascotas';
 import type { Mascota, MascotaResumen, CrearMascotaDto, EditarMascotaDto, CambioEstadoMascotaDto } from '../types/mascotas';
 import type { Paginado } from '../types/comun';
@@ -73,6 +74,43 @@ export class ClienteDemo extends ClienteApi {
     return this.usuariosEditados.get(this.nivelActual) ?? usuarioDemo(this.nivelActual);
   }
 
+  private exigirPropietario(mascota?: Mascota) {
+    const usuario = this.usuarioActual();
+    const refugio = this.refugios.find(r => r.id === usuario.refugioId);
+    if (usuario.rol.nivel !== NivelRol.Refugio || !refugio || !refugio.activo || refugio.estadoVerificacion !== EstadoVerificacion.Verificado || (mascota && mascota.refugioId !== refugio.id)) {
+      throw new ErrorHttp({ titulo: 'Solo el refugio verificado propietario puede gestionar esta mascota.', estadoHttp: 403 });
+    }
+    return refugio;
+  }
+
+  private async subirArchivoDemo(id: number, cuerpo: unknown) {
+    const indice = this.mascotas.findIndex(m => m.id === id && m.activo);
+    const inicial = this.mascotas[indice];
+    if (!inicial) throw new ErrorHttp({ titulo: 'No encontramos esa mascota.', estadoHttp: 404 });
+    this.exigirPropietario(inicial);
+    const archivo = cuerpo instanceof FormData ? cuerpo.get('archivo') : null;
+    if (!(archivo instanceof Blob)) throw new ErrorHttp({ titulo: 'Selecciona un archivo.', estadoHttp: 400 });
+    const error = validarArchivoMascota(archivo);
+    if (error) throw new ErrorHttp({ titulo: error, estadoHttp: 400 });
+    const bytes = new Uint8Array(await archivo.arrayBuffer());
+    if (!coincideFirmaArchivo(archivo.type, bytes)) throw new ErrorHttp({ titulo: 'El contenido no coincide con el formato del archivo.', estadoHttp: 400 });
+    // Volver a validar después de leer: evita superar el límite con cargas concurrentes.
+    const mascota = this.mascotas[indice]!;
+    this.exigirPropietario(mascota);
+    const activos = mascota.multimedia.filter(a => a.activo);
+    if (activos.length >= MAX_ARCHIVOS_MASCOTA) throw new ErrorHttp({ titulo: 'La mascota ya tiene 10 archivos. Elimina uno antes de cargar otro.', estadoHttp: 409 });
+    let binario = '';
+    for (let i = 0; i < bytes.length; i += 8192) binario += String.fromCharCode(...bytes.subarray(i, i + 8192));
+    const ahora = new Date().toISOString();
+    const nuevo = { id: Math.max(...this.mascotas.flatMap(m => m.multimedia.map(a => a.id)), 0) + 1,
+      activo: true, fechaCreacion: ahora, fechaModificacion: null, mascotaId: id, reporteId: null, seguimientoId: null,
+      tipo: esFoto(archivo.type) ? TipoMultimedia.Foto : TipoMultimedia.Video,
+      archivo: `data:${archivo.type};base64,${btoa(binario)}`, fechaCarga: ahora,
+      esPrincipal: esFoto(archivo.type) && !activos.some(a => a.tipo === TipoMultimedia.Foto && a.esPrincipal) };
+    this.mascotas[indice] = { ...mascota, multimedia: [...mascota.multimedia, nuevo], fechaModificacion: ahora, fechaUltimaActualizacion: ahora };
+    return nuevo;
+  }
+
   constructor(config: ConfiguracionCliente) {
     super(config);
     this.almacenDemo = config.almacen;
@@ -87,7 +125,8 @@ export class ClienteDemo extends ClienteApi {
       if (cuenta) this.nivelActual = cuenta.rol;
     }
     const { metodo = 'GET', cuerpo, parametros } = opciones;
-    const respuesta = this.resolver(ruta, metodo, cuerpo, parametros);
+    const carga = /^\/api\/mascotas\/(\d+)\/multimedia$/.exec(ruta);
+    const respuesta = carga && metodo === 'POST' ? await this.subirArchivoDemo(Number(carga[1]), cuerpo) : this.resolver(ruta, metodo, cuerpo, parametros);
     return esperar(respuesta) as Promise<T>;
   }
 
@@ -270,14 +309,7 @@ export class ClienteDemo extends ClienteApi {
       return mascotasResumen().slice(0, 3);
     }
 
-    const exigirRefugio = (mascota?: Mascota) => {
-      const usuario = this.usuarioActual();
-      const refugio = this.refugios.find(r => r.id === usuario.refugioId);
-      if (usuario.rol.nivel !== NivelRol.Refugio || !refugio || refugio.estadoVerificacion !== EstadoVerificacion.Verificado || !refugio.activo || (mascota && mascota.refugioId !== refugio.id)) {
-        throw new ErrorHttp({ titulo: 'Solo el refugio verificado propietario puede gestionar esta mascota.', estadoHttp: 403 });
-      }
-      return refugio;
-    };
+    const exigirRefugio = (mascota?: Mascota) => this.exigirPropietario(mascota);
     const preparar = (datos: CrearMascotaDto, anterior?: Mascota) => {
       const errores = validarMascota(datos);
       if (Object.keys(errores).length) throw new ErrorHttp({ titulo: 'Revisa los datos de la mascota.', estadoHttp: 400, errores: Object.fromEntries(Object.entries(errores).map(([k,v]) => [k, [v]])) });
@@ -294,12 +326,52 @@ export class ClienteDemo extends ClienteApi {
         esterilizada: datos.esterilizada, procedencia: datos.procedencia, fechaIngreso: datos.fechaIngreso,
         temperamentos: TEMPERAMENTOS.filter(t => datos.temperamentoIds.includes(t.id)) };
     };
+    const accionArchivo = /^\/api\/mascotas\/(\d+)\/multimedia\/(\d+)(\/principal)?$/.exec(ruta);
+    if (accionArchivo) {
+      const indice = this.mascotas.findIndex(m => m.id === Number(accionArchivo[1]) && m.activo);
+      const mascota = this.mascotas[indice];
+      if (!mascota) throw new ErrorHttp({ titulo: 'No encontramos esa mascota.', estadoHttp: 404 });
+      exigirRefugio(mascota);
+      const archivo = mascota.multimedia.find(a => a.id === Number(accionArchivo[2]) && a.activo);
+      if (!archivo) throw new ErrorHttp({ titulo: 'No encontramos ese archivo.', estadoHttp: 404 });
+      const principal = !!accionArchivo[3];
+      if ((principal && metodo !== 'PUT') || (!principal && metodo !== 'DELETE')) throw new ErrorHttp({ titulo: 'Operación no disponible.', estadoHttp: 405 });
+      if (principal && archivo.tipo !== TipoMultimedia.Foto) throw new ErrorHttp({ titulo: 'La portada debe ser una foto.', estadoHttp: 400 });
+      const ahora = new Date().toISOString();
+      let multimedia = mascota.multimedia.map(a => principal ? { ...a, esPrincipal: a.activo && a.id === archivo.id }
+        : a.id === archivo.id ? { ...a, activo: false, esPrincipal: false, fechaModificacion: ahora } : a);
+      if (!principal && archivo.esPrincipal) {
+        const siguiente = multimedia.find(a => a.activo && a.tipo === TipoMultimedia.Foto);
+        if (siguiente) multimedia = multimedia.map(a => ({ ...a, esPrincipal: a.id === siguiente.id }));
+      }
+      this.mascotas[indice] = { ...mascota, multimedia, fechaModificacion: ahora, fechaUltimaActualizacion: ahora };
+      return undefined;
+    }
+
+    const publicacion = /^\/api\/mascotas\/(\d+)\/publicar$/.exec(ruta);
+    if (publicacion && metodo === 'POST') {
+      const indice = this.mascotas.findIndex(m => m.id === Number(publicacion[1]) && m.activo);
+      const mascota = this.mascotas[indice];
+      if (!mascota) throw new ErrorHttp({ titulo: 'No encontramos esa mascota.', estadoHttp: 404 });
+      exigirRefugio(mascota);
+      if (mascota.estado !== EstadoMascota.Borrador) throw new ErrorHttp({ titulo: 'La mascota ya fue publicada. Actualiza el listado.', estadoHttp: 409 });
+      preparar({ ...mascota, razaId: mascota.razaId ?? undefined, descripcion: mascota.descripcion ?? undefined,
+        edadAproximada: mascota.edadAproximada ?? undefined, temperamentoIds: mascota.temperamentos.map(t => t.id) });
+      const ahora = new Date().toISOString();
+      const publicada = { ...mascota, estado: EstadoMascota.Disponible, fechaModificacion: ahora, fechaUltimaActualizacion: ahora };
+      this.mascotas[indice] = publicada;
+      return { ...publicada, multimedia: publicada.multimedia.filter(a => a.activo) };
+    }
+
     const coincideMascota = /\/api\/mascotas\/(\d+)(?:\/(estado))?$/.exec(ruta);
     if (coincideMascota) {
       const indice = this.mascotas.findIndex(m => m.id === Number(coincideMascota[1]));
       const mascota = this.mascotas[indice];
       if (!mascota || !mascota.activo) throw new ErrorHttp({ titulo: 'No encontramos esa mascota.', estadoHttp: 404 });
-      if (metodo === 'GET' && !coincideMascota[2]) return mascota;
+      if (metodo === 'GET' && !coincideMascota[2]) {
+        if (mascota.estado === EstadoMascota.Borrador && this.nivelActual !== NivelRol.Administrador && !(this.nivelActual === NivelRol.Refugio && this.usuarioActual().refugioId === mascota.refugioId)) throw new ErrorHttp({ titulo: 'Esta ficha todavía no está publicada.', estadoHttp: 404 });
+        return { ...mascota, multimedia: mascota.multimedia.filter(a => a.activo) };
+      }
       exigirRefugio(mascota);
       const ahora = new Date().toISOString();
       if (metodo === 'DELETE' || (metodo === 'PUT' && coincideMascota[2])) {
@@ -319,18 +391,19 @@ export class ClienteDemo extends ClienteApi {
       }
     }
 
-    if (ruta.endsWith('/api/mascotas') && metodo === 'POST') {
+    if ((ruta.endsWith('/api/mascotas') || ruta.endsWith('/api/mascotas/borradores')) && metodo === 'POST') {
       const refugio = exigirRefugio();
       const campos = preparar(cuerpo as CrearMascotaDto);
       const ahora = new Date().toISOString();
       const nueva: Mascota = { ...campos, id: Math.max(...this.mascotas.map(m => m.id), 0) + 1,
         activo: true, fechaCreacion: ahora, fechaModificacion: null, refugioId: refugio.id,
-        estado: EstadoMascota.Disponible, fechaUltimaActualizacion: ahora, motivoBaja: null, multimedia: [], historialClinico: [] };
+        estado: ruta.endsWith('/borradores') ? EstadoMascota.Borrador : EstadoMascota.Disponible, fechaUltimaActualizacion: ahora, motivoBaja: null, multimedia: [], historialClinico: [] };
       this.mascotas.push(nueva);
       return nueva;
     }
     if (ruta.endsWith('/api/mascotas') && metodo === 'GET') {
       let mascotas = this.mascotas.filter(m => m.activo);
+      if (this.nivelActual !== NivelRol.Refugio && this.nivelActual !== NivelRol.Administrador) mascotas = mascotas.filter(m => m.estado !== EstadoMascota.Borrador);
       if (this.nivelActual === NivelRol.Refugio) mascotas = mascotas.filter(m => m.refugioId === this.usuarioActual().refugioId);
       if (parametros?.refugioId !== undefined) mascotas = mascotas.filter(m => m.refugioId === Number(parametros.refugioId));
       for (const campo of ['especieId', 'razaId', 'tamanoId', 'sexo', 'estado'] as const) {
@@ -342,7 +415,7 @@ export class ClienteDemo extends ClienteApi {
         return { id: m.id, nombre: m.nombre, especie: ESPECIES.find(e => e.id === m.especieId)!.nombre,
           raza: RAZAS.find(r => r.id === m.razaId)?.nombre ?? null, tamano: TAMANOS.find(t => t.id === m.tamanoId)!.nombre,
           sexo: m.sexo, edadAproximada: m.edadAproximada, estado: m.estado,
-          fotoPrincipal: m.multimedia.find(a => a.esPrincipal)?.archivo ?? mascotasResumen().find(a => a.id === m.id)?.fotoPrincipal ?? null,
+          fotoPrincipal: m.multimedia.find(a => a.activo && a.esPrincipal)?.archivo ?? mascotasResumen().find(a => a.id === m.id)?.fotoPrincipal ?? null,
           refugioId: refugio.id, refugioNombre: refugio.nombre, refugioVerificado: refugio.estadoVerificacion === EstadoVerificacion.Verificado,
           fechaUltimaActualizacion: m.fechaUltimaActualizacion, puntajeCompatibilidad: null };
       });
