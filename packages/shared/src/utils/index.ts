@@ -3,3 +3,5 @@ export * from './validacion';
 export * from './perfil';
 export * from './recuperacion';
 export * from './refugios';
+
+export * from './mascotas';

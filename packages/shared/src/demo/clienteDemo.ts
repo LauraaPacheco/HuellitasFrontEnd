@@ -11,7 +11,9 @@ import type { Usuario, PerfilAdoptanteDto, EditarPerfilDto } from '../types/usua
 import { validarRefugio, normalizarRefugio } from '../utils/refugios';
 import type { Refugio, SolicitudRefugioDto, EditarRefugioDto } from '../types/refugios';
 import { validarDatosPersonales, validarPerfilAdoptante } from '../utils/perfil';
-import { EstadoVerificacion, NivelRol } from '../types/enums';
+import { EstadoMascota, EstadoVerificacion, NivelRol } from '../types/enums';
+import { validarMascota, estadosManualesMascota } from '../utils/mascotas';
+import type { Mascota, MascotaResumen, CrearMascotaDto, EditarMascotaDto, CambioEstadoMascotaDto } from '../types/mascotas';
 import type { Paginado } from '../types/comun';
 import {
   COLORES,
@@ -60,6 +62,7 @@ export class ClienteDemo extends ClienteApi {
   /** Nivel del usuario con sesion iniciada; null si nadie entro. */
   private nivelActual: NivelRol | null = null;
   private readonly refugios: Refugio[] = REFUGIOS.map(r => ({ ...r, requisitos: [...r.requisitos] }));
+  private readonly mascotas: Mascota[] = mascotasResumen().map(m => mascotaCompleta(m.id)!);
   private recuperacionSolicitada = false;
   private recuperacionUsada = false;
   private readonly usuariosEditados = new Map<NivelRol, Usuario>();
@@ -267,44 +270,83 @@ export class ClienteDemo extends ClienteApi {
       return mascotasResumen().slice(0, 3);
     }
 
-    const coincideMascota = /\/api\/mascotas\/(\d+)$/.exec(ruta);
-    if (coincideMascota) {
-      const mascota = mascotaCompleta(Number(coincideMascota[1]));
-      if (!mascota) {
-        throw new ErrorHttp({ titulo: 'No encontramos esa mascota', estadoHttp: 404 });
+    const exigirRefugio = (mascota?: Mascota) => {
+      const usuario = this.usuarioActual();
+      const refugio = this.refugios.find(r => r.id === usuario.refugioId);
+      if (usuario.rol.nivel !== NivelRol.Refugio || !refugio || refugio.estadoVerificacion !== EstadoVerificacion.Verificado || !refugio.activo || (mascota && mascota.refugioId !== refugio.id)) {
+        throw new ErrorHttp({ titulo: 'Solo el refugio verificado propietario puede gestionar esta mascota.', estadoHttp: 403 });
       }
-      return mascota;
+      return refugio;
+    };
+    const preparar = (datos: CrearMascotaDto, anterior?: Mascota) => {
+      const errores = validarMascota(datos);
+      if (Object.keys(errores).length) throw new ErrorHttp({ titulo: 'Revisa los datos de la mascota.', estadoHttp: 400, errores: Object.fromEntries(Object.entries(errores).map(([k,v]) => [k, [v]])) });
+      const valido = (opciones: readonly { id: number; activo: boolean }[], id: number, previo?: number) => opciones.some(o => o.id === id && (o.activo || id === previo));
+      if (!valido(ESPECIES, datos.especieId, anterior?.especieId) || !valido(TAMANOS, datos.tamanoId, anterior?.tamanoId) || !valido(COLORES, datos.colorId, anterior?.colorId) ||
+          (datos.razaId !== undefined && !RAZAS.some(r => r.id === datos.razaId && r.especieId === datos.especieId && (r.activo || r.id === anterior?.razaId))) ||
+          datos.temperamentoIds.some(id => !valido(TEMPERAMENTOS, id, anterior?.temperamentos.find(t => t.id === id)?.id))) {
+        throw new ErrorHttp({ titulo: 'Revisa los catálogos: la raza debe corresponder a la especie y las opciones deben estar activas.', estadoHttp: 400 });
+      }
+      // Campos explícitos: el cuerpo no puede asignar propietario, estado ni multimedia.
+      return { nombre: datos.nombre.trim(), especieId: datos.especieId, razaId: datos.razaId ?? null,
+        tamanoId: datos.tamanoId, colorId: datos.colorId, sexo: datos.sexo,
+        edadAproximada: datos.edadAproximada ?? null, descripcion: datos.descripcion?.trim() || null,
+        esterilizada: datos.esterilizada, procedencia: datos.procedencia, fechaIngreso: datos.fechaIngreso,
+        temperamentos: TEMPERAMENTOS.filter(t => datos.temperamentoIds.includes(t.id)) };
+    };
+    const coincideMascota = /\/api\/mascotas\/(\d+)(?:\/(estado))?$/.exec(ruta);
+    if (coincideMascota) {
+      const indice = this.mascotas.findIndex(m => m.id === Number(coincideMascota[1]));
+      const mascota = this.mascotas[indice];
+      if (!mascota || !mascota.activo) throw new ErrorHttp({ titulo: 'No encontramos esa mascota.', estadoHttp: 404 });
+      if (metodo === 'GET' && !coincideMascota[2]) return mascota;
+      exigirRefugio(mascota);
+      const ahora = new Date().toISOString();
+      if (metodo === 'DELETE' || (metodo === 'PUT' && coincideMascota[2])) {
+        const datos = cuerpo as CambioEstadoMascotaDto;
+        const estado = metodo === 'DELETE' ? EstadoMascota.NoDisponible : datos.nuevoEstado;
+        if (!estadosManualesMascota(mascota.estado).includes(estado)) throw new ErrorHttp({ titulo: 'Este cambio debe gestionarse desde el proceso de adopción o el estado ya cambió.', estadoHttp: 409 });
+        if (estado === EstadoMascota.NoDisponible && !datos.motivo?.trim()) throw new ErrorHttp({ titulo: 'Escribe el motivo de la baja.', estadoHttp: 400 });
+        this.mascotas[indice] = { ...mascota, estado, motivoBaja: estado === EstadoMascota.NoDisponible ? datos.motivo!.trim() : null, fechaModificacion: ahora, fechaUltimaActualizacion: ahora };
+        return undefined;
+      }
+      if (metodo === 'PUT') {
+        const cambios = cuerpo as EditarMascotaDto;
+        const completos: CrearMascotaDto = { ...mascota, razaId: mascota.razaId ?? undefined, edadAproximada: mascota.edadAproximada ?? undefined, descripcion: mascota.descripcion ?? undefined, temperamentoIds: mascota.temperamentos.map(t => t.id), ...cambios };
+        const actualizada = { ...mascota, ...preparar(completos, mascota), fechaModificacion: ahora, fechaUltimaActualizacion: ahora };
+        this.mascotas[indice] = actualizada;
+        return actualizada;
+      }
     }
 
-    if (ruta.endsWith('/api/mascotas')) {
-      let lista = mascotasResumen();
+    if (ruta.endsWith('/api/mascotas') && metodo === 'POST') {
+      const refugio = exigirRefugio();
+      const campos = preparar(cuerpo as CrearMascotaDto);
+      const ahora = new Date().toISOString();
+      const nueva: Mascota = { ...campos, id: Math.max(...this.mascotas.map(m => m.id), 0) + 1,
+        activo: true, fechaCreacion: ahora, fechaModificacion: null, refugioId: refugio.id,
+        estado: EstadoMascota.Disponible, fechaUltimaActualizacion: ahora, motivoBaja: null, multimedia: [], historialClinico: [] };
+      this.mascotas.push(nueva);
+      return nueva;
+    }
+    if (ruta.endsWith('/api/mascotas') && metodo === 'GET') {
+      let mascotas = this.mascotas.filter(m => m.activo);
+      if (this.nivelActual === NivelRol.Refugio) mascotas = mascotas.filter(m => m.refugioId === this.usuarioActual().refugioId);
+      if (parametros?.refugioId !== undefined) mascotas = mascotas.filter(m => m.refugioId === Number(parametros.refugioId));
+      for (const campo of ['especieId', 'razaId', 'tamanoId', 'sexo', 'estado'] as const) {
+        if (parametros?.[campo] !== undefined) mascotas = mascotas.filter(m => m[campo] === Number(parametros[campo]));
+      }
       const texto = String(parametros?.texto ?? '').toLowerCase();
-      if (texto) {
-        lista = lista.filter(
-          (m) =>
-            m.nombre.toLowerCase().includes(texto) ||
-            (m.raza ?? '').toLowerCase().includes(texto) ||
-            m.especie.toLowerCase().includes(texto),
-        );
-      }
-      if (parametros?.especieId !== undefined) {
-        const especie = ESPECIES.find((e) => e.id === Number(parametros.especieId))?.nombre;
-        lista = lista.filter((m) => m.especie === especie);
-      }
-      // El resumen trae la raza por nombre, no por id, asi que hay que
-      // traducir el id igual que con la especie.
-      if (parametros?.razaId !== undefined) {
-        const raza = RAZAS.find((r) => r.id === Number(parametros.razaId))?.nombre;
-        const especie = RAZAS.find((r) => r.id === Number(parametros.razaId))?.especieId;
-        const nombreEspecie = ESPECIES.find((e) => e.id === especie)?.nombre;
-        lista = lista.filter((m) => m.raza === raza && m.especie === nombreEspecie);
-      }
-      // !== undefined y no una comprobacion de verdad: EstadoMascota
-      // empieza en Disponible = 0, asi que `if (parametros.estado)` se
-      // saltaba el filtro justo para el estado mas comun.
-      if (parametros?.estado !== undefined) {
-        lista = lista.filter((m) => m.estado === Number(parametros.estado));
-      }
+      let lista: MascotaResumen[] = mascotas.map(m => {
+        const refugio = this.refugios.find(r => r.id === m.refugioId)!;
+        return { id: m.id, nombre: m.nombre, especie: ESPECIES.find(e => e.id === m.especieId)!.nombre,
+          raza: RAZAS.find(r => r.id === m.razaId)?.nombre ?? null, tamano: TAMANOS.find(t => t.id === m.tamanoId)!.nombre,
+          sexo: m.sexo, edadAproximada: m.edadAproximada, estado: m.estado,
+          fotoPrincipal: m.multimedia.find(a => a.esPrincipal)?.archivo ?? mascotasResumen().find(a => a.id === m.id)?.fotoPrincipal ?? null,
+          refugioId: refugio.id, refugioNombre: refugio.nombre, refugioVerificado: refugio.estadoVerificacion === EstadoVerificacion.Verificado,
+          fechaUltimaActualizacion: m.fechaUltimaActualizacion, puntajeCompatibilidad: null };
+      });
+      if (texto) lista = lista.filter(m => [m.nombre, m.raza, m.especie].some(v => v?.toLowerCase().includes(texto)));
       return paginar(lista, pagina, tamano);
     }
 
