@@ -92,3 +92,9 @@ export function usarCambiarEstadoMascota(id: number) {
 
 // Los catalogos se fueron a @/casos/catalogos: no son mascotas, y los
 // necesitan tambien reportes y la administracion.
+
+export function usarCrearBorradorMascota() {
+  const cliente = useQueryClient();
+  return useMutation({ mutationFn: (datos: CrearMascotaDto) => api.mascotas.crearBorrador(datos),
+    onSuccess: () => { void cliente.invalidateQueries({ queryKey: clavesMascotas.listas() }); } });
+}

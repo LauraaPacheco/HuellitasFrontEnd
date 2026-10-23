@@ -1,3 +1,4 @@
+import './multimedia.css';
 import { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { useSesion } from '@/modulos/autenticacion/ContextoSesion';
@@ -53,7 +54,7 @@ export function PaginaMascotas() {
     <>
       <Encabezado
         titulo="Mascotas"
-        resumen={data ? `${data.total} publicadas` : undefined}
+        resumen={data ? `${data.total} fichas` : undefined}
         acciones={publicar}
       />
 
@@ -178,10 +179,10 @@ export function PaginaMascotas() {
               return (
                 <tr key={mascota.id}>
                   <td>
-                    <span className="tabla__nombre">{mascota.nombre}</span>
+                    <div className="mascota-miniatura">{mascota.fotoPrincipal && <img src={mascota.fotoPrincipal} alt={`Foto principal de ${mascota.nombre}`} loading="lazy" />}<div><span className="tabla__nombre">{mascota.nombre}</span>
                     <span className="tabla__detalle">
                       {mascota.raza ?? 'Sin raza definida'} · {mascota.tamano}
-                    </span>
+                    </span></div></div>
                   </td>
                   <td className="tabla__detalle">{mascota.especie}</td>
                   <td className="tabla__detalle">{mascota.refugioNombre}</td>
@@ -198,7 +199,7 @@ export function PaginaMascotas() {
                   <td>
                     <Insignia estado={ESTADO_MASCOTA[mascota.estado]} />
                   </td>
-                  {esRefugio && <td><Link className="boton boton--primario mascota-enlace" to={`/mascotas/${mascota.id}/editar`}>Gestionar<span className="visualmente-oculto"> a {mascota.nombre}</span></Link></td>}
+                  {esRefugio && <td><Link className="boton boton--primario mascota-enlace" to={`/mascotas/${mascota.id}/editar`}>{mascota.estado === EstadoMascota.Borrador ? 'Continuar publicación' : 'Gestionar'}<span className="visualmente-oculto"> a {mascota.nombre}</span></Link></td>}
                 </tr>
               );
             })}

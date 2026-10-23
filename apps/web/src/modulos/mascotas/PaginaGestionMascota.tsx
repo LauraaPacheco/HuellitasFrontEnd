@@ -1,9 +1,11 @@
+import { PasosPublicacion, RevisionPublicacion } from './PublicacionPorPasos';
+import { GestionMultimedia } from './GestionMultimedia';
 import { Calendario } from '@/componentes/ui/Calendario/Calendario';
 import { useState, type FormEvent } from 'react';
-import { Link, useNavigate, useParams } from 'react-router-dom';
+import { Link, useNavigate, useParams, useLocation } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { ErrorHttp, EstadoMascota, EstadoVerificacion, ESTADO_MASCOTA, Procedencia, Sexo, validarMascota, estadosManualesMascota, type CrearMascotaDto, type Mascota, type OpcionCatalogo } from '@huellitas/shared';
-import { usarMascota, usarCrearMascota, usarEditarMascota, usarCambiarEstadoMascota } from '@/casos/mascotas';
+import { usarMascota, usarCrearBorradorMascota, usarEditarMascota, usarCambiarEstadoMascota } from '@/casos/mascotas';
 import { usarEspecies, usarRazas, usarTamanos, usarColores, usarTemperamentos, opcionesElegibles } from '@/casos/catalogos';
 import { api } from '@/lib/api';
 import { useSesion } from '@/modulos/autenticacion/ContextoSesion';
@@ -20,6 +22,9 @@ const errorTexto = (error: Error) => error instanceof ErrorHttp ? error.detalle 
 
 export function PaginaGestionMascota() {
   const { id: parametro } = useParams();
+  const ubicacion = useLocation();
+  const navegar = useNavigate();
+  const [multimediaPendiente, setMultimediaPendiente] = useState(false);
   const id = parametro === undefined ? undefined : Number(parametro);
   const { usuario } = useSesion();
   const refugioId = usuario?.refugioId;
@@ -32,13 +37,31 @@ export function PaginaGestionMascota() {
   if (refugio.isError || (id !== undefined && mascota.isError)) return <EstadoVacio titulo="No pudimos cargar la información" descripcion="Revisa tu conexión o el identificador de la mascota." accion={<><Boton onClick={() => { void refugio.refetch(); if (id) void mascota.refetch(); }}>Reintentar</Boton>{volver}</>} />;
   if (refugio.data?.estadoVerificacion !== EstadoVerificacion.Verificado || !refugio.data.activo) return <EstadoVacio titulo="Tu refugio necesita estar verificado" descripcion="El administrador debe verificarlo antes de publicar o gestionar mascotas." accion={volver} />;
   if (mascota.data && mascota.data.refugioId !== refugioId) return <EstadoVacio ilustracion="bloqueo" titulo="Esta mascota pertenece a otro refugio" descripcion="Solo puedes gestionar las mascotas de tu refugio." accion={volver} />;
+  const asistente = !id || mascota.data?.estado === EstadoMascota.Borrador;
+  const valorPaso = new URLSearchParams(ubicacion.search).get('paso');
+  const paso = !id ? 1 : valorPaso === 'fotos' ? 2 : valorPaso === 'revision' ? 3 : 1;
+  function irPaso(destino: number) {
+    if (!id || multimediaPendiente) return;
+    navegar(`/mascotas/${id}/editar?paso=${destino === 1 ? 'informacion' : destino === 2 ? 'fotos' : 'revision'}`);
+    window.scrollTo({ top: 0 });
+  }
   return <>
-    <Encabezado titulo={id ? `Editar a ${mascota.data?.nombre ?? 'tu mascota'}` : 'Publicar mascota'} resumen="Completa su información para ayudarle a encontrar un hogar." acciones={volver} />
-    <FormularioMascota key={id ?? 'nueva'} mascota={mascota.data} />
+    <Encabezado titulo={asistente ? (mascota.data ? `Publicar a ${mascota.data.nombre}` : 'Publicar mascota') : `Editar a ${mascota.data?.nombre ?? 'tu mascota'}`} resumen={asistente ? 'Completa los pasos y revisa la ficha antes de publicarla.' : 'Actualiza su información y sus fotos.'} acciones={volver} />
+    {ubicacion.state?.mensaje && <p role="status" className="mascotas-mensaje">{ubicacion.state.mensaje}</p>}
+    {asistente && <PasosPublicacion paso={paso} bloqueado={multimediaPendiente} alCambiar={irPaso} />}
+    {(!asistente || paso === 1) && <FormularioMascota key={id ?? 'nueva'} mascota={mascota.data} asistente={asistente}
+      alContinuar={guardada => { navegar(`/mascotas/${guardada.id}/editar?paso=fotos`, { replace: !id }); window.scrollTo({ top: 0 }); }} />}
+    {mascota.data && (!asistente || paso === 2) && <>
+      {asistente && <p className="publicacion-aviso">La ficha sigue en borrador. Puedes añadir fotos y videos o continuar sin archivos por ahora.</p>}
+      <GestionMultimedia mascota={mascota.data} enfocar={!asistente && ubicacion.hash === '#multimedia'} alCambiarActividad={setMultimediaPendiente} />
+      {asistente && <><div className="publicacion-navegacion"><Boton disabled={multimediaPendiente} onClick={() => irPaso(1)}>← Anterior</Boton><Boton variante="primario" disabled={multimediaPendiente} onClick={() => irPaso(3)}>Continuar a revisión →</Boton></div>{multimediaPendiente && <p role="status" className="mascota-ayuda">Carga o descarta los archivos seleccionados y termina la operación antes de cambiar de paso.</p>}</>}
+    </>}
+    {asistente && paso === 3 && mascota.data && <RevisionPublicacion mascota={mascota.data} alVolver={irPaso} alCambiarActividad={setMultimediaPendiente} />}
+
   </>;
 }
 
-function FormularioMascota({ mascota }: { mascota?: Mascota }) {
+function FormularioMascota({ mascota, asistente, alContinuar }: { mascota?: Mascota; asistente: boolean; alContinuar: (guardada: Mascota) => void }) {
   const navegar = useNavigate();
   const [datos, setDatos] = useState<CrearMascotaDto>(() => mascota ? {
     nombre: mascota.nombre, especieId: mascota.especieId, razaId: mascota.razaId ?? undefined,
@@ -51,7 +74,7 @@ function FormularioMascota({ mascota }: { mascota?: Mascota }) {
   const [errores, setErrores] = useState<Record<string, string>>({});
   const especies = usarEspecies(); const razas = usarRazas(datos.especieId || undefined);
   const tamanos = usarTamanos(); const colores = usarColores(); const temperamentos = usarTemperamentos();
-  const crear = usarCrearMascota(); const editar = usarEditarMascota(mascota?.id ?? 0);
+  const crear = usarCrearBorradorMascota(); const editar = usarEditarMascota(mascota?.id ?? 0);
   const guardar = mascota ? editar : crear;
   const catalogos = [especies, tamanos, colores, temperamentos, ...(datos.especieId ? [razas] : [])];
   const requeridos = [{ consulta: especies, valor: datos.especieId }, { consulta: tamanos, valor: datos.tamanoId }, { consulta: colores, valor: datos.colorId }];
@@ -64,7 +87,7 @@ function FormularioMascota({ mascota }: { mascota?: Mascota }) {
     evento.preventDefault();
     if (guardar.isPending || !catalogosListos) return;
     const nuevos = validarMascota(datos); setErrores(nuevos);
-    if (!Object.keys(nuevos).length) guardar.mutate(datos, { onSuccess: () => navegar('/mascotas', { state: { mensaje: mascota ? 'Los cambios se guardaron.' : 'La mascota se publicó correctamente.' } }) });
+    if (!Object.keys(nuevos).length) guardar.mutate(datos, { onSuccess: guardada => asistente ? alContinuar(guardada) : navegar('/mascotas', { state: { mensaje: 'Los cambios se guardaron.' } }) });
   }
   function selector(campo: 'especieId' | 'razaId' | 'tamanoId' | 'colorId', etiqueta: string, consulta: typeof especies, requerido = true) {
     return <SelectorCatalogo id={`mascota-${campo}`} etiqueta={etiqueta} opciones={consulta.data as readonly OpcionCatalogo[] | undefined}
@@ -74,7 +97,7 @@ function FormularioMascota({ mascota }: { mascota?: Mascota }) {
       bloqueadoPor={campo === 'razaId' && !datos.especieId ? 'Elige primero una especie' : undefined} />;
   }
   return <div className="mascota-gestion">
-    {mascota && <GestionEstado mascota={mascota} />}
+    {mascota && !asistente && <GestionEstado mascota={mascota} />}
     <form className="mascota-formulario" onSubmit={enviar} noValidate>
       <fieldset disabled={guardar.isPending}>
         <legend>Información de la mascota</legend>
@@ -100,7 +123,7 @@ function FormularioMascota({ mascota }: { mascota?: Mascota }) {
         {!catalogosListos && <p className="mascota-ayuda">Espera a que carguen los catálogos. Si no hay especies, tamaños o colores, el administrador debe configurarlos antes de publicar.</p>}
         {Object.keys(errores).length > 0 && <p role="alert" className="campo__error">Revisa los campos indicados antes de guardar.</p>}
         {guardar.isError && <p role="alert" className="campo__error">{errorTexto(guardar.error)}</p>}
-        <div className="mascota-acciones"><Boton variante="primario" tipo="submit" cargando={guardar.isPending} disabled={!catalogosListos}>{mascota ? 'Guardar cambios' : 'Publicar mascota'}</Boton><Link className="boton boton--secundario mascota-enlace" to="/mascotas">Cancelar</Link></div>
+        <div className="mascota-acciones"><Boton variante="primario" tipo="submit" cargando={guardar.isPending} disabled={!catalogosListos}>{asistente ? 'Guardar y continuar →' : 'Guardar cambios'}</Boton><Link className="boton boton--secundario mascota-enlace" to="/mascotas">{asistente && mascota ? 'Salir y conservar borrador' : 'Cancelar'}</Link></div>
       </fieldset>
     </form>
   </div>;
