@@ -1,3 +1,4 @@
+import { PaginaGestionMascota } from '@/modulos/mascotas/PaginaGestionMascota';
 import { PaginaVerificacionRefugios } from '@/modulos/refugios/PaginaVerificacionRefugios';
 import { PaginaPerfilRefugio } from '@/modulos/refugios/PaginaPerfilRefugio';
 import { PaginaEditarRefugio } from '@/modulos/refugios/PaginaEditarRefugio';
@@ -101,6 +102,8 @@ export const rutas = createBrowserRouter([
           </RutaProtegida>
         ),
       },
+      { path: 'mascotas/nueva', element: <RutaProtegida niveles={[NivelRol.Refugio]}><PaginaGestionMascota /></RutaProtegida> },
+      { path: 'mascotas/:id/editar', element: <RutaProtegida niveles={[NivelRol.Refugio]}><PaginaGestionMascota /></RutaProtegida> },
       {
         path: 'reportes',
         element: (

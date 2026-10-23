@@ -1,6 +1,10 @@
 import { useState } from 'react';
+import { Link, useLocation } from 'react-router-dom';
+import { useSesion } from '@/modulos/autenticacion/ContextoSesion';
+import './mascotas.css';
 import {
   ESTADO_MASCOTA,
+  NivelRol,
   EstadoMascota,
   formatearFecha,
   tiempoRelativo,
@@ -27,8 +31,12 @@ const FILTRO_INICIAL: FiltroMascota = { pagina: 1, tamanoPagina: 20 };
  * su invalidación viven en @/casos/mascotas.
  */
 export function PaginaMascotas() {
+  const { usuario } = useSesion();
+  const ubicacion = useLocation();
+  const esRefugio = usuario?.rol.nivel === NivelRol.Refugio;
+  const publicar = esRefugio ? <Link className="boton boton--primario mascota-enlace" to="/mascotas/nueva">Publicar mascota</Link> : undefined;
   const [filtro, setFiltro] = useState<FiltroMascota>(FILTRO_INICIAL);
-  const { data, isLoading, isError } = usarMascotas(filtro);
+  const { data, isLoading, isFetching, isError } = usarMascotas({ ...filtro, ...(esRefugio && usuario?.refugioId ? { refugioId: usuario.refugioId } : {}) });
   const { data: especies, isFetching: cargandoEspecies, isError: errorEspecies, refetch: recargarEspecies } = usarEspecies();
   const { data: razas, isFetching: cargandoRazas, isError: errorRazas, refetch: recargarRazas } = usarRazas(filtro.especieId);
 
@@ -46,11 +54,10 @@ export function PaginaMascotas() {
       <Encabezado
         titulo="Mascotas"
         resumen={data ? `${data.total} publicadas` : undefined}
-        acciones={
-          <Boton variante="primario">Publicar mascota</Boton>
-        }
+        acciones={publicar}
       />
 
+      {ubicacion.state?.mensaje && <p role="status" className="mascotas-mensaje">{ubicacion.state.mensaje}</p>}
       <div className="filtros">
         <label className="visualmente-oculto" htmlFor="buscar-mascota">
           Buscar por nombre
@@ -136,7 +143,7 @@ export function PaginaMascotas() {
           ilustracion="durmiendo"
           titulo="Todavía no has publicado mascotas"
           descripcion="Publica la primera y aparecerá en el catálogo de la app."
-          accion={<Boton variante="primario">Publicar mascota</Boton>}
+          accion={publicar}
         />
       )}
 
@@ -150,7 +157,7 @@ export function PaginaMascotas() {
       )}
 
       {data && data.items.length > 0 && (
-        <table className="tabla">
+        <div className="mascotas-tabla"><table className="tabla">
           <thead>
             <tr>
               <th scope="col">Mascota</th>
@@ -158,6 +165,7 @@ export function PaginaMascotas() {
               <th scope="col">Refugio</th>
               <th scope="col">Actualizada</th>
               <th scope="col">Estado</th>
+              {esRefugio && <th scope="col">Acción</th>}
             </tr>
           </thead>
           <tbody>
@@ -190,12 +198,18 @@ export function PaginaMascotas() {
                   <td>
                     <Insignia estado={ESTADO_MASCOTA[mascota.estado]} />
                   </td>
+                  {esRefugio && <td><Link className="boton boton--primario mascota-enlace" to={`/mascotas/${mascota.id}/editar`}>Gestionar<span className="visualmente-oculto"> a {mascota.nombre}</span></Link></td>}
                 </tr>
               );
             })}
           </tbody>
-        </table>
+        </table></div>
       )}
+      {data && data.totalPaginas > 1 && <nav className="mascota-acciones" aria-label="Paginación de mascotas">
+        <Boton disabled={data.pagina <= 1 || isFetching} onClick={() => setFiltro(prev => ({ ...prev, pagina: (prev.pagina ?? 1) - 1 }))}>Anterior</Boton>
+        <span>Página {data.pagina} de {data.totalPaginas}</span>
+        <Boton disabled={data.pagina >= data.totalPaginas || isFetching} onClick={() => setFiltro(prev => ({ ...prev, pagina: (prev.pagina ?? 1) + 1 }))}>Siguiente</Boton>
+      </nav>}
     </>
   );
 }

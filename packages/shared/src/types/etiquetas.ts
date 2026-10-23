@@ -65,9 +65,9 @@ export const ESTADO_VERIFICACION: Record<EstadoVerificacion, DescriptorEstado> =
 
 export const ESTADO_MASCOTA: Record<EstadoMascota, DescriptorEstado> = {
   [EstadoMascota.Disponible]: { etiqueta: 'Disponible', tono: 'marca' },
-  [EstadoMascota.EnProceso]: { etiqueta: 'En proceso', tono: 'neutro' },
-  [EstadoMascota.Adoptada]: { etiqueta: 'Adoptada', tono: 'neutro' },
-  [EstadoMascota.NoDisponible]: { etiqueta: 'No disponible', tono: 'neutro' },
+  [EstadoMascota.EnProceso]: { etiqueta: 'En proceso', tono: 'advertencia' },
+  [EstadoMascota.Adoptada]: { etiqueta: 'Adoptada', tono: 'acento' },
+  [EstadoMascota.NoDisponible]: { etiqueta: 'No disponible', tono: 'peligro' },
 };
 
 export const ESTADO_SOLICITUD: Record<EstadoSolicitud, DescriptorEstado> = {

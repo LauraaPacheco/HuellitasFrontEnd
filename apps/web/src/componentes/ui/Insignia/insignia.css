@@ -13,6 +13,6 @@
 .insignia::before { content: ''; width: 6px; height: 6px; border-radius: 50%; background: currentColor; flex-shrink: 0; }
 .insignia--neutro { background: var(--surface-200); color: var(--ink-muted); }
 .insignia--marca { background: color-mix(in srgb, var(--brand-strong) 12%, var(--surface-100)); color: var(--brand-strong); }
-.insignia--acento { background: color-mix(in srgb, var(--accent) 12%, var(--surface-100)); color: var(--ink); }
+.insignia--acento { background: color-mix(in srgb, var(--accent) 12%, var(--surface-100)); color: var(--accent); }
 .insignia--advertencia { background: color-mix(in srgb, var(--warn) 12%, var(--surface-100)); color: var(--warn); }
 .insignia--peligro { background: color-mix(in srgb, var(--danger) 12%, var(--surface-100)); color: var(--danger); }

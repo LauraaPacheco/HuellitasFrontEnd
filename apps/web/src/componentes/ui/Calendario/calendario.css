@@ -1,0 +1,31 @@
+.calendario__abrir { display: flex; align-items: center; justify-content: space-between; gap: 12px; text-align: left; color: var(--ink); cursor: pointer; width: 100%; }
+.calendario__ayuda { color: var(--ink-muted); margin: 0 0 24px; }
+.calendario__navegacion { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 20px; }
+.calendario__periodo { display: flex; gap: 8px; }
+.calendario__periodo select, .calendario__periodo input { border: 1px solid var(--border); background: var(--surface-200); color: var(--ink); border-radius: 10px; padding: 10px; font: inherit; font-weight: 600; min-width: 0; }
+.calendario__periodo input { width: 85px; }
+.calendario__flecha { width: 38px; height: 40px; border: 1px solid var(--border); border-radius: 10px; background: var(--surface-100); color: var(--ink); cursor: pointer; font-size: 24px; }
+.calendario__flecha:disabled { opacity: .35; cursor: default; }
+.calendario__semana, .calendario__dias { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 5px; text-align: center; }
+.calendario__semana { margin-bottom: 8px; font-size: 13px; font-weight: 600; color: var(--ink-muted); }
+.calendario__dias button { min-height: 40px; border: 1px solid transparent; border-radius: 12px; background: var(--surface-100); color: var(--ink); font: inherit; cursor: pointer; }
+.calendario__dias button:hover:enabled { background: var(--surface-300); }
+.calendario__dias button[aria-current] { border-color: var(--brand); }
+.calendario__dias button[aria-pressed='true'] { background: var(--brand-strong); color: var(--on-brand); font-weight: 700; }
+.calendario__dias button:disabled { opacity: .3; cursor: default; }
+.calendario__pie { display: flex; justify-content: space-between; gap: 12px; margin-top: 24px; }
+@media (max-width: 380px) { .calendario__periodo select, .calendario__periodo input { padding: 8px 4px; } .calendario__periodo input { width: 70px; } }
+.calendario__periodo select {
+  appearance: none;
+  -webkit-appearance: none;
+  padding-right: 36px;
+  background-image: var(--icono-desplegable);
+  background-repeat: no-repeat;
+  background-position: right 12px center;
+  background-size: 16px;
+}
+@media (max-width: 380px) {
+  .calendario__navegacion { flex-wrap: wrap; }
+  .calendario__periodo { order: -1; flex-basis: 100%; justify-content: center; }
+  .calendario__flecha { flex-shrink: 0; width: 44px; }
+}

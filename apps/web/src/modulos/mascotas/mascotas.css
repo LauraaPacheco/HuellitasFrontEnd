@@ -1,0 +1,28 @@
+.mascota-gestion { width: 100%; min-width: 0; display: grid; gap: var(--space-5); }
+.mascota-formulario, .mascota-estado { background: var(--surface-100); border: 1px solid var(--border); border-radius: 20px; padding: clamp(18px, 3vw, 32px); }
+.mascota-formulario fieldset { border: 0; padding: 0; margin: 0; min-width: 0; display: grid; gap: var(--space-5); }
+.mascota-formulario legend { font-size: 20px; font-weight: 700; padding: 0 0 var(--space-4); }
+.mascota-formulario__grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--space-5); }
+.mascota-ayuda { color: var(--ink-muted); margin: 0; line-height: 1.6; }
+.mascota-opcion { display: flex; align-items: center; gap: 10px; }
+.mascota-opcion input { width: 18px; height: 18px; accent-color: var(--brand); }
+.mascota-temperamentos__opciones, .mascota-acciones { display: flex; flex-wrap: wrap; gap: var(--space-4); }
+.mascota-acciones { margin-top: var(--space-5); }
+.mascota-estado { display: flex; align-items: center; justify-content: space-between; gap: var(--space-4); flex-wrap: wrap; }
+.mascotas-tabla { overflow-x: auto; }
+.mascotas-mensaje { border: 1px solid var(--brand); background: var(--surface-200); border-radius: 12px; padding: var(--space-4); margin-bottom: var(--space-4); }
+@media (max-width: 640px) { .mascota-formulario__grid { grid-template-columns: 1fr; } .mascota-acciones > * { flex: 1; } }
+
+a.mascota-enlace { text-decoration: none; }
+
+.mascota-formulario textarea.campo__control { height: auto; min-height: 120px; padding: 16px; line-height: 1.6; resize: vertical; }
+.mascota-estado { background: linear-gradient(115deg, var(--surface-200), var(--surface-100)); padding: 24px 28px; }
+.mascota-estado__informacion { display: flex; align-items: flex-start; gap: 18px; flex: 1; min-width: 0; }
+.mascota-estado__informacion h2 { margin: 0 0 12px; font-size: 18px; }
+.mascota-estado__icono { display: grid; place-items: center; flex: 0 0 46px; height: 46px; border: 1px solid var(--border); border-radius: 14px; background: var(--surface-100); color: var(--brand-strong); font-size: 26px; }
+.mascota-estado__resumen { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+.mascota-estado__resumen p, .mascota-estado__motivo { margin: 0; color: var(--ink-muted); font-size: 14px; line-height: 1.6; }
+.mascota-estado__motivo { margin-top: 10px; }
+@media (max-width: 640px) { .mascota-estado { padding: 20px; } .mascota-estado > .boton { width: 100%; } }
+
+.mascota-estado__nota { font-size: 13px; line-height: 1.5; color: var(--ink-muted); margin: 8px 0 0; }
