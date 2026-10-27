@@ -1,5 +1,7 @@
 # HU-MAS-02 Catálogos paramétricos
 
+> Actualización de integración real: consultar [INTEGRACION-BACKEND.md](INTEGRACION-BACKEND.md). Los contratos propuestos y recorridos demo descritos abajo se conservan como contexto y no sustituyen esa revisión.
+
 Estado: base de consumo del front implementada y probada en demo. Integración
 con backend pendiente; esta HU no se declara cerrada de extremo a extremo.
 El formulario de publicación de HU-MAS-01 todavía no forma parte de este cambio.

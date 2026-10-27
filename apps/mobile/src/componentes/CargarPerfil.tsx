@@ -17,7 +17,7 @@ export function CargarPerfil({ children, soloAdoptante = false }: {
   const permitido = !soloAdoptante || usuario?.rol.nivel === NivelRol.Adoptante;
   const consulta = useQuery({
     queryKey: ['mi-perfil', usuario?.correo],
-    queryFn: () => api.usuarios.yo(),
+    queryFn: () => api.usuarios.yo(usuario ?? undefined),
     enabled: !!usuario && permitido,
     staleTime: 0,
     gcTime: 0,

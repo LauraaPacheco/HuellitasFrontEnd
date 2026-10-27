@@ -40,8 +40,8 @@ const almacenWeb = almacenDe(CLAVE_TOKEN);
 
 /**
  * La sesion completa (usuario y refresh token) va aparte del access token.
- * Hace falta porque el backend todavia no expone GET /usuarios/yo: sin
- * esto, al recargar la pagina no habria forma de saber quien entro.
+ * Conserva el contexto de rol y el refresh token; al abrir se actualiza
+ * el perfil desde GET /api/v1/Usuarios/perfil.
  */
 const almacenSesionWeb = almacenDe(CLAVE_SESION);
 

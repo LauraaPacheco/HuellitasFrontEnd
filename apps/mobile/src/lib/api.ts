@@ -39,8 +39,8 @@ const almacenMovil = almacenDe(CLAVE_TOKEN);
 
 /**
  * La sesion completa (usuario y refresh token) va aparte del access token.
- * Hace falta porque el backend todavia no expone GET /usuarios/yo: sin
- * esto, al reabrir la app no habria forma de saber quien entro.
+ * Conserva rol y refresh token; al abrir la app se consulta
+ * GET /api/v1/Usuarios/perfil para actualizar los datos.
  */
 const almacenSesionMovil = almacenDe(CLAVE_SESION);
 

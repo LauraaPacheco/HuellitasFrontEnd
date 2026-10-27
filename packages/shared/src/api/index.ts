@@ -15,6 +15,7 @@ import {
 export * from './client';
 export * from './rutas';
 export * from './sesion';
+export * from './contratosBackend';
 export * from './services';
 
 /** Todos los servicios, ya construidos sobre un mismo cliente. */
@@ -45,9 +46,9 @@ export function crearApi(config: OpcionesApi): ApiHuellitas {
   return {
     cliente,
     autenticacion: new ServicioAutenticacion(cliente),
-    usuarios: new ServicioUsuarios(cliente),
+    usuarios: new ServicioUsuarios(cliente, config),
     refugios: new ServicioRefugios(cliente),
-    mascotas: new ServicioMascotas(cliente),
+    mascotas: new ServicioMascotas(cliente, config.modoDemo ?? false),
     catalogos: new ServicioCatalogos(cliente),
     adopcion: new ServicioAdopcion(cliente),
     trazabilidad: new ServicioTrazabilidad(cliente),

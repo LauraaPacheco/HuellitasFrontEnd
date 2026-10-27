@@ -40,16 +40,16 @@ export interface MascotaResumen {
   readonly nombre: string;
   readonly especie: string;
   readonly raza: string | null;
-  readonly tamano: string;
+  readonly tamano: string | null;
   readonly sexo: Sexo;
   readonly edadAproximada: number | null;
   readonly estado: EstadoMascota;
   readonly fotoPrincipal: string | null;
-  readonly refugioId: number;
-  readonly refugioNombre: string;
-  readonly refugioVerificado: boolean;
+  readonly refugioId: number | null;
+  readonly refugioNombre: string | null;
+  readonly refugioVerificado: boolean | null;
   /** La encuesta mostro que la informacion vencida es el problema #1 (P4). */
-  readonly fechaUltimaActualizacion: string;
+  readonly fechaUltimaActualizacion: string | null;
   readonly puntajeCompatibilidad: number | null;
 }
 

@@ -16,6 +16,7 @@ export type ErroresFormulario<T> = Partial<Record<keyof T, string>>;
 export function validarDatosPersonales(datos: DatosPersonalesFormulario): ErroresFormulario<DatosPersonalesFormulario> {
   const errores: ErroresFormulario<DatosPersonalesFormulario> = {};
   if (!datos.nombre.trim()) errores.nombre = 'Escribe tu nombre completo.';
+  else if (datos.nombre.trim().length > 120) errores.nombre = 'El nombre admite hasta 120 caracteres.';
   if (!esTelefonoValido(datos.telefono)) errores.telefono = 'El teléfono debe tener 10 dígitos.';
   return errores;
 }
@@ -27,6 +28,8 @@ export function validarPerfilAdoptante(datos: PerfilAdoptanteFormulario): Errore
   }
   if (!datos.espacioDisponible.trim()) errores.espacioDisponible = 'Describe el espacio disponible.';
   if (!datos.tiempoDisponible.trim()) errores.tiempoDisponible = 'Indica cuánto tiempo puedes dedicarle.';
+  if (datos.espacioDisponible.trim().length > 80) errores.espacioDisponible = 'Máximo 80 caracteres.';
+  if (datos.tiempoDisponible.trim().length > 80) errores.tiempoDisponible = 'Máximo 80 caracteres.';
   for (const campo of ['presenciaDeNinos', 'otrasMascotas', 'experienciaPrevia'] as const) {
     if (typeof datos[campo] !== 'boolean') errores[campo] = 'Selecciona Sí o No.';
   }

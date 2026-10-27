@@ -1,5 +1,7 @@
 # Publicación por pasos
 
+> Actualización de integración real: consultar [INTEGRACION-BACKEND.md](INTEGRACION-BACKEND.md). Los contratos propuestos y recorridos demo descritos abajo se conservan como contexto y no sustituyen esa revisión.
+
 La web presenta tres pasos: Información → Fotos y videos → Revisar y publicar.
 HU-MAS-04 añadirá Salud cuando esté implementada. La información obligatoria se
 valida antes de avanzar; fotos y videos son opcionales por ahora y la revisión

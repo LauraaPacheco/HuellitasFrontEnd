@@ -8,6 +8,9 @@ export interface Rol extends EntidadBase {
 }
 
 export interface Usuario extends EntidadBase {
+  readonly fotoUrl?: string | null;
+  readonly politicaAceptada?: string | null;
+  readonly fechaAceptacionPolitica?: string | null;
   readonly rolId: number;
   readonly rol: Rol;
   readonly refugioId: number | null;
@@ -65,6 +68,7 @@ export interface RestablecerDto {
 export interface EditarPerfilDto {
   nombre?: string;
   telefono?: string;
+  fotoUrl?: string | null;
 }
 
 export interface PerfilAdoptanteDto {

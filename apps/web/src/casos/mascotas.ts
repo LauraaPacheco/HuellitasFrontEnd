@@ -38,10 +38,10 @@ export const clavesMascotas = {
 };
 
 /** Listado paginado, con los filtros de búsqueda. */
-export function usarMascotas(filtro: FiltroMascota) {
+export function usarMascotas(filtro: FiltroMascota, inventario = false) {
   return useQuery({
-    queryKey: clavesMascotas.lista(filtro),
-    queryFn: () => api.mascotas.buscar(filtro),
+    queryKey: [...clavesMascotas.lista(filtro), inventario ? 'inventario' : 'catalogo'],
+    queryFn: () => inventario ? api.mascotas.inventario(filtro) : api.mascotas.buscar(filtro),
     // Al cambiar de filtro o de página, deja ver el resultado anterior en
     // vez de vaciar la tabla: evita el salto de la pantalla en blanco.
     placeholderData: (previo) => previo,
