@@ -173,7 +173,7 @@ export default function PantallaConfirmar() {
             <Boton
               titulo="Entrar como visitante"
               variante="secundario"
-              alPresionar={() => router.replace('/(tabs)/catalogo')}
+              alPresionar={() => router.replace('/principal/catalogo')}
             />
             <Text style={[estilos.texto, { color: paleta.inkMuted, fontSize: 13 }]}>
               Sin confirmar puedes mirar el catálogo, pero no postularte ni

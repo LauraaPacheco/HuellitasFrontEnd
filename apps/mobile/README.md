@@ -21,9 +21,9 @@ el SDK del proyecto; no actualices las dependencias automáticamente.
 ## Organización
 
 - `app/` — rutas basadas en archivos (Expo Router)
-  - `(tabs)/` — las cuatro pestañas: catálogo, solicitudes, reportar, perfil
+  - `principal/` — las cuatro pestañas: catálogo, solicitudes, reportar, perfil
   - `login.tsx`, `registro.tsx` — acceso
-  - `mascota/[id].tsx` — ficha de la mascota
+  - `mascota/[mascotaId].tsx` — ficha de la mascota
 - `src/componentes/` — botones, campos, insignias e isotipo
 - `src/lib/` — cliente de la API y contexto de sesión
 - `src/temas/` — paleta según el tema del sistema

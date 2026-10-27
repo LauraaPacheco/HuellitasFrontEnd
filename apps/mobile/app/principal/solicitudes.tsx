@@ -1,7 +1,7 @@
 import { ActivityIndicator, FlatList, StyleSheet, Text, View } from 'react-native';
 import { useQuery } from '@tanstack/react-query';
 import { ESTADO_SOLICITUD, formatearFecha } from '@huellitas/shared';
-import { api } from '@/lib/api';
+import { api, MODO_DEMO } from '@/lib/api';
 import { useSesion } from '@/lib/sesion';
 import { Insignia } from '@/componentes/Insignia';
 import { espaciado, radios, usarPaleta } from '@/temas';
@@ -14,7 +14,7 @@ export default function PantallaSolicitudes() {
   const { data, isLoading } = useQuery({
     queryKey: ['mis-solicitudes'],
     queryFn: () => api.adopcion.misSolicitudes(),
-    enabled: usuario !== null,
+    enabled: MODO_DEMO && usuario !== null,
   });
 
   if (!usuario) {
@@ -22,6 +22,8 @@ export default function PantallaSolicitudes() {
       <AvisoSesion mensaje="Inicia sesión para ver en qué va tu solicitud de adopción." />
     );
   }
+
+  if (!MODO_DEMO) return <View style={estilos.vacio}><Text style={{ color: paleta.ink }}>El seguimiento de solicitudes todavía no está disponible.</Text><Text style={{ color: paleta.inkMuted }}>Al postularte desde una ficha recibirás el código de confirmación. El servidor aún no permite consultar tu historial aquí.</Text></View>;
 
   if (isLoading) return <ActivityIndicator style={{ marginTop: espaciado.s6 }} />;
 

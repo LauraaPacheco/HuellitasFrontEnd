@@ -19,8 +19,8 @@ export default function PantallaMascota() {
   const paleta = usarPaleta();
   const router = useRouter();
   const { usuario } = useSesion();
-  const { id } = useLocalSearchParams<{ id: string }>();
-  const mascotaId = Number(id);
+  const { mascotaId: parametro } = useLocalSearchParams<{ mascotaId: string }>();
+  const mascotaId = Number(parametro);
 
   const { data: mascota, isLoading } = useQuery({
     queryKey: ['mascota', mascotaId],
@@ -85,7 +85,7 @@ export default function PantallaMascota() {
 
       <Boton
         titulo={usuario ? 'Postularme para adoptar' : 'Inicia sesión para postularte'}
-        alPresionar={() => router.push(usuario ? `/(tabs)/solicitudes` : '/login')}
+        alPresionar={() => router.push(usuario ? `/postular/${mascotaId}` : '/login')}
       />
     </ScrollView>
   );

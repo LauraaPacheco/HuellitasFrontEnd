@@ -15,7 +15,22 @@ import type {
 } from '../../types/adopcion';
 
 export class ServicioAdopcion {
-  constructor(private readonly api: ClienteApi) {}
+  constructor(private readonly api: ClienteApi, private readonly modoDemo = false) {}
+
+  /** HU-ADO-01: respuesta reducida del endpoint real, sin inventar el detalle. */
+  async postular(datos: CrearSolicitudDto): Promise<ConfirmacionPostulacion> {
+    if (this.modoDemo) {
+      const mascota = await this.api.get<{ nombre: string }>(RUTAS.mascotas.porId(datos.mascotaId));
+      return { mensaje: 'Simulación demo: esta solicitud no se guarda ni se envía al refugio.', solicitud: {
+        solicitudId: 0, codigo: 'DEMO-SIN-REGISTRO', mascotaNombre: mascota.nombre,
+        fechaEnvio: new Date().toISOString(), estado: 'Simulada',
+      } };
+    }
+    return this.api.post<ConfirmacionPostulacion>('/api/v1/Adopciones', {
+      mascotaId: datos.mascotaId,
+      respuestasFormulario: { ...datos.respuestasFormulario, aceptaCompromisos: datos.aceptaCompromisos },
+    });
+  }
 
   /** Bandeja del refugio. */
   listar(filtro: FiltroSolicitud = {}): Promise<Paginado<SolicitudResumen>> {
@@ -80,4 +95,9 @@ export class ServicioAdopcion {
   constancia(adopcionId: number): Promise<{ url: string }> {
     return this.api.get<{ url: string }>(RUTAS.adopciones.constancia(adopcionId));
   }
+}
+
+export interface ConfirmacionPostulacion {
+  mensaje: string;
+  solicitud: { solicitudId: number; codigo: string; mascotaNombre: string; fechaEnvio: string; estado: string };
 }

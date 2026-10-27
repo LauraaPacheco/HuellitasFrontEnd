@@ -40,15 +40,15 @@ function Navegacion() {
           headerTitleStyle: { fontWeight: '700' },
           contentStyle: { backgroundColor: paleta.surface100 },
           // iOS pone de texto del boton atras el titulo de la pantalla
-          // anterior. Como (tabs) va sin encabezado ni titulo, caia al
-          // nombre de la carpeta y se leia "(tabs)". 'minimal' deja solo
+          // anterior. Como principal va sin encabezado ni titulo, caia al
+          // nombre de la carpeta y se leia "principal". 'minimal' deja solo
           // la flecha. Ojo: expo-router 57 trae su propia copia de
           // react-navigation con la API v7, asi que headerBackTitleVisible
           // (la de v6) no existe aqui aunque el paquete v6 este instalado.
           headerBackButtonDisplayMode: 'minimal',
         }}
       >
-        <Stack.Screen name="(tabs)" options={{ headerShown: false, title: 'Huellitas' }} />
+        <Stack.Screen name="principal" options={{ headerShown: false, title: 'Huellitas' }} />
         <Stack.Screen name="login" options={{ headerShown: false }} />
         <Stack.Screen name="restablecer-contrasena" options={{ title: 'Nueva contraseña' }} />
         <Stack.Screen name="seguridad-cuenta" options={{ title: 'Seguridad de la cuenta' }} />
@@ -60,8 +60,9 @@ function Navegacion() {
           name="olvide-contrasena"
           options={{ title: 'Recuperar contraseña' }}
         />
-        <Stack.Screen name="refugio/[id]" options={{ title: 'Perfil del refugio' }} />
-        <Stack.Screen name="mascota/[id]" options={{ title: 'Mascota' }} />
+        <Stack.Screen name="refugio/[refugioId]" options={{ title: 'Perfil del refugio' }} />
+        <Stack.Screen name="postular/[mascotaId]" options={{ title: 'Solicitud de adopción' }} />
+        <Stack.Screen name="mascota/[mascotaId]" options={{ title: 'Mascota' }} />
       </Stack>
     </>
   );

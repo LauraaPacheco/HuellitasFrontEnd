@@ -8,7 +8,7 @@ function IconoTab({ simbolo, color }: { simbolo: string; color: ColorValue }) {
   return <Text style={{ color, fontSize: 18 }}>{simbolo}</Text>;
 }
 
-export default function LayoutTabs() {
+export default function LayoutPrincipal() {
   const paleta = usarPaleta();
   const margenes = useSafeAreaInsets();
 

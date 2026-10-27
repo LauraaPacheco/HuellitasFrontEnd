@@ -37,7 +37,7 @@ export default function PantallaLogin() {
     setEnviando(true);
     try {
       await iniciarSesion({ correo, contrasena });
-      router.replace('/(tabs)/catalogo');
+      router.replace('/principal/catalogo');
     } catch (causa) {
       setError(
         causa instanceof ErrorHttp && causa.estadoHttp === 0
@@ -125,7 +125,7 @@ export default function PantallaLogin() {
           escala={escala}
           titulo="Entrar como visitante"
           variante="secundario"
-          alPresionar={() => router.replace('/(tabs)/catalogo')}
+          alPresionar={() => router.replace('/principal/catalogo')}
         />
         <Text style={{ color: paleta.inkMuted, textAlign: 'center', fontSize: 14 * escala }}>
           ¿No tienes cuenta?{' '}

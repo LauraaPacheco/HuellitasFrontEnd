@@ -50,7 +50,7 @@ export function crearApi(config: OpcionesApi): ApiHuellitas {
     refugios: new ServicioRefugios(cliente),
     mascotas: new ServicioMascotas(cliente, config.modoDemo ?? false),
     catalogos: new ServicioCatalogos(cliente),
-    adopcion: new ServicioAdopcion(cliente),
+    adopcion: new ServicioAdopcion(cliente, config.modoDemo ?? false),
     trazabilidad: new ServicioTrazabilidad(cliente),
     reportes: new ServicioReportes(cliente),
     administracion: new ServicioAdministracion(cliente),

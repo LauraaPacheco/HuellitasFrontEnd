@@ -76,7 +76,7 @@ function FormularioAdoptante({ usuario }: { usuario: Usuario }) {
       {error && <Text accessibilityRole="alert" style={{ color: paleta.danger }}>{error}</Text>}
       {guardado && <Text accessibilityRole="alert" style={{ color: paleta.brandStrong }}>Perfil guardado. Completitud: {actual?.perfil?.porcentajeCompletitud ?? 0}%.</Text>}
       <Boton titulo="Guardar perfil" cargando={guardando} alPresionar={() => void guardar()} />
-      <Boton titulo="Volver al perfil" variante="secundario" deshabilitado={guardando} alPresionar={() => router.replace('/(tabs)/perfil')} />
+      <Boton titulo="Volver al perfil" variante="secundario" deshabilitado={guardando} alPresionar={() => router.replace('/principal/perfil')} />
     </ScrollView>
   );
 }

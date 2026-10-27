@@ -11,7 +11,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 export default function PantallaRefugio() {
   const paleta = usarPaleta();
   const margenes = useSafeAreaInsets();
-  const id = Number(useLocalSearchParams<{ id: string }>().id);
+  const id = Number(useLocalSearchParams<{ refugioId: string }>().refugioId);
   const valido = Number.isInteger(id) && id > 0;
   const consulta = useQuery({ queryKey: ['perfil-publico-refugio', id], queryFn: () => api.refugios.obtener(id), enabled: valido, retry: false });
   const refugio = consulta.data;
