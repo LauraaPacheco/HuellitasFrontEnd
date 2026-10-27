@@ -1,3 +1,4 @@
+import { MODO_DEMO } from '@/lib/api';
 import './multimedia.css';
 import { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
@@ -7,11 +8,12 @@ import {
   ESTADO_MASCOTA,
   NivelRol,
   EstadoMascota,
+  Sexo,
   formatearFecha,
   tiempoRelativo,
   type FiltroMascota,
 } from '@huellitas/shared';
-import { usarEspecies, usarRazas } from '@/casos/catalogos';
+import { usarEspecies, usarRazas, usarTamanos } from '@/casos/catalogos';
 import { usarMascotas } from '@/casos/mascotas';
 import { Encabezado } from '@/componentes/layout/Encabezado';
 import { Boton } from '@/componentes/ui/Boton';
@@ -37,15 +39,16 @@ export function PaginaMascotas() {
   const esRefugio = usuario?.rol.nivel === NivelRol.Refugio;
   const publicar = esRefugio ? <Link className="boton boton--primario mascota-enlace" to="/mascotas/nueva">Publicar mascota</Link> : undefined;
   const [filtro, setFiltro] = useState<FiltroMascota>(FILTRO_INICIAL);
-  const { data, isLoading, isFetching, isError } = usarMascotas({ ...filtro, ...(esRefugio && usuario?.refugioId ? { refugioId: usuario.refugioId } : {}) });
+  const { data, isLoading, isFetching, isError } = usarMascotas({ ...filtro, ...(MODO_DEMO && esRefugio && usuario?.refugioId ? { refugioId: usuario.refugioId } : {}) }, esRefugio);
   const { data: especies, isFetching: cargandoEspecies, isError: errorEspecies, refetch: recargarEspecies } = usarEspecies();
   const { data: razas, isFetching: cargandoRazas, isError: errorRazas, refetch: recargarRazas } = usarRazas(filtro.especieId);
 
+  const tamanos = usarTamanos();
   const hayFiltro =
     filtro.texto !== undefined ||
     filtro.estado !== undefined ||
     filtro.especieId !== undefined ||
-    filtro.razaId !== undefined;
+    filtro.razaId !== undefined || filtro.tamanoId !== undefined || filtro.sexo !== undefined;
 
   const cambiar = (parcial: Partial<FiltroMascota>) =>
     setFiltro((previo) => ({ ...previo, pagina: 1, ...parcial }));
@@ -59,7 +62,8 @@ export function PaginaMascotas() {
       />
 
       {ubicacion.state?.mensaje && <p role="status" className="mascotas-mensaje">{ubicacion.state.mensaje}</p>}
-      <div className="filtros">
+      {(MODO_DEMO || !esRefugio) && <div className="filtros">
+        {MODO_DEMO && <>
         <label className="visualmente-oculto" htmlFor="buscar-mascota">
           Buscar por nombre
         </label>
@@ -74,6 +78,7 @@ export function PaginaMascotas() {
           }
         />
 
+        </>}
         <SelectorCatalogo
           id="filtro-especie"
           etiqueta="Filtrar por especie"
@@ -90,6 +95,8 @@ export function PaginaMascotas() {
           alCambiar={(especieId) => cambiar({ especieId, razaId: undefined })}
         />
 
+        {!MODO_DEMO && <><SelectorCatalogo id="filtro-tamano" etiqueta="Filtrar por tamaño" etiquetaOculta opciones={tamanos.data} valor={filtro.tamanoId} alCambiar={tamanoId=>cambiar({tamanoId})} cargando={tamanos.isFetching} errorCarga={tamanos.isError} alReintentar={()=>void tamanos.refetch()} textoVacio="Todos los tamaños" /><label className="visualmente-oculto" htmlFor="filtro-sexo">Filtrar por sexo</label><select id="filtro-sexo" className="filtro-select" value={filtro.sexo ?? ''} onChange={e=>cambiar({sexo:e.target.value === '' ? undefined : Number(e.target.value) as Sexo})}><option value="">Todos los sexos</option><option value={Sexo.Macho}>Macho</option><option value={Sexo.Hembra}>Hembra</option></select></>}
+        {MODO_DEMO && <>
         <SelectorCatalogo
           id="filtro-raza"
           etiqueta="Filtrar por raza"
@@ -128,7 +135,8 @@ export function PaginaMascotas() {
             </option>
           ))}
         </select>
-      </div>
+        </>}
+      </div>}
 
       {isLoading && <p style={{ color: 'var(--ink-muted)' }}>Cargando mascotas…</p>}
 
@@ -172,7 +180,7 @@ export function PaginaMascotas() {
           <tbody>
             {data.items.map((mascota) => {
               const dias = Math.floor(
-                (Date.now() - Date.parse(mascota.fechaUltimaActualizacion)) / 86_400_000,
+                (Date.now() - Date.parse(mascota.fechaUltimaActualizacion ?? '')) / 86_400_000,
               );
               const vencida = dias >= DIAS_PARA_ALERTA;
 
@@ -181,11 +189,11 @@ export function PaginaMascotas() {
                   <td>
                     <div className="mascota-miniatura">{mascota.fotoPrincipal && <img src={mascota.fotoPrincipal} alt={`Foto principal de ${mascota.nombre}`} loading="lazy" />}<div><span className="tabla__nombre">{mascota.nombre}</span>
                     <span className="tabla__detalle">
-                      {mascota.raza ?? 'Sin raza definida'} · {mascota.tamano}
+                      {[mascota.raza ?? 'Sin raza definida', mascota.tamano].filter(Boolean).join(' · ')}
                     </span></div></div>
                   </td>
                   <td className="tabla__detalle">{mascota.especie}</td>
-                  <td className="tabla__detalle">{mascota.refugioNombre}</td>
+                  <td className="tabla__detalle">{mascota.refugioNombre ?? (esRefugio ? 'Mi refugio' : 'Consultar ficha')}</td>
                   {/*
                     La encuesta dejó la información desactualizada como el
                     problema número uno (P4), así que no basta con mostrar
@@ -193,7 +201,7 @@ export function PaginaMascotas() {
                   */}
                   <td className={vencida ? 'tabla__alerta' : 'tabla__detalle'}>
                     <span title={formatearFecha(mascota.fechaUltimaActualizacion)}>
-                      {tiempoRelativo(mascota.fechaUltimaActualizacion)}
+                      {mascota.fechaUltimaActualizacion ? tiempoRelativo(mascota.fechaUltimaActualizacion) : 'Sin fecha de actualización'}
                     </span>
                   </td>
                   <td>

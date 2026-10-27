@@ -48,7 +48,7 @@ const resultado = await build({
       const almacen = { obtener: async () => null, guardar: async () => {}, limpiar: async () => {} };
       const cliente = new ClienteDemo({ urlBase: '', almacen });
       const catalogos = new ServicioCatalogos(cliente);
-      const mascotas = new ServicioMascotas(cliente);
+      const mascotas = new ServicioMascotas(cliente, true);
       for (const metodo of ['especies', 'tamanos', 'colores', 'temperamentos']) {
         const lista = await catalogos[metodo]();
         assert.ok(lista.length > 0);

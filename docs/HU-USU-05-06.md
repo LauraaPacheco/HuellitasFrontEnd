@@ -1,5 +1,7 @@
 # HU-USU-05 y HU-USU-06 Perfiles de usuario
 
+> Actualización de integración real: consultar [INTEGRACION-BACKEND.md](INTEGRACION-BACKEND.md). Los contratos propuestos y recorridos demo descritos abajo se conservan como contexto y no sustituyen esa revisión.
+
 Estado: formularios móviles implementados y probados en demo, pendientes de
 integración real. No se consideran historias cerradas de extremo a extremo.
 

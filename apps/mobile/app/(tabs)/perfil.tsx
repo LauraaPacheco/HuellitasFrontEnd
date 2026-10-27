@@ -34,6 +34,8 @@ export default function PantallaPerfil() {
 
       <Boton titulo="Editar datos personales" variante="secundario" alPresionar={() => router.push('/datos-personales')} />
 
+      <Boton titulo="Seguridad de la cuenta" variante="secundario" alPresionar={() => router.push('/seguridad-cuenta')} />
+
       {usuario.rol.nivel === NivelRol.Adoptante && <View
         style={[
           estilos.tarjeta,

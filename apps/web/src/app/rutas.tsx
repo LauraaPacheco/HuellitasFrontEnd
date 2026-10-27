@@ -1,3 +1,4 @@
+import { PaginaCuenta } from '@/modulos/cuenta/PaginaCuenta';
 import { PaginaGestionMascota } from '@/modulos/mascotas/PaginaGestionMascota';
 import { PaginaVerificacionRefugios } from '@/modulos/refugios/PaginaVerificacionRefugios';
 import { PaginaPerfilRefugio } from '@/modulos/refugios/PaginaPerfilRefugio';
@@ -78,6 +79,7 @@ export const rutas = createBrowserRouter([
       // A donde llega cada quien depende de su rol: mandar a todos a
       // /solicitudes dejaba al adoptante rebotando contra sin-permiso.
       { index: true, element: <InicioSegunRol /> },
+      { path: 'mi-cuenta', element: <PaginaCuenta /> },
       {
         path: 'solicitudes',
         element: (

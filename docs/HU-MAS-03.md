@@ -1,5 +1,7 @@
 # HU-MAS-03 — Fotos y videos
 
+> Actualización de integración real: consultar [INTEGRACION-BACKEND.md](INTEGRACION-BACKEND.md). Los contratos propuestos y recorridos demo descritos abajo se conservan como contexto y no sustituyen esa revisión.
+
 Estado: gestión web y demo en memoria implementadas; pendiente integración
 con backend, almacenamiento definitivo y validación de criterios con el equipo.
 No modifica SQL ni envía archivos a servicios externos.

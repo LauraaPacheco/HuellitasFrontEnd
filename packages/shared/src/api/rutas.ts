@@ -19,7 +19,7 @@ export const RUTAS = {
     restablecer: '/api/v1/Usuarios/restablecer',
   },
   /**
-   * Usuarios, refugios, mascotas y demás módulos siguen pendientes; catálogos
+   * Refugios y los módulos de adopción siguen pendientes; perfiles, mascotas y catálogos
    * ya usa su controlador versionado. Cuando Mateo
    * cree cada controlador, la ruta queda /api/v1/<Controlador>; mientras
    * tanto solo las usa el modo demo.
@@ -27,9 +27,9 @@ export const RUTAS = {
   usuarios: {
     base: '/api/usuarios',
     porId: (id: number) => `/api/usuarios/${id}`,
-    yo: '/api/usuarios/yo',
-    misDatos: '/api/usuarios/yo/datos-personales',
-    perfilAdoptante: '/api/usuarios/yo/perfil-adoptante',
+    yo: '/api/v1/Usuarios/perfil',
+    misDatos: '/api/v1/Usuarios/perfil',
+    perfilAdoptante: '/api/v1/Usuarios/perfil-adoptante',
     cambiarRol: (id: number) => `/api/usuarios/${id}/rol`,
     desactivar: (id: number) => `/api/usuarios/${id}/desactivar`,
   },
@@ -47,12 +47,13 @@ export const RUTAS = {
     calificacionesPorRefugio: (id: number) => `/api/refugios/${id}/calificaciones`,
   },
   mascotas: {
-    base: '/api/mascotas',
-    porId: (id: number) => `/api/mascotas/${id}`,
-    cambiarEstado: (id: number) => `/api/mascotas/${id}/estado`,
-    multimedia: (id: number) => `/api/mascotas/${id}/multimedia`,
-    historialClinico: (id: number) => `/api/mascotas/${id}/historial-clinico`,
-    bitacora: (id: number) => `/api/mascotas/${id}/bitacora`,
+    base: '/api/v1/Mascotas',
+    inventario: '/api/v1/Mascotas/refugio/inventario',
+    porId: (id: number) => `/api/v1/Mascotas/${id}`,
+    cambiarEstado: (id: number) => `/api/v1/Mascotas/${id}/estado`,
+    multimedia: (id: number) => `/api/v1/Mascotas/${id}/multimedia`,
+    historialClinico: (id: number) => `/api/v1/Mascotas/${id}/historial-clinico`,
+    bitacora: (id: number) => `/api/v1/Mascotas/${id}/bitacora`,
     favoritos: '/api/favoritos',
     favoritoPorMascota: (id: number) => `/api/favoritos/${id}`,
     compatibilidad: (id: number) => `/api/match/mascotas/${id}`,

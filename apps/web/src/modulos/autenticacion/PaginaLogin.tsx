@@ -1,5 +1,5 @@
 import { useState, type FormEvent } from 'react';
-import { Link, Navigate, useNavigate } from 'react-router-dom';
+import { Link, Navigate, useNavigate, useLocation } from 'react-router-dom';
 import { ErrorHttp, esCorreoValido } from '@huellitas/shared';
 import { useSesion } from './ContextoSesion';
 import { Isotipo } from '@/componentes/ui/Isotipo';
@@ -13,6 +13,7 @@ import './login.css';
 export function PaginaLogin() {
   const { usuario, iniciarSesion } = useSesion();
   const navegar = useNavigate();
+  const ubicacion = useLocation();
   const [correo, setCorreo] = useState('');
   const [contrasena, setContrasena] = useState('');
   const [error, setError] = useState<string | null>(null);
@@ -94,6 +95,7 @@ export function PaginaLogin() {
             Ingresa con la cuenta del encargado del refugio
           </p>
 
+          {ubicacion.state?.mensaje && <p role="status">{ubicacion.state.mensaje}</p>}
           <AvisoDemo conCredenciales />
 
           <Campo

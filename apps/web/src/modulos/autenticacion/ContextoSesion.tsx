@@ -1,3 +1,4 @@
+import { useQueryClient } from '@tanstack/react-query';
 import {
   createContext,
   useCallback,
@@ -9,7 +10,9 @@ import {
 } from 'react';
 import {
   NivelRol,
+  ErrorHttp,
   type LoginDto,
+  type EditarPerfilDto,
   type SesionGuardada,
   type Usuario,
 } from '@huellitas/shared';
@@ -20,23 +23,18 @@ interface ValorSesion {
   readonly cargando: boolean;
   readonly iniciarSesion: (datos: LoginDto) => Promise<void>;
   readonly cerrarSesion: () => Promise<void>;
+  readonly guardarDatosPersonales: (datos: EditarPerfilDto) => Promise<void>;
   readonly tieneNivel: (...niveles: NivelRol[]) => boolean;
 }
 
 const ContextoSesion = createContext<ValorSesion | null>(null);
 
 export function ProveedorSesion({ children }: { children: ReactNode }) {
+  const cache = useQueryClient();
   const [usuario, setUsuario] = useState<Usuario | null>(null);
   const [cargando, setCargando] = useState(true);
 
-  /**
-   * Al abrir la app recuperamos la sesion de lo que quedo guardado.
-   *
-   * Lo normal seria preguntarle al backend con GET /usuarios/yo, pero ese
-   * endpoint todavia no existe. Mientras tanto confiamos en lo guardado:
-   * si el token ya vencio, la primera llamada protegida respondera 401 y
-   * la app volvera al login sola.
-   */
+  /** Recupera la sesión y consulta el perfil vigente del servidor. */
   useEffect(() => {
     let vigente = true;
     void (async () => {
@@ -44,7 +42,14 @@ export function ProveedorSesion({ children }: { children: ReactNode }) {
         const crudo = await almacenSesion.obtener();
         if (crudo && vigente) {
           const sesion = JSON.parse(crudo) as SesionGuardada;
-          setUsuario(sesion.usuario);
+          try {
+            const actualizado = { ...sesion, usuario: await api.usuarios.yo(sesion.usuario) };
+            if (vigente) { setUsuario(actualizado.usuario); await almacenSesion.guardar(JSON.stringify(actualizado)); }
+          } catch (error) {
+            if (error instanceof ErrorHttp && error.estadoHttp === 401) throw error;
+            // Un fallo temporal de red no elimina una sesión previamente guardada.
+            if (vigente) setUsuario(sesion.usuario);
+          }
         }
       } catch {
         await almacenSesion.limpiar();
@@ -61,10 +66,11 @@ export function ProveedorSesion({ children }: { children: ReactNode }) {
   const iniciarSesion = useCallback(async (datos: LoginDto) => {
     const respuesta = await api.autenticacion.login(datos);
     await almacen.guardar(respuesta.token);
-    const sesion = MODO_DEMO ? { ...respuesta, usuario: await api.usuarios.yo() } : respuesta;
-    await almacenSesion.guardar(JSON.stringify(sesion));
-    setUsuario(sesion.usuario);
-  }, []);
+    try {
+      const sesion = { ...respuesta, usuario: await api.usuarios.yo(respuesta.usuario) };
+      await almacenSesion.guardar(JSON.stringify(sesion)); cache.clear(); setUsuario(sesion.usuario);
+    } catch (error) { await almacen.limpiar(); await almacenSesion.limpiar(); throw error; }
+  }, [cache]);
 
   const cerrarSesion = useCallback(async () => {
     try {
@@ -77,8 +83,20 @@ export function ProveedorSesion({ children }: { children: ReactNode }) {
     } finally {
       await almacen.limpiar();
       await almacenSesion.limpiar();
+      await cache.cancelQueries(); cache.clear();
       setUsuario(null);
     }
+  }, [cache]);
+
+  const guardarDatosPersonales = useCallback(async (datos: EditarPerfilDto) => {
+    const token = await almacen.obtener();
+    if (!token) throw new Error('La sesión terminó.');
+    const actualizado = await api.usuarios.editarPerfil(datos);
+    const crudo = await almacenSesion.obtener();
+    if (!crudo || await almacen.obtener() !== token) throw new Error('La sesión cambió.');
+    const sesion = JSON.parse(crudo) as SesionGuardada;
+    if (sesion.token !== token) throw new Error('La sesión cambió.');
+    await almacenSesion.guardar(JSON.stringify({ ...sesion, usuario: actualizado })); setUsuario(actualizado);
   }, []);
 
   const tieneNivel = useCallback(
@@ -88,8 +106,8 @@ export function ProveedorSesion({ children }: { children: ReactNode }) {
   );
 
   const valor = useMemo<ValorSesion>(
-    () => ({ usuario, cargando, iniciarSesion, cerrarSesion, tieneNivel }),
-    [usuario, cargando, iniciarSesion, cerrarSesion, tieneNivel],
+    () => ({ usuario, cargando, iniciarSesion, cerrarSesion, guardarDatosPersonales, tieneNivel }),
+    [usuario, cargando, iniciarSesion, cerrarSesion, guardarDatosPersonales, tieneNivel],
   );
 
   return <ContextoSesion.Provider value={valor}>{children}</ContextoSesion.Provider>;

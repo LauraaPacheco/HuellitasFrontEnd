@@ -1,5 +1,7 @@
 # HU-MAS-01 — Gestión de mascotas y estados
 
+> Actualización de integración real: consultar [INTEGRACION-BACKEND.md](INTEGRACION-BACKEND.md). Los contratos propuestos y recorridos demo descritos abajo se conservan como contexto y no sustituyen esa revisión.
+
 Estado: implementada en frontend y demo en memoria; pendiente integración y
 validación con backend. No modifica SQL ni inserta animales en la base de datos.
 

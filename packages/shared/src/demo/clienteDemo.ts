@@ -125,7 +125,7 @@ export class ClienteDemo extends ClienteApi {
       if (cuenta) this.nivelActual = cuenta.rol;
     }
     const { metodo = 'GET', cuerpo, parametros } = opciones;
-    const carga = /^\/api\/mascotas\/(\d+)\/multimedia$/.exec(ruta);
+    const carga = /^\/api\/v1\/Mascotas\/(\d+)\/multimedia$/.exec(ruta);
     const respuesta = carga && metodo === 'POST' ? await this.subirArchivoDemo(Number(carga[1]), cuerpo) : this.resolver(ruta, metodo, cuerpo, parametros);
     return esperar(respuesta) as Promise<T>;
   }
@@ -246,11 +246,11 @@ export class ClienteDemo extends ClienteApi {
 
     /* ---------- Usuario de la sesion ---------- */
 
-    if (ruta.endsWith('/usuarios/yo/datos-personales') && metodo === 'GET') {
+    if (ruta.endsWith('/v1/Usuarios/perfil') && metodo === 'GET') {
       return this.usuarioActual();
     }
 
-    if (ruta.endsWith('/usuarios/yo/perfil-adoptante') && metodo === 'PUT') {
+    if (ruta.endsWith('/v1/Usuarios/perfil-adoptante') && metodo === 'PUT') {
       const usuario = this.usuarioActual();
       if (usuario.rol.nivel !== NivelRol.Adoptante) {
         throw new ErrorHttp({ titulo: 'Solo los adoptantes pueden editar este perfil', estadoHttp: 403 });
@@ -274,7 +274,7 @@ export class ClienteDemo extends ClienteApi {
       return perfil;
     }
 
-    if (ruta.endsWith('/usuarios/yo')) {
+    if (ruta.endsWith('/v1/Usuarios/perfil')) {
       const usuario = this.usuarioActual();
       if (metodo === 'GET') return usuario;
       if (metodo === 'PUT') {
@@ -326,7 +326,7 @@ export class ClienteDemo extends ClienteApi {
         esterilizada: datos.esterilizada, procedencia: datos.procedencia, fechaIngreso: datos.fechaIngreso,
         temperamentos: TEMPERAMENTOS.filter(t => datos.temperamentoIds.includes(t.id)) };
     };
-    const accionArchivo = /^\/api\/mascotas\/(\d+)\/multimedia\/(\d+)(\/principal)?$/.exec(ruta);
+    const accionArchivo = /^\/api\/v1\/Mascotas\/(\d+)\/multimedia\/(\d+)(\/principal)?$/.exec(ruta);
     if (accionArchivo) {
       const indice = this.mascotas.findIndex(m => m.id === Number(accionArchivo[1]) && m.activo);
       const mascota = this.mascotas[indice];
@@ -348,7 +348,7 @@ export class ClienteDemo extends ClienteApi {
       return undefined;
     }
 
-    const publicacion = /^\/api\/mascotas\/(\d+)\/publicar$/.exec(ruta);
+    const publicacion = /^\/api\/v1\/Mascotas\/(\d+)\/publicar$/.exec(ruta);
     if (publicacion && metodo === 'POST') {
       const indice = this.mascotas.findIndex(m => m.id === Number(publicacion[1]) && m.activo);
       const mascota = this.mascotas[indice];
@@ -363,7 +363,7 @@ export class ClienteDemo extends ClienteApi {
       return { ...publicada, multimedia: publicada.multimedia.filter(a => a.activo) };
     }
 
-    const coincideMascota = /\/api\/mascotas\/(\d+)(?:\/(estado))?$/.exec(ruta);
+    const coincideMascota = /\/api\/v1\/Mascotas\/(\d+)(?:\/(estado))?$/.exec(ruta);
     if (coincideMascota) {
       const indice = this.mascotas.findIndex(m => m.id === Number(coincideMascota[1]));
       const mascota = this.mascotas[indice];
@@ -374,7 +374,7 @@ export class ClienteDemo extends ClienteApi {
       }
       exigirRefugio(mascota);
       const ahora = new Date().toISOString();
-      if (metodo === 'DELETE' || (metodo === 'PUT' && coincideMascota[2])) {
+      if (metodo === 'DELETE' || (metodo === 'PATCH' && coincideMascota[2])) {
         const datos = cuerpo as CambioEstadoMascotaDto;
         const estado = metodo === 'DELETE' ? EstadoMascota.NoDisponible : datos.nuevoEstado;
         if (!estadosManualesMascota(mascota.estado).includes(estado)) throw new ErrorHttp({ titulo: 'Este cambio debe gestionarse desde el proceso de adopción o el estado ya cambió.', estadoHttp: 409 });
@@ -391,7 +391,7 @@ export class ClienteDemo extends ClienteApi {
       }
     }
 
-    if ((ruta.endsWith('/api/mascotas') || ruta.endsWith('/api/mascotas/borradores')) && metodo === 'POST') {
+    if ((ruta.endsWith('/api/v1/Mascotas') || ruta.endsWith('/api/v1/Mascotas/borradores')) && metodo === 'POST') {
       const refugio = exigirRefugio();
       const campos = preparar(cuerpo as CrearMascotaDto);
       const ahora = new Date().toISOString();
@@ -401,7 +401,7 @@ export class ClienteDemo extends ClienteApi {
       this.mascotas.push(nueva);
       return nueva;
     }
-    if (ruta.endsWith('/api/mascotas') && metodo === 'GET') {
+    if (ruta.endsWith('/api/v1/Mascotas') && metodo === 'GET') {
       let mascotas = this.mascotas.filter(m => m.activo);
       if (this.nivelActual !== NivelRol.Refugio && this.nivelActual !== NivelRol.Administrador) mascotas = mascotas.filter(m => m.estado !== EstadoMascota.Borrador);
       if (this.nivelActual === NivelRol.Refugio) mascotas = mascotas.filter(m => m.refugioId === this.usuarioActual().refugioId);
