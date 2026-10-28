@@ -62,7 +62,7 @@ function Navegacion() {
         />
         <Stack.Screen name="refugio/[refugioId]" options={{ title: 'Perfil del refugio' }} />
         <Stack.Screen name="postular/[mascotaId]" options={{ title: 'Solicitud de adopción' }} />
-        <Stack.Screen name="mascota/[mascotaId]" options={{ title: 'Mascota' }} />
+        <Stack.Screen name="mascota/[mascotaId]" options={{ headerShown: false }} />
       </Stack>
     </>
   );

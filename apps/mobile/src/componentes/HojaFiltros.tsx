@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { ActivityIndicator, Modal, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import Svg, { Circle, Ellipse } from 'react-native-svg';
+import { Cat, Dog, Mars, PawPrint, Venus, type LucideIcon } from 'lucide-react-native';
 import { useQuery } from '@tanstack/react-query';
 import { Sexo, type FiltroMascota, type OpcionCatalogo } from '@huellitas/shared';
 import { api } from '@/lib/api';
@@ -80,7 +80,7 @@ export function HojaFiltros({ visible, filtro, especies, tamanos, cargandoCatalo
             ) : <>
               <Seccion etiqueta="Especie">
                 <Segmentado etiqueta="Especie" valor={borrador.especieId ?? 0}
-                  opciones={[{ valor: 0, etiqueta: 'Todas' }, ...activas.map(e => ({ valor: e.id, etiqueta: e.nombre }))]}
+                  opciones={[{ valor: 0, etiqueta: 'Todas' }, ...activas.map(e => ({ valor: e.id, etiqueta: e.nombre, icono: /perro/i.test(e.nombre) ? Dog : /gato/i.test(e.nombre) ? Cat : PawPrint }))]}
                   alCambiar={v => setBorrador(b => ({ ...b, especieId: v || undefined }))} />
               </Seccion>
 
@@ -95,12 +95,12 @@ export function HojaFiltros({ visible, filtro, especies, tamanos, cargandoCatalo
                           onPress={() => setBorrador(b => ({ ...b, tamanoId: elegido ? undefined : t.id }))}
                           style={[estilos.tarjetaTamano, {
                             borderColor: elegido ? paleta.brand : paleta.border,
-                            backgroundColor: elegido ? paleta.brandTint : paleta.surface100,
+                            backgroundColor: elegido ? paleta.brandStrong : paleta.surface100,
                           }]}>
                           <View style={estilos.icono} accessibilityElementsHidden importantForAccessibility="no-hide-descendants">
-                            <Huella tamano={14 + Math.min(i, 3) * 5} color={elegido ? paleta.brand : paleta.inkMuted} />
+                            <PawPrint size={20 + Math.min(i, 3) * 5} strokeWidth={1.8} color={elegido ? paleta.onBrand : paleta.inkMuted} />
                           </View>
-                          <Text numberOfLines={1} style={{ color: elegido ? paleta.brand : paleta.ink, fontSize: 14, fontWeight: elegido ? '600' : '400' }}>{t.nombre}</Text>
+                          <Text numberOfLines={1} style={{ color: elegido ? paleta.onBrand : paleta.ink, fontSize: 14, fontWeight: elegido ? '600' : '400' }}>{t.nombre}</Text>
                         </Pressable>
                       );
                     })}
@@ -111,7 +111,7 @@ export function HojaFiltros({ visible, filtro, especies, tamanos, cargandoCatalo
 
             <Seccion etiqueta="Sexo">
               <Segmentado etiqueta="Sexo" valor={borrador.sexo ?? -1}
-                opciones={[{ valor: -1, etiqueta: 'Todos' }, { valor: Sexo.Macho, etiqueta: '♂ Macho' }, { valor: Sexo.Hembra, etiqueta: '♀ Hembra' }]}
+                opciones={[{ valor: -1, etiqueta: 'Todos' }, { valor: Sexo.Macho, etiqueta: 'Macho', icono: Mars }, { valor: Sexo.Hembra, etiqueta: 'Hembra', icono: Venus }]}
                 alCambiar={v => setBorrador(b => ({ ...b, sexo: v === -1 ? undefined : v as Sexo }))} />
             </Seccion>
           </ScrollView>
@@ -138,44 +138,33 @@ function Seccion({ etiqueta, children }: { readonly etiqueta: string; readonly c
   );
 }
 
-/** Control segmentado; con más de tres opciones pasa a filas parejas (4 → 2×2). */
+/** Las especies adicionales conservan su espacio en una fila desplazable. */
 function Segmentado({ etiqueta, opciones, valor, alCambiar }: {
   readonly etiqueta: string;
-  readonly opciones: readonly { valor: number; etiqueta: string }[];
+  readonly opciones: readonly { valor: number; etiqueta: string; icono?: LucideIcon }[];
   readonly valor: number;
   readonly alCambiar: (valor: number) => void;
 }) {
   const paleta = usarPaleta();
   return (
-    <View accessibilityRole="radiogroup" accessibilityLabel={etiqueta}
-      style={[estilos.segmentado, { backgroundColor: paleta.surface100, borderColor: paleta.border }]}>
+    <ScrollView horizontal={opciones.length > 3} showsHorizontalScrollIndicator={opciones.length > 3} contentContainerStyle={{ flexGrow: 1 }}><View accessibilityRole="radiogroup" accessibilityLabel={etiqueta}
+      style={[estilos.segmentado, { flex: 1, backgroundColor: paleta.surface100, borderColor: paleta.border }]}>
       {opciones.map(o => {
         const elegida = o.valor === valor;
         return (
           <Pressable key={o.valor} accessibilityRole="radio" accessibilityState={{ checked: elegida }}
             accessibilityLabel={`${etiqueta}: ${o.etiqueta}`} onPress={() => alCambiar(o.valor)}
             style={[estilos.segmento, {
-              flexBasis: opciones.length <= 3 ? 0 : opciones.length === 4 ? '45%' : '30%',
+              flexBasis: 0, minWidth: opciones.length > 3 ? 100 : undefined,
               borderColor: elegida ? paleta.brand : 'transparent',
               backgroundColor: elegida ? paleta.brandTint : 'transparent',
             }]}>
+            {o.icono && <o.icono size={18} color={elegida ? paleta.brand : paleta.ink} strokeWidth={1.8} />}
             <Text numberOfLines={1} style={{ color: elegida ? paleta.brand : paleta.ink, fontSize: 14, fontWeight: elegida ? '600' : '400' }}>{o.etiqueta}</Text>
           </Pressable>
         );
       })}
-    </View>
-  );
-}
-
-function Huella({ tamano, color }: { readonly tamano: number; readonly color: string }) {
-  return (
-    <Svg viewBox="0 0 24 24" width={tamano} height={tamano}>
-      <Ellipse cx="12" cy="16" rx="5.5" ry="4.5" fill={color} />
-      <Circle cx="5" cy="10" r="2.2" fill={color} />
-      <Circle cx="9.2" cy="5.8" r="2.3" fill={color} />
-      <Circle cx="14.8" cy="5.8" r="2.3" fill={color} />
-      <Circle cx="19" cy="10" r="2.2" fill={color} />
-    </Svg>
+    </View></ScrollView>
   );
 }
 
@@ -191,11 +180,11 @@ const estilos = StyleSheet.create({
   titulo: { fontSize: 19, fontWeight: '700' },
   fila: { flexDirection: 'row', flexWrap: 'wrap', gap: espaciado.s2 },
   tarjetaTamano: {
-    flexGrow: 1, flexBasis: '28%', minHeight: 72, gap: espaciado.s1, alignItems: 'center', justifyContent: 'center',
+    flexGrow: 1, flexBasis: '28%', minHeight: 90, gap: espaciado.s1, alignItems: 'center', justifyContent: 'center',
     borderWidth: 1, borderRadius: radios.sm, paddingHorizontal: espaciado.s2,
   },
-  icono: { height: 30, justifyContent: 'flex-end' },
-  segmentado: { flexDirection: 'row', flexWrap: 'wrap', gap: espaciado.s1, padding: espaciado.s1, borderWidth: 1, borderRadius: radios.md },
-  segmento: { flexGrow: 1, minHeight: 40, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderRadius: radios.sm, paddingHorizontal: espaciado.s2 },
+  icono: { height: 34, justifyContent: 'center' },
+  segmentado: { flexDirection: 'row', gap: espaciado.s1, padding: espaciado.s1, borderWidth: 1, borderRadius: radios.md },
+  segmento: { flexDirection: 'row', gap: 6, flexGrow: 1, minHeight: 44, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderRadius: radios.sm, paddingHorizontal: espaciado.s2 },
   aplicar: { minHeight: 52, borderRadius: radios.md, alignItems: 'center', justifyContent: 'center' },
 });

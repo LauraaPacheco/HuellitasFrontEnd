@@ -106,7 +106,7 @@ export default function PantallaCatalogo() {
         alReintentar={() => { void especies.refetch(); void tamanos.refetch(); }}
         alCerrar={() => setFiltrosAbiertos(false)}
         alAplicar={f => {
-          setFiltro(previo => ({ ...previo, ...f, pagina: 1 }));
+          setFiltro(previo => ({ ...previo, especieId: f.especieId, tamanoId: f.tamanoId, sexo: f.sexo, pagina: 1 }));
           setFiltrosAbiertos(false);
         }}
       />
