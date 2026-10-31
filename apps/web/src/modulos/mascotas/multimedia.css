@@ -21,3 +21,9 @@
 @media (max-width: 540px) { .multimedia__acciones > .boton { flex: 1 1 100%; } .multimedia__pendientes { padding: 12px; } }
 .mascota-miniatura { display: flex; align-items: center; gap: 12px; }
 .mascota-miniatura img { width: 56px; height: 56px; object-fit: cover; border-radius: 12px; flex-shrink: 0; }
+.fotos-url { display: grid; gap: 16px; margin-block: 16px; }
+.fotos-url__agregar { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: start; gap: 12px; }
+.fotos-url__agregar > .boton { margin-top: 28px; }
+.fotos-url .multimedia__rejilla { margin-top: 0; padding: 0; list-style: none; }
+@media (max-width: 540px) { .fotos-url__agregar { grid-template-columns: 1fr; } .fotos-url__agregar > .boton { margin-top: 0; } }
+.publicacion-revision > .multimedia__rejilla { padding: 0; list-style: none; }

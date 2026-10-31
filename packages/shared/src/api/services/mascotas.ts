@@ -1,6 +1,7 @@
 import { ErrorHttp, type ClienteApi } from '../client';
 import { paginadoApi, estadoMascotaApi, sexoApi, type PaginadoApi, type ResumenMascotaApi, type DetalleMascotaApi, type FichaMascotaPublica } from '../contratosBackend';
 import { RUTAS } from '../rutas';
+import { validarUrlFoto } from '../../utils/multimedia';
 import type { Paginado } from '../../types/comun';
 import type { Bitacora } from '../../types/trazabilidad';
 import type {
@@ -56,8 +57,11 @@ export class ServicioMascotas {
 
   registrar(datos: CrearMascotaDto): Promise<{ id: number; mensaje: string }> {
     if (!Number.isInteger(datos.edadAproximada ?? 0) || (datos.edadAproximada ?? 0) < 0 || (datos.edadAproximada ?? 0) > 255) throw new ErrorHttp({ titulo: 'La edad debe ser un número entero entre 0 y 255 años.', estadoHttp: 400 });
+    const fotosUrls = (datos.fotosUrls ?? []).map(url => url.trim());
+    const errorFoto = fotosUrls.map((url, i) => validarUrlFoto(url, fotosUrls.slice(0, i))).find(Boolean);
+    if (errorFoto) throw new ErrorHttp({ titulo: errorFoto, estadoHttp: 400 });
     const { nombre, especieId, razaId, tamanoId, colorId, sexo, edadAproximada, descripcion, esterilizada, procedencia } = datos;
-    return this.api.post(RUTAS.mascotas.base, { nombre, especieId, razaId, tamanoId, colorId, sexo, edadAproximada, descripcion, esterilizada, procedencia, fotosUrls: [] });
+    return this.api.post(RUTAS.mascotas.base, { nombre, especieId, razaId, tamanoId, colorId, sexo, edadAproximada, descripcion, esterilizada, procedencia, fotosUrls });
   }
 
   crearBorrador(datos: CrearMascotaDto): Promise<Mascota> {

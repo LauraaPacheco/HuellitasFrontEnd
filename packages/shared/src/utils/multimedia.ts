@@ -4,6 +4,20 @@ export const MAX_VIDEO_BYTES = 25 * 1024 * 1024;
 export const FORMATOS_FOTO = ['image/jpeg', 'image/png', 'image/webp'] as const;
 export const FORMATOS_VIDEO = ['video/mp4', 'video/webm'] as const;
 export function esFoto(tipo: string): boolean { return (FORMATOS_FOTO as readonly string[]).includes(tipo); }
+/** Largo de Multimedia.Archivo en el backend (HasMaxLength(400)). */
+export const MAX_LARGO_URL_FOTO = 400;
+/** Mientras el backend no reciba archivos, la ficha real acepta fotos como URLs públicas. */
+export function validarUrlFoto(url: string, existentes: readonly string[] = []): string | null {
+  const limpia = url.trim();
+  if (!limpia) return 'Pega la dirección de la foto.';
+  if (limpia.length > MAX_LARGO_URL_FOTO) return `La dirección puede tener hasta ${MAX_LARGO_URL_FOTO} caracteres.`;
+  let direccion: URL;
+  try { direccion = new URL(limpia); } catch { return 'Escribe una dirección completa, que empiece por https://'; }
+  if (direccion.protocol !== 'https:' && direccion.protocol !== 'http:') return 'La dirección debe empezar por https://';
+  if (existentes.includes(limpia)) return 'Esa foto ya está en la lista.';
+  if (existentes.length >= MAX_ARCHIVOS_MASCOTA) return `Puedes agregar hasta ${MAX_ARCHIVOS_MASCOTA} fotos.`;
+  return null;
+}
 export function validarArchivoMascota(archivo: { type: string; size: number }): string | null {
   const foto = esFoto(archivo.type);
   if (!foto && !(FORMATOS_VIDEO as readonly string[]).includes(archivo.type)) return 'Elige una foto JPG, PNG o WebP, o un video MP4 o WebM.';

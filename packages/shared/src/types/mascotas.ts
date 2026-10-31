@@ -122,6 +122,8 @@ export interface CrearMascotaDto {
   procedencia: Procedencia;
   fechaIngreso: string;
   temperamentoIds: number[];
+  /** Solo backend real: URLs públicas; la primera queda como foto principal. */
+  fotosUrls?: string[];
 }
 
 export interface EditarMascotaDto extends Partial<CrearMascotaDto> {}
