@@ -80,6 +80,12 @@ export const RUTAS = {
     visitas: '/api/visitas',
   },
   adopciones: {
+    /** Backend real (db3a4fb). */
+    postular: '/api/v1/Adopciones',
+    misSolicitudes: '/api/v1/Adopciones/mis-solicitudes',
+    bandeja: '/api/v1/Adopciones/refugio/bandeja',
+    aprobar: (id: number) => `/api/v1/Adopciones/${id}/aprobar`,
+    rechazar: (id: number) => `/api/v1/Adopciones/${id}/rechazar`,
     base: '/api/adopciones',
     constancia: (id: number) => `/api/adopciones/${id}/constancia`,
   },
