@@ -25,11 +25,16 @@ import { Insignia } from '@/componentes/Insignia';
 import { AvisoDemo } from '@/componentes/AvisoDemo';
 import { espaciado, radios, usarPaleta } from '@/temas';
 
+const UNA_HORA = 60 * 60 * 1000;
+
 export default function PantallaCatalogo() {
   const paleta = usarPaleta();
   const [filtrosAbiertos, setFiltrosAbiertos] = useState(false);
-  const especies=useQuery({queryKey:['catalogos','especies'],queryFn:()=>api.catalogos.especies()});
-  const tamanos=useQuery({queryKey:['catalogos','tamanos'],queryFn:()=>api.catalogos.tamanos()});
+  // Los catálogos solo los usa la hoja de filtros: se piden la primera vez que se abre,
+  // no al entrar al catálogo (que es la pantalla de llegada después del login).
+  const [catalogosPedidos, setCatalogosPedidos] = useState(false);
+  const especies=useQuery({queryKey:['catalogos','especies'],queryFn:()=>api.catalogos.especies(),enabled:catalogosPedidos,staleTime:UNA_HORA});
+  const tamanos=useQuery({queryKey:['catalogos','tamanos'],queryFn:()=>api.catalogos.tamanos(),enabled:catalogosPedidos,staleTime:UNA_HORA});
   const [texto, setTexto] = useState('');
   const [filtro, setFiltro] = useState<FiltroMascota>({ pagina: 1, tamanoPagina: 20 });
   const filtrosAplicados: FiltrosCatalogo = { especieId: filtro.especieId, tamanoId: filtro.tamanoId, sexo: filtro.sexo };
@@ -76,7 +81,7 @@ export default function PantallaCatalogo() {
           <Pressable
             accessibilityRole="button"
             accessibilityLabel={filtrosActivos ? `Filtros, ${filtrosActivos} activos` : 'Filtros'}
-            onPress={() => setFiltrosAbiertos(true)}
+            onPress={() => { setCatalogosPedidos(true); setFiltrosAbiertos(true); }}
             style={({ pressed }) => [
               estilos.botonFiltros,
               {
