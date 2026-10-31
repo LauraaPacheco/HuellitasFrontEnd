@@ -26,11 +26,13 @@ export interface Adopcion extends EntidadBase {
 export interface SolicitudResumen {
   readonly id: number;
   readonly codigo: string;
-  readonly usuarioId: number;
+  /** Opcionales: el resumen del backend real no los devuelve; solo la demo los trae. */
+  readonly usuarioId?: number;
   readonly nombreAdoptante: string;
-  readonly perfilCompleto: boolean;
-  readonly mascotaId: number;
+  readonly perfilCompleto?: boolean;
+  readonly mascotaId?: number;
   readonly nombreMascota: string;
+  readonly fotoMascota?: string | null;
   readonly fechaEnvio: string;
   readonly estado: EstadoSolicitud;
   /** Alimenta el resaltado ambar de las solicitudes demoradas. */
