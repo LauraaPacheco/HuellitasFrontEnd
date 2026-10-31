@@ -52,6 +52,18 @@ describe('Contratos backend 29bbef0',()=>{
     const {api,fetch}=await preparar([{mensaje:'Mascota registrada.',id:9}]);expect(await api.mascotas.registrar(datos)).toEqual({mensaje:'Mascota registrada.',id:9});const cuerpo=JSON.parse(fetch.mock.calls[0][1].body);
     expect(cuerpo).toMatchObject({nombre:'Luna',edadAproximada:0,fotosUrls:[]});expect(cuerpo).not.toHaveProperty('fechaIngreso');expect(cuerpo).not.toHaveProperty('temperamentoIds');
   });
+  it('envía las URLs de fotos en orden, con la principal primero',async()=>{
+    const {api,fetch}=await preparar([{mensaje:'Mascota registrada.',id:9}]);
+    await api.mascotas.registrar({...datos,fotosUrls:[' https://example.com/principal.jpg ','https://example.com/2.png']});
+    expect(JSON.parse(fetch.mock.calls[0][1].body).fotosUrls).toEqual(['https://example.com/principal.jpg','https://example.com/2.png']);
+  });
+  it('rechaza URLs de fotos inválidas o repetidas sin llamar a red',async()=>{
+    const {api,fetch}=await preparar([]);
+    expect(()=>api.mascotas.registrar({...datos,fotosUrls:['ftp://example.com/a.jpg']})).toThrow();
+    expect(()=>api.mascotas.registrar({...datos,fotosUrls:['https://example.com/a.jpg','https://example.com/a.jpg']})).toThrow();
+    expect(()=>api.mascotas.registrar({...datos,fotosUrls:[`https://example.com/${'a'.repeat(400)}.jpg`]})).toThrow();
+    expect(fetch).not.toHaveBeenCalled();
+  });
   it('rechaza edades fraccionarias antes de enviar una petición',async()=>{
     const {api,fetch}=await preparar([]);expect(()=>api.mascotas.registrar({...datos,edadAproximada:0.5})).toThrow();expect(fetch).not.toHaveBeenCalled();
   });
