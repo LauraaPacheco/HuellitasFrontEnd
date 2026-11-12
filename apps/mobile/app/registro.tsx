@@ -1,6 +1,7 @@
 import { useState } from 'react';
-import { ScrollView, StyleSheet, Switch, Text, View } from 'react-native';
-import { useRouter } from 'expo-router';
+import { ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Link, useRouter } from 'expo-router';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import {
   ErrorHttp,
   esCorreoValido,
@@ -11,11 +12,19 @@ import {
 import { api } from '@/lib/api';
 import { Boton } from '@/componentes/Boton';
 import { Campo } from '@/componentes/Campo';
+import { Casilla } from '@/componentes/Casilla';
 import { espaciado, usarPaleta } from '@/temas';
 
+/**
+ * Crear cuenta de adoptante.
+ *
+ * Misma composicion que el login: titulo con su ayuda, campos, la casilla
+ * de la politica y, al final, el enlace para quien ya tiene cuenta.
+ */
 export default function PantallaRegistro() {
   const paleta = usarPaleta();
   const router = useRouter();
+  const { bottom } = useSafeAreaInsets();
   const [nombre, setNombre] = useState('');
   const [correo, setCorreo] = useState('');
   const [telefono, setTelefono] = useState('');
@@ -40,13 +49,7 @@ export default function PantallaRegistro() {
 
     setEnviando(true);
     try {
-      await api.autenticacion.registrar({
-        nombre,
-        correo,
-        telefono,
-        contrasena,
-        aceptaPolitica,
-      });
+      await api.autenticacion.registrar({ nombre, correo, telefono, contrasena, aceptaPolitica });
       // Se lleva el correo para poder reenviar el enlace sin volver a pedirlo.
       router.replace({ pathname: '/confirmar', params: { correo } });
     } catch (causa) {
@@ -63,10 +66,20 @@ export default function PantallaRegistro() {
   return (
     <ScrollView
       style={{ backgroundColor: paleta.surface100 }}
-      contentContainerStyle={estilos.contenido}
+      contentContainerStyle={[estilos.contenido, { paddingBottom: bottom + espaciado.s5 }]}
       keyboardShouldPersistTaps="handled"
+      automaticallyAdjustKeyboardInsets
     >
-      <Campo etiqueta="Nombre completo" valor={nombre} alCambiar={setNombre} autoComplete="name" />
+      <View style={estilos.titulos}>
+        <Text accessibilityRole="header" style={[estilos.titulo, { color: paleta.ink }]}>
+          Crea tu cuenta
+        </Text>
+        <Text style={[estilos.ayuda, { color: paleta.inkMuted }]}>
+          Con tu cuenta puedes postularte a una adopción y seguir tus solicitudes.
+        </Text>
+      </View>
+
+      <Campo etiqueta="Nombre completo" valor={nombre} alCambiar={setNombre} marcador="Como aparece en tu documento" autoComplete="name" />
       <Campo
         etiqueta="Correo"
         valor={correo}
@@ -89,7 +102,7 @@ export default function PantallaRegistro() {
         valor={contrasena}
         alCambiar={setContrasena}
         esContrasena
-        autoComplete="password"
+        autoComplete="new-password"
         ayuda={
           contrasena.length === 0
             ? `Mínimo ${LONGITUD_MINIMA_CONTRASENA} caracteres`
@@ -97,33 +110,35 @@ export default function PantallaRegistro() {
         }
       />
 
-      <View style={estilos.consentimiento}>
-        <Switch
-          value={aceptaPolitica}
-          onValueChange={setAceptaPolitica}
-          accessibilityLabel="Acepto la política de tratamiento de datos"
-          trackColor={{ true: paleta.brand, false: paleta.surface300 }}
-        />
-        <Text style={{ color: paleta.ink, fontSize: 14, lineHeight: 21, flex: 1 }}>
-          Acepto la política de tratamiento de datos conforme a la Ley 1581 de 2012.
-        </Text>
-      </View>
+      <Casilla
+        marcada={aceptaPolitica}
+        alCambiar={setAceptaPolitica}
+        texto="Acepto la política de tratamiento de datos conforme a la Ley 1581 de 2012."
+      />
 
       {error && (
-        <Text style={{ color: paleta.danger, fontSize: 13, fontWeight: '600' }}>{error}</Text>
+        <Text accessibilityRole="alert" style={[estilos.error, { color: paleta.danger }]}>
+          {error}
+        </Text>
       )}
 
       <Boton titulo="Crear cuenta" cargando={enviando} alPresionar={() => void registrar()} />
+
+      <Text style={[estilos.pie, { color: paleta.inkMuted }]}>
+        ¿Ya tienes cuenta?{' '}
+        <Link href="/login" replace style={{ color: paleta.brandStrong, fontWeight: '600', textDecorationLine: 'underline' }}>
+          Inicia sesión
+        </Link>
+      </Text>
     </ScrollView>
   );
 }
 
 const estilos = StyleSheet.create({
-  contenido: { padding: espaciado.s5, gap: espaciado.s4, paddingBottom: espaciado.s7 },
-  consentimiento: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    gap: espaciado.s3,
-    marginTop: espaciado.s2,
-  },
+  contenido: { paddingHorizontal: espaciado.s4, paddingTop: espaciado.s2, gap: espaciado.s4 },
+  titulos: { gap: espaciado.s2, marginBottom: espaciado.s1 },
+  titulo: { fontSize: 28, fontWeight: '700', letterSpacing: -0.5 },
+  ayuda: { fontSize: 15, lineHeight: 23 },
+  error: { fontSize: 13, fontWeight: '600' },
+  pie: { fontSize: 14, textAlign: 'center', marginTop: espaciado.s2 },
 });

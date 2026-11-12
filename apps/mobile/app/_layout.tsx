@@ -1,5 +1,5 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { Stack } from 'expo-router';
+import { DarkTheme, DefaultTheme, Stack, ThemeProvider } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { ProveedorSesion } from '@/lib/sesion';
@@ -29,15 +29,31 @@ export default function LayoutRaiz() {
 
 function Navegacion() {
   const { tema, paleta } = usarTema();
+  // Tema de la navegacion con los colores de Huellitas. Sin esto, el fondo
+  // por defecto (gris claro) se asoma como una linea bajo los encabezados.
+  const base = tema === 'oscuro' ? DarkTheme : DefaultTheme;
+  const temaNavegacion = {
+    ...base,
+    colors: {
+      ...base.colors,
+      background: paleta.surface100,
+      card: paleta.surface100,
+      border: 'transparent',
+      text: paleta.ink,
+      primary: paleta.brandStrong,
+    },
+  };
 
   return (
-    <>
+    <ThemeProvider value={temaNavegacion}>
       <StatusBar style={tema === 'oscuro' ? 'light' : 'dark'} />
       <Stack
         screenOptions={{
           headerStyle: { backgroundColor: paleta.surface100 },
           headerTintColor: paleta.ink,
           headerTitleStyle: { fontWeight: '700' },
+          // Sin linea bajo el encabezado, como en la web: separa el espacio.
+          headerShadowVisible: false,
           contentStyle: { backgroundColor: paleta.surface100 },
           // iOS pone de texto del boton atras el titulo de la pantalla
           // anterior. Como principal va sin encabezado ni titulo, caia al
@@ -54,7 +70,7 @@ function Navegacion() {
         <Stack.Screen name="seguridad-cuenta" options={{ title: 'Seguridad de la cuenta' }} />
         <Stack.Screen name="datos-personales" options={{ title: 'Datos personales' }} />
         <Stack.Screen name="perfil-adoptante" options={{ title: 'Perfil de adoptante' }} />
-        <Stack.Screen name="registro" options={{ title: 'Crear cuenta' }} />
+        <Stack.Screen name="registro" options={{ title: '' }} />
         <Stack.Screen name="confirmar" options={{ title: 'Confirmar correo' }} />
         <Stack.Screen
           name="olvide-contrasena"
@@ -64,6 +80,6 @@ function Navegacion() {
         <Stack.Screen name="postular/[mascotaId]" options={{ title: 'Solicitud de adopción' }} />
         <Stack.Screen name="mascota/[mascotaId]" options={{ headerShown: false }} />
       </Stack>
-    </>
+    </ThemeProvider>
   );
 }

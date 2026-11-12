@@ -80,3 +80,17 @@ El primer comando genera un APK para Android; el segundo, una app para el
 simulador iOS en macOS. Para iPhone físico usa `--profile demo`, con cuenta
 Apple Developer y dispositivo registrado. Ambos perfiles activan la demo sin
 backend. Consulta los pasos iniciales y la firma en el README de la raíz.
+
+## Probar en Expo Go (SDK 58)
+
+Usa Node 24. Si tu terminal utiliza otra versión, puedes iniciar con:
+
+```bash
+# Desde la raíz del repositorio
+npm exec --yes --package=node@24 -- npm run mobile -- --clear
+```
+
+Escanea el QR con el iPhone y conecta el teléfono y el Mac a la misma red Wi-Fi.
+`EXPO_PUBLIC_URL_API` en `.env` debe apuntar a `http://IP_DEL_MAC:5046`;
+el backend debe escuchar en `http://0.0.0.0:5046` (perfil `http`).
+Si cambia la IP del Mac, actualiza `.env` y reinicia Expo.

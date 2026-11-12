@@ -57,7 +57,7 @@ export function Boton({
       {cargando ? (
         <ActivityIndicator color={texto} />
       ) : (
-        <Text style={[estilos.texto, { color: texto, fontSize: 16 * escala }]}>{titulo}</Text>
+        <Text style={[estilos.texto, { color: texto, fontSize: 15 * escala }]}>{titulo}</Text>
       )}
     </Pressable>
   );
@@ -73,7 +73,7 @@ const estilos = StyleSheet.create({
     justifyContent: 'center',
   },
   texto: {
-    fontSize: 16,
+    fontSize: 15,
     fontWeight: '600',
   },
 });
