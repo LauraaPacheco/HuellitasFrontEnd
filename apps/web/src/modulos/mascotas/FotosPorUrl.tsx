@@ -13,7 +13,7 @@ interface Props {
 /**
  * Fotos por URL para la ficha real.
  *
- * El backend todavía no recibe archivos: guarda las direcciones tal cual en
+ * Las imágenes subidas y los enlaces se guardan como direcciones en
  * Multimedia y marca la primera como principal. Por eso "Usar como principal"
  * solo mueve la foto al inicio de la lista.
  */
@@ -23,6 +23,7 @@ export function FotosPorUrl({ fotos, alCambiar, deshabilitado }: Props) {
   const [fallidas, setFallidas] = useState<ReadonlySet<string>>(new Set());
 
   function agregar() {
+    if (deshabilitado) return;
     const problema = validarUrlFoto(url, fotos);
     if (problema) { setError(problema); return; }
     alCambiar([...fotos, url.trim()]);
@@ -40,7 +41,7 @@ export function FotosPorUrl({ fotos, alCambiar, deshabilitado }: Props) {
         <Boton tipo="submit" disabled={deshabilitado || fotos.length >= MAX_ARCHIVOS_MASCOTA}>Agregar foto</Boton>
       </form>
 
-      {fotos.length === 0 ? <p className="multimedia__vacio">Todavía no agregaste fotos. Puedes publicar sin ellas y agregarlas después.</p> : (
+      {fotos.length === 0 ? <p className="multimedia__vacio">Todavía no agregaste fotos. Puedes publicar sin ellas.</p> : (
         <ul className="multimedia__rejilla" aria-label="Fotos agregadas">
           {fotos.map((foto, i) => (
             <li key={foto} className="multimedia__tarjeta">

@@ -2,6 +2,7 @@ import { ESTADO_SOLICITUD, ESTADO_USUARIO, EstadoSolicitud, EstadoUsuario } from
 import { Boton } from '@/componentes/ui/Boton';
 import { BotonTema } from '@/componentes/ui/BotonTema';
 import { Campo } from '@/componentes/ui/Campo';
+import { EstadoError } from '@/componentes/ui/EstadoError';
 import { EstadoVacio } from '@/componentes/ui/EstadoVacio';
 import { Ilustracion, type VarianteIlustracion } from '@/componentes/ui/Ilustracion';
 import { Insignia } from '@/componentes/ui/Insignia';
@@ -81,10 +82,11 @@ export function PaginaGaleria() {
               accion={<Boton>Ver todas</Boton>}
             />
           </Tarjeta>
-          <Tarjeta nombre="Error de carga" nota="Sin ilustración: un error no se adorna">
-            <EstadoVacio
+          <Tarjeta nombre="Error de carga" nota="EstadoError: ocupa la pantalla y explica el fallo según su tipo">
+            <EstadoError
               titulo="No pudimos cargar las solicitudes"
-              descripcion="Revisa tu conexión y vuelve a intentarlo."
+              error={new TypeError('Failed to fetch')}
+              alReintentar={() => undefined}
             />
           </Tarjeta>
         </Rejilla>

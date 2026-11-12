@@ -12,7 +12,6 @@ import type {
   RechazoSolicitudDto,
   SolicitudAdopcion,
   SolicitudResumen,
-  VisitaEntrevista,
 } from '../../types/adopcion';
 
 export class ServicioAdopcion {
@@ -87,10 +86,32 @@ export class ServicioAdopcion {
   }
 
   /** Dispara el cierre en cascada: mascota adoptada y demas solicitudes cerradas. */
-  finalizar(id: number): Promise<Adopcion> {
-    this.soloDemo();
-    return this.api.post<Adopcion>(RUTAS.solicitudes.finalizar(id));
+  async finalizar(id: number): Promise<void> {
+    if (this.modoDemo) { await this.api.post(RUTAS.solicitudes.finalizar(id)); return; }
+    await this.api.patch(RUTAS.adopciones.finalizar(id));
   }
+
+  documentos(id: number): Promise<readonly SoporteSolicitud[]> {
+    this.exigirServidor();
+    return this.api.get(RUTAS.adopciones.soportes(id));
+  }
+
+  async asociarSoporte(id: number, tipo: string, archivoUrl: string): Promise<void> {
+    this.exigirServidor();
+    if (!tipo.trim() || !/^https:\/\//i.test(archivoUrl)) throw new ErrorHttp({ titulo: 'Indica el tipo y un enlace HTTPS válido del documento.', estadoHttp: 400 });
+    await this.api.post(RUTAS.adopciones.soportes(id), { tipo: tipo.trim(), archivoUrl });
+  }
+
+  async confirmarVisita(id: number, aceptar: boolean): Promise<void> {
+    this.exigirServidor(); await this.api.patch(RUTAS.adopciones.confirmarVisita(id), { aceptar });
+  }
+
+  descargarConstancia(id: number): Promise<Blob> {
+    this.exigirServidor();
+    return this.api.peticion(RUTAS.adopciones.constanciaPdf(id), { formato: 'blob' });
+  }
+
+  private exigirServidor() { if (this.modoDemo) throw new ErrorHttp({ titulo: 'Esta operación requiere conexión al backend real.', estadoHttp: 501 }); }
 
   lineaTiempo(id: number): Promise<readonly EtapaLineaTiempo[]> {
     this.soloDemo();
@@ -99,18 +120,24 @@ export class ServicioAdopcion {
     );
   }
 
+  /** Contrato demo antiguo; en real usar archivos.subir y asociarSoporte. */
   subirSoporte(id: number, archivo: FormData): Promise<void> {
+    this.soloDemo();
     return this.api.peticion<void>(RUTAS.solicitudes.soportes(id), {
       metodo: 'POST',
       cuerpo: archivo,
     });
   }
 
-  agendarVisita(datos: CrearVisitaDto): Promise<VisitaEntrevista> {
-    return this.api.post<VisitaEntrevista>(RUTAS.solicitudes.visitas, datos);
+  async agendarVisita(datos: CrearVisitaDto): Promise<void> {
+    if (!Number.isFinite(Date.parse(datos.fecha)) || Date.parse(datos.fecha) <= Date.now() || ![0, 1].includes(datos.modalidad)) throw new ErrorHttp({ titulo: 'Selecciona una fecha futura y una modalidad válida.', estadoHttp: 400 });
+    if (this.modoDemo) { await this.api.post(RUTAS.solicitudes.visitas, datos); return; }
+    await this.api.post(RUTAS.adopciones.agendarVisita(datos.solicitudId), { fecha: datos.fecha, modalidad: datos.modalidad });
   }
 
+  /** Contrato demo antiguo; en real descargarConstancia recibe el ID de solicitud. */
   constancia(adopcionId: number): Promise<{ url: string }> {
+    this.soloDemo();
     return this.api.get<{ url: string }>(RUTAS.adopciones.constancia(adopcionId));
   }
 }
@@ -122,3 +149,5 @@ export interface ConfirmacionPostulacion {
   mensaje: string;
   solicitud: { solicitudId: number; codigo: string; mascotaNombre: string; fechaEnvio: string; estado: string };
 }
+
+export interface SoporteSolicitud { documentoId: number; tipo: string; archivoUrl: string; fechaCarga: string }

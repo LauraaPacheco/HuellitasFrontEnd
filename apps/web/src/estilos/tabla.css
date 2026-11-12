@@ -61,3 +61,124 @@
 }
 .tabla-scroll, .mascotas-tabla, .refugio-tabla { position: relative; }
 .tabla .boton { white-space: nowrap; overflow-wrap: normal; padding-inline: 16px; }
+
+/* ---------------------------------------------------------------------
+ * Tabla que se vuelve tarjetas en celular (.tabla--tarjetas)
+ *
+ * Con cinco o seis columnas una tabla no cabe en un celular y obliga a
+ * desplazar de lado. Por debajo de 640 px cada fila pasa a ser una
+ * tarjeta. Cada celda dice que papel tiene con una clase:
+ *
+ *   tabla__c-titulo  lo que identifica la fila (arriba a la izquierda)
+ *   tabla__c-estado  la insignia de estado (arriba a la derecha)
+ *   tabla__c-ancho   dato a todo el ancho, con linea debajo
+ *   tabla__c-dato    dato corto; van de a dos por fila
+ *   tabla__c-accion  botones, a todo el ancho al final
+ *
+ * Las celdas con data-etiqueta muestran ese nombre encima del valor, que
+ * es lo que en la tabla decia el encabezado de la columna.
+ * ------------------------------------------------------------------ */
+@media (max-width: 640px) {
+  .tabla-scroll:has(.tabla--tarjetas),
+  .mascotas-tabla:has(.tabla--tarjetas),
+  .refugio-tabla:has(.tabla--tarjetas) {
+    overflow: visible;
+  }
+
+  .tabla.tabla--tarjetas {
+    display: block;
+    min-width: 0;
+  }
+
+  /* Encabezados ocultos a la vista; el lector de pantalla los conserva. */
+  .tabla--tarjetas thead {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    white-space: nowrap;
+  }
+
+  .tabla--tarjetas tbody {
+    display: grid;
+    gap: var(--space-3);
+  }
+
+  /* Columna ancha y columna al contenido: el titulo usa todo lo que
+     deja libre el estado, y el segundo dato de cada fila queda pegado a
+     la derecha con su ancho justo. */
+  .tabla--tarjetas tbody tr {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: var(--space-3) var(--space-4);
+    padding: var(--space-4);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    background: var(--surface-100);
+  }
+
+  .tabla--tarjetas tbody tr:hover {
+    background: var(--surface-100);
+  }
+
+  .tabla--tarjetas td {
+    display: block;
+    min-width: 0;
+    padding: 0;
+    border: 0;
+  }
+
+  .tabla--tarjetas td.tabla__c-titulo {
+    grid-column: 1;
+    grid-row: 1;
+  }
+
+  .tabla--tarjetas td.tabla__c-estado {
+    grid-column: 2;
+    grid-row: 1;
+    justify-self: end;
+    align-self: start;
+  }
+
+  .tabla--tarjetas td.tabla__c-ancho {
+    grid-column: 1 / -1;
+    padding-bottom: var(--space-3);
+    border-bottom: 1px solid var(--border);
+  }
+
+  .tabla--tarjetas td.tabla__c-dato--fin {
+    text-align: right;
+  }
+
+  .tabla--tarjetas td.tabla__c-accion {
+    grid-column: 1 / -1;
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-2);
+  }
+
+  .tabla--tarjetas td.tabla__c-accion:empty {
+    display: none;
+  }
+
+  .tabla--tarjetas td.tabla__c-accion .boton {
+    flex: 1;
+  }
+
+  .tabla--tarjetas td[data-etiqueta]::before {
+    content: attr(data-etiqueta);
+    display: block;
+    margin-bottom: 4px;
+    font-size: 0.6875rem;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: var(--ink-muted);
+  }
+
+  .tabla--tarjetas .mascota-miniatura img {
+    width: 44px;
+    height: 44px;
+  }
+}

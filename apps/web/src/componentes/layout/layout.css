@@ -32,16 +32,45 @@
   gap: var(--space-1);
 }
 
+/* Cada item es su propio contenedor: asi la letra se mide contra el
+   ancho real del item, sea la columna del sidebar o media fila de la
+   rejilla de dos columnas del menu movil. */
+.layout__menu > li {
+  container-type: inline-size;
+}
+
 .layout__enlace {
   display: flex;
   align-items: center;
   height: 44px;
-  padding: 0 var(--space-4);
+  padding: 0 var(--space-3);
   border-radius: var(--radius-md);
   color: var(--ink);
   text-decoration: none;
-  font-size: 14px;
+  /* Con el icono, en el sidebar de 220 px quedan ~135 px para el texto y
+     "Reportes ciudadanos" mide 143 a 14 px. Con 7cqi baja a ~13 px ahi
+     y vuelve a 14 px en cuanto hay espacio. Nunca menos de 12. */
+  font-size: clamp(0.75rem, 7cqi, 0.875rem);
   font-weight: 500;
+  gap: 10px;
+  white-space: nowrap;
+}
+
+/* El icono no se encoge: si falta espacio, cede el texto. */
+.layout__icono {
+  flex-shrink: 0;
+  color: var(--ink-muted);
+}
+
+.layout__enlace:hover .layout__icono,
+.layout__enlace--activo .layout__icono {
+  color: inherit;
+}
+
+.layout__etiqueta {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .layout__enlace:hover {
@@ -67,27 +96,136 @@
 
 .layout__cuenta {
   margin-top: auto;
-  border: 1px solid var(--border);
-  border-radius: var(--radius-md);
-  background: var(--surface-100);
-  padding: var(--space-3);
+  border-top: 1px solid var(--border);
+  padding-top: var(--space-4);
   display: flex;
   flex-direction: column;
-  align-items: flex-start;
-  gap: var(--space-2);
+  gap: var(--space-3);
+  container-type: inline-size;
 }
 
+.layout__usuario {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  min-width: 0;
+  /* Es el enlace a Mi cuenta: se ve como bloque, no como texto subrayado. */
+  margin: calc(var(--space-2) * -1) 0;
+  padding: var(--space-2);
+  border-radius: var(--radius-md);
+  color: inherit;
+  text-decoration: none;
+  transition: background-color 120ms ease;
+}
+
+.layout__usuario:hover {
+  background: var(--surface-300);
+}
+
+.layout__usuario:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 2px;
+}
+
+/* Estando en Mi cuenta, el bloque queda marcado con el tono de la marca. */
+.layout__usuario--activo,
+.layout__usuario--activo:hover {
+  background: var(--brand-tint);
+}
+
+.layout__usuario--activo .layout__avatar {
+  background: var(--brand-strong);
+  color: var(--on-brand);
+}
+
+.layout__avatar {
+  flex-shrink: 0;
+  width: 38px;
+  height: 38px;
+  border-radius: var(--radius-pill);
+  display: grid;
+  place-items: center;
+  background: var(--brand-tint);
+  color: var(--brand-strong);
+  font-size: 14px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+}
+
+.layout__identidad {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+/* Hasta dos lineas: un nombre largo se corta con puntos en vez de
+   estirar el bloque. El nombre completo queda en el title. */
 .layout__nombre {
   margin: 0;
   font-size: 14px;
   font-weight: 600;
+  line-height: 1.3;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
 }
 
 .layout__rol {
-  /* El gap del contenedor ya separa; sin esto queda doble espacio. */
   margin: 0;
   font-size: 12px;
   color: var(--ink-muted);
+}
+
+.layout__acciones-cuenta {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.layout__salir {
+  flex: 1;
+  min-width: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  height: 44px;
+  padding: 0 var(--space-3);
+  border: 0;
+  border-radius: var(--radius-md);
+  background: transparent;
+  color: var(--ink-muted);
+  font: inherit;
+  /* Se mide contra el ancho del bloque de cuenta (cqi), no de la
+     ventana: el sidebar se queda fijo en 220 px hasta los 1200 px, asi
+     que con vw la letra crecia sin que creciera el espacio y el texto
+     terminaba cortado con puntos suspensivos cerca de los 1200 px. */
+  font-size: clamp(0.75rem, 6.8cqi, 0.875rem);
+  font-weight: 600;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: background-color 120ms ease, color 120ms ease;
+}
+
+.layout__salir svg {
+  flex-shrink: 0;
+}
+
+/* Si aun asi no cabe, puntos suspensivos antes que una segunda linea. */
+.layout__salir-texto {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.layout__salir:hover {
+  background: var(--surface-300);
+  color: var(--danger);
+}
+
+.layout__salir:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 2px;
 }
 
 .layout__contenido {
@@ -115,21 +253,69 @@
 .layout__cabecera { display: flex; align-items: center; justify-content: space-between; gap: 16px; }
 .layout__opciones { display: flex; flex: 1; min-height: 0; flex-direction: column; gap: var(--space-6); }
 .layout__alternar { display: none; align-items: center; gap: 10px; padding: 8px 14px; border: 1px solid var(--border); border-radius: 12px; background: var(--surface-100); color: var(--ink); font: inherit; }
-.layout__nombre { overflow-wrap: anywhere; }
-.encabezado { display: flex; align-items: flex-end; justify-content: space-between; gap: var(--space-4); padding-bottom: var(--space-4); border-bottom: 1px solid var(--border); margin-bottom: var(--space-5); }
-.encabezado > div { min-width: 0; }
-.encabezado h1 { font-size: clamp(24px, 2.5vw, 30px); line-height: 1.2; overflow-wrap: anywhere; }
+/*
+ * Encabezado de pantalla: icono de la seccion en un cuadro verde suave,
+ * titulo con el resumen debajo y las acciones a la derecha. Sin linea
+ * divisoria: lo separa del contenido el espacio, no una raya.
+ */
+.encabezado {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-4);
+  margin-bottom: var(--space-6);
+}
+
+.encabezado__texto {
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+  min-width: 0;
+}
+
+.encabezado__icono {
+  flex-shrink: 0;
+  width: 48px;
+  height: 48px;
+  display: grid;
+  place-items: center;
+  border-radius: 14px;
+  background: var(--brand-tint);
+  color: var(--brand-strong);
+}
+
+.encabezado__titulos {
+  min-width: 0;
+}
+
+.encabezado__seccion {
+  margin: 0 0 2px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--brand-strong);
+}
+
+.encabezado h1 {
+  margin: 0;
+  font-size: clamp(1.5rem, 2.4vw, 1.875rem);
+  line-height: 1.15;
+  letter-spacing: -0.02em;
+  overflow-wrap: anywhere;
+}
+
+.encabezado__resumen {
+  margin: 6px 0 0;
+  font-size: 0.875rem;
+  line-height: 1.45;
+  color: var(--ink-muted);
+}
+
 .encabezado__acciones { display: flex; flex-wrap: wrap; gap: var(--space-2); flex-shrink: 0; max-width: 100%; }
 @media (min-width: 901px) and (max-width: 1200px) { .layout__contenido { padding: 24px; } .layout { grid-template-columns: 220px minmax(0, 1fr); } }
 @media (max-width: 900px) {
   .layout { grid-template-columns: minmax(0, 1fr); min-height: 100dvh; }
-  .layout__lateral { padding: 14px 16px; gap: 16px; }
-  .layout__alternar { display: inline-flex; }
-  .layout__opciones { display: none; }
-  .layout__opciones--abiertas { display: flex; gap: 16px; }
-  .layout__menu { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); }
-  .layout__enlace { height: auto; min-height: 44px; padding: 10px 12px; }
-  .layout__cuenta { margin-top: 0; }
 }
 @media (max-width: 640px) {
   .encabezado { align-items: stretch; flex-direction: column; }
@@ -137,5 +323,417 @@
   .encabezado__acciones { width: 100%; }
   .layout__contenido { padding: 20px 16px; }
 }
-@media (max-width: 380px) { .layout__menu { grid-template-columns: 1fr; } }
 @media (max-width: 900px) { .layout { grid-template-rows: auto 1fr; } }
+
+/* ---------------------------------------------------------------------
+ * Menu compacto (solo escritorio)
+ *
+ * El boton circular sobre el borde alterna entre el menu completo y uno
+ * de solo iconos. Los textos no se borran: se ocultan a la vista con el
+ * patron de clip, asi el lector de pantalla los sigue leyendo.
+ * ------------------------------------------------------------------ */
+.layout__lateral {
+  position: relative;
+}
+
+.layout__colapsar {
+  position: absolute;
+  top: calc(var(--space-5) + 1px);
+  right: -14px;
+  z-index: 2;
+  width: 28px;
+  height: 28px;
+  display: grid;
+  place-items: center;
+  padding: 0;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-pill);
+  background: var(--surface-100);
+  color: var(--ink-muted);
+  cursor: pointer;
+  transition: color 120ms ease, border-color 120ms ease, background-color 120ms ease;
+}
+
+.layout__colapsar:hover {
+  color: var(--ink);
+  border-color: var(--brand);
+}
+
+.layout__colapsar:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 2px;
+}
+
+@media (min-width: 901px) {
+  .layout {
+    transition: grid-template-columns 200ms ease;
+  }
+
+  .layout.layout--compacto {
+    grid-template-columns: 76px minmax(0, 1fr);
+  }
+
+  .layout--compacto .layout__lateral {
+    padding-inline: var(--space-3);
+  }
+
+  .layout--compacto .layout__cabecera {
+    justify-content: center;
+  }
+
+  .layout--compacto .layout__marca {
+    justify-content: center;
+    padding-left: 0;
+  }
+
+  .layout--compacto .layout__nombre-marca,
+  .layout--compacto .layout__etiqueta,
+  .layout--compacto .layout__identidad,
+  .layout--compacto .layout__salir-texto {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    white-space: nowrap;
+  }
+
+  .layout--compacto .layout__enlace {
+    justify-content: center;
+    padding: 0;
+  }
+
+  .layout--compacto .layout__usuario {
+    justify-content: center;
+    padding-inline: 0;
+  }
+
+  .layout--compacto .layout__acciones-cuenta {
+    flex-direction: column;
+  }
+
+  .layout--compacto .layout__salir {
+    flex: 0 0 auto;
+    width: 44px;
+    justify-content: center;
+    padding: 0;
+  }
+}
+
+@media (max-width: 900px) {
+  .layout__colapsar {
+    display: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .layout {
+    transition: none;
+  }
+}
+
+/* ---------------------------------------------------------------------
+ * Menu movil
+ *
+ * Por debajo de 900 px queda arriba solo el titulo de la pagina y abajo la
+ * barra inferior. El + del centro de esa barra abre el menu como una
+ * ventana flotante que crece desde el, con una capa oscura detras.
+ * ------------------------------------------------------------------ */
+.layout__cajon-cabecera,
+.layout__fondo,
+.layout__titulo-barra,
+.layout__icono-barra {
+  display: none;
+}
+
+.layout__alternar,
+.layout__cerrar-cajon {
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  place-items: center;
+  border: 0;
+  border-radius: var(--radius-md);
+  background: transparent;
+  color: var(--ink);
+  cursor: pointer;
+}
+
+.layout__alternar:hover,
+.layout__cerrar-cajon:hover {
+  background: var(--surface-300);
+}
+
+.layout__alternar:focus-visible,
+.layout__cerrar-cajon:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 2px;
+}
+
+@media (max-width: 900px) {
+  .layout {
+    grid-template-rows: auto 1fr;
+  }
+
+  /* Sin franja: el mismo fondo de la pagina, sin borde. Solo queda la
+     hamburguesa; el logo y el nombre ya van dentro del panel. Sigue fija
+     arriba para poder abrir el menu sin volver al inicio. */
+  .layout__lateral {
+    position: sticky;
+    top: 0;
+    z-index: 30;
+    padding: var(--space-3) var(--space-4);
+    gap: 0;
+    border-right: 0;
+    border-bottom: 0;
+    background: var(--surface-100);
+  }
+
+  .layout__cabecera {
+    justify-content: flex-start;
+  }
+
+  .layout__cabecera > .layout__marca {
+    display: none;
+  }
+
+  .layout__cabecera {
+    gap: var(--space-1);
+  }
+
+  .layout__titulo-barra {
+    display: block;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-family: var(--fuente-display);
+    font-size: 1.25rem;
+    font-weight: 700;
+    letter-spacing: -0.01em;
+  }
+
+  /* En movil el encabezado pierde la linea: el titulo se fue a la barra y
+     la linea quedaba suelta bajo ella. Si solo le quedaba el h1 oculto, no
+     ocupa espacio. */
+  .encabezado {
+    border-bottom: 0;
+    padding-bottom: 0;
+    margin-bottom: var(--space-4);
+  }
+
+  .encabezado:not(:has(.encabezado__resumen)):not(:has(.encabezado__acciones)) {
+    margin-bottom: 0;
+  }
+
+  /* El icono y la seccion ya estan en la barra de arriba. */
+  .encabezado__icono,
+  .encabezado__seccion {
+    display: none;
+  }
+
+  .layout__icono-barra {
+    flex-shrink: 0;
+    width: 32px;
+    height: 32px;
+    display: grid;
+    place-items: center;
+    margin-right: var(--space-2);
+    border-radius: 10px;
+    background: var(--brand-tint);
+    color: var(--brand-strong);
+  }
+
+  /* Sin borde mientras se esta arriba; al desplazar, una sombra suave la
+     separa del contenido que pasa por debajo. */
+  .layout__lateral {
+    transition: box-shadow 160ms ease;
+  }
+
+  .layout--desplazado .layout__lateral {
+    box-shadow: 0 1px 0 var(--border), 0 6px 16px rgb(0 0 0 / 0.06);
+  }
+
+  /* El titulo ya esta en la barra: en la pagina se oculta a la vista,
+     pero el h1 sigue ahi para el lector de pantalla. */
+  .encabezado h1 {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    white-space: nowrap;
+  }
+
+  /* Abajo deja libre el alto de la barra inferior flotante (64 + 12 de
+     margen) mas un poco de aire, para que nada quede tapado. */
+  .layout__contenido {
+    padding-top: var(--space-2);
+    padding-bottom: calc(100px + env(safe-area-inset-bottom, 0px));
+  }
+
+  .layout__fondo {
+    display: block;
+    position: fixed;
+    inset: 0;
+    z-index: 1;
+    background: rgb(0 0 0 / 0.4);
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 220ms ease, visibility 0s linear 220ms;
+  }
+
+  .layout--menu-abierto .layout__fondo {
+    opacity: 1;
+    visibility: visible;
+    transition: opacity 220ms ease;
+  }
+
+  /*
+   * Ventana del menu: flota sobre la barra inferior y crece desde el +
+   * del centro (transform-origin abajo al centro). Cerrada queda con
+   * visibility: hidden, asi nada de adentro recibe foco.
+   */
+  .layout__opciones {
+    position: fixed;
+    left: var(--space-3);
+    right: var(--space-3);
+    bottom: calc(64px + var(--space-3) + 20px + env(safe-area-inset-bottom, 0px));
+    z-index: 2;
+    max-width: 496px;
+    max-height: calc(100dvh - 180px);
+    margin-inline: auto;
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-4);
+    padding: var(--space-4);
+    overflow-y: auto;
+    background: var(--surface-200);
+    border: 1px solid var(--border);
+    border-radius: 24px;
+    box-shadow: 0 18px 48px rgb(0 0 0 / 0.22);
+    transform-origin: 50% 100%;
+    transform: translateY(16px) scale(0.92);
+    opacity: 0;
+    visibility: hidden;
+    transition:
+      transform 240ms cubic-bezier(0.3, 0.8, 0.3, 1),
+      opacity 180ms ease,
+      visibility 0s linear 240ms;
+  }
+
+  .layout__opciones--abiertas {
+    transform: none;
+    opacity: 1;
+    visibility: visible;
+    transition:
+      transform 240ms cubic-bezier(0.3, 0.8, 0.3, 1),
+      opacity 180ms ease;
+  }
+
+  /* El + de la barra ya cierra: la cabecera del panel lateral sobra. */
+  .layout__cajon-cabecera {
+    display: none;
+  }
+
+  /* Opciones en cuadricula de tres: icono arriba y nombre debajo. */
+  .layout__menu {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: var(--space-2);
+  }
+
+  .layout__enlace {
+    flex-direction: column;
+    justify-content: center;
+    gap: 6px;
+    height: auto;
+    min-height: 76px;
+    padding: var(--space-3) var(--space-1);
+    border-radius: 16px;
+    background: var(--surface-100);
+    font-size: 0.75rem;
+    line-height: 1.25;
+    text-align: center;
+    white-space: normal;
+  }
+
+  /* Repetido aqui: el fondo de los cuadros de arriba le ganaba al verde
+     del activo y quedaba texto blanco sobre blanco. */
+  .layout__enlace--activo,
+  .layout__enlace--activo:hover {
+    background: var(--brand-strong);
+  }
+
+  .layout__icono {
+    width: 22px;
+    height: 22px;
+  }
+
+  .layout__etiqueta {
+    overflow: visible;
+  }
+
+  /* Cuenta en una sola fila: quien eres a la izquierda, acciones a la
+     derecha. "Cerrar sesión" queda como icono con su nombre para el
+     lector de pantalla. */
+  .layout__cuenta {
+    margin-top: 0;
+    padding-top: var(--space-3);
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-2);
+  }
+
+  .layout__usuario {
+    flex: 1;
+    min-width: 0;
+  }
+
+  .layout__acciones-cuenta {
+    flex-shrink: 0;
+  }
+
+  .layout__salir {
+    flex: 0 0 auto;
+    width: 44px;
+    justify-content: center;
+    padding: 0;
+  }
+
+  .layout__salir-texto {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    white-space: nowrap;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .layout__opciones,
+  .layout__opciones--abiertas,
+  .layout__fondo,
+  .layout--menu-abierto .layout__fondo {
+    transition: none;
+  }
+}
+
+/*
+ * Cuando la pagina muestra un estado de carga o de error, el contenido
+ * pasa a columna flexible y el estado rellena solo el espacio que queda
+ * bajo lo que haya encima (encabezado, filtros). Asi se centra en el
+ * hueco real, sin empujar nada fuera de la pantalla.
+ */
+.layout__contenido:has(> .estado-error, > .estado-construccion, > .estado-cargando--pagina) {
+  display: flex;
+  flex-direction: column;
+}
+
+.layout__contenido > .estado-error,
+.layout__contenido > .estado-construccion,
+.layout__contenido > .estado-cargando--pagina {
+  flex: 1 0 auto;
+}

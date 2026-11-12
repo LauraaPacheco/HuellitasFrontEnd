@@ -7,10 +7,12 @@ import { Encabezado } from '@/componentes/layout/Encabezado';
 import { Boton } from '@/componentes/ui/Boton';
 import { Insignia } from '@/componentes/ui/Insignia';
 import { EstadoVacio } from '@/componentes/ui/EstadoVacio';
+import { EstadoError } from '@/componentes/ui/EstadoError';
 import { Modal } from '@/componentes/ui/Modal/Modal';
 import { Campo } from '@/componentes/ui/Campo';
 import '@/estilos/tabla.css';
 import './refugios.css';
+import { EstadoCargando } from '@/componentes/ui/EstadoCargando';
 
 export function PaginaVerificacionRefugios() {
   const cliente = useQueryClient();
@@ -41,14 +43,14 @@ export function PaginaVerificacionRefugios() {
   return <>
     <Encabezado titulo="Verificación de refugios" resumen="Revisa la información antes de habilitar la publicación de mascotas." />
     {mensaje && <p role="status">{mensaje}</p>}
-    {consulta.isPending && <p>Cargando solicitudes de refugios…</p>}
-    {consulta.isError && <EstadoVacio titulo="No pudimos cargar los refugios" descripcion="Revisa tu conexión y vuelve a intentarlo." accion={<Boton onClick={() => void consulta.refetch()}>Reintentar</Boton>} />}
+    {consulta.isPending && <EstadoCargando mensaje="Cargando solicitudes de refugios…" />}
+    {consulta.isError && <EstadoError titulo="No pudimos cargar los refugios" error={consulta.error} alReintentar={() => void consulta.refetch()} reintentando={consulta.isFetching} />}
     {consulta.data && consulta.data.items.length === 0 && <EstadoVacio titulo="Sin solicitudes de refugios" descripcion="Las solicitudes de registro aparecerán aquí para su revisión." />}
-    {!!consulta.data?.items.length && <div className="refugio-tabla"><table className="tabla">
+    {!!consulta.data?.items.length && <div className="refugio-tabla"><table className="tabla tabla--tarjetas">
       <thead><tr><th scope="col">Refugio</th><th scope="col">NIT</th><th scope="col">Estado</th><th scope="col">Acción</th></tr></thead>
       <tbody>{consulta.data.items.map(refugio => <tr key={refugio.id}>
-        <td>{refugio.nombre}</td><td>{refugio.nit}</td><td><Insignia estado={ESTADO_VERIFICACION[refugio.estadoVerificacion]} /></td>
-        <td><Boton variante="primario" className="refugio-revisar" aria-label={`Revisar ${refugio.nombre}`} disabled={guardar.isPending} onClick={() => elegir(refugio)}>Revisar <span aria-hidden="true">↗</span></Boton></td>
+        <td className="tabla__c-titulo"><span className="tabla__nombre">{refugio.nombre}</span></td><td className="tabla__c-dato" data-etiqueta="NIT">{refugio.nit}</td><td className="tabla__c-estado"><Insignia estado={ESTADO_VERIFICACION[refugio.estadoVerificacion]} /></td>
+        <td className="tabla__c-accion"><Boton variante="primario" className="refugio-revisar" aria-label={`Revisar ${refugio.nombre}`} disabled={guardar.isPending} onClick={() => elegir(refugio)}>Revisar <span aria-hidden="true">↗</span></Boton></td>
       </tr>)}</tbody>
     </table></div>}
     {consulta.data && consulta.data.totalPaginas > 1 && <div className="refugio-acciones">

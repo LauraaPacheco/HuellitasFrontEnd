@@ -49,7 +49,7 @@ export class ServicioMascotas {
     }
     const dto = await this.api.get<DetalleMascotaApi>(RUTAS.mascotas.porId(id));
     return { id: dto.id, nombre: dto.nombre, especie: dto.especie, raza: dto.raza, sexo: sexoApi(dto.sexo), edadAproximada: dto.edadAproximada,
-      descripcion: dto.descripcion, esterilizada: dto.esterilizada, estado: estadoMascotaApi(dto.estado), refugioNombre: dto.refugio, refugioTelefono: dto.refugioTelefono, fotos: dto.fotos };
+      descripcion: dto.descripcion, esterilizada: dto.esterilizada, estado: estadoMascotaApi(dto.estado), refugioNombre: dto.refugio, refugioId: dto.refugioId, refugioTelefono: dto.refugioTelefono, fotos: dto.fotos };
   }
 
   /** Conservado para las operaciones de dominio demo. En real, registrar devuelve solamente el identificador. */

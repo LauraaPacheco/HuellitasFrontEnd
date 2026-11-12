@@ -12,6 +12,8 @@ export default defineConfig(({ mode }) => {
   return {
     plugins: [react()],
     resolve: {
+      // La web usa React 18; Expo usa React 19 en el mismo monorepo.
+      dedupe: ['react', 'react-dom'],
       alias: {
         '@': fileURLToPath(new URL('./src', import.meta.url)),
         '@huellitas/shared': fileURLToPath(

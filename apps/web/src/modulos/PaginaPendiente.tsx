@@ -1,5 +1,5 @@
 import { Encabezado } from '@/componentes/layout/Encabezado';
-import { EstadoVacio } from '@/componentes/ui/EstadoVacio';
+import { EstadoConstruccion } from '@/componentes/ui/EstadoConstruccion';
 
 interface Props {
   readonly titulo: string;
@@ -14,10 +14,7 @@ export function PaginaPendiente({ titulo, historias }: Props) {
   return (
     <>
       <Encabezado titulo={titulo} />
-      <EstadoVacio
-        titulo="Pantalla en construcción"
-        descripcion={`Corresponde a ${historias}.`}
-      />
+      <EstadoConstruccion pantalla={titulo} historias={historias} />
     </>
   );
 }

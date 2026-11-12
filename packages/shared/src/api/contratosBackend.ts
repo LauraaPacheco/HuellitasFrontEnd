@@ -3,10 +3,10 @@ import { EstadoMascota, EstadoSolicitud, Sexo } from '../types/enums';
 import type { MascotaResumen } from '../types/mascotas';
 import type { SolicitudResumen } from '../types/adopcion';
 import type { Paginado } from '../types/comun';
-export interface PerfilUsuarioApi { id: number; nombre: string; correo: string; telefono: string | null; fotoUrl: string | null; estado: string; fechaRegistro: string; politicaAceptada?: string | null; fechaAceptacionPolitica?: string | null }
+export interface PerfilUsuarioApi { id: number; refugioId?: number | null; nombre: string; correo: string; telefono: string | null; fotoUrl: string | null; estado: string; fechaRegistro: string; politicaAceptada?: string | null; fechaAceptacionPolitica?: string | null }
 export interface PerfilAdoptanteApi { tipoVivienda: string | null; espacioDisponible: string | null; presenciaDeNinos: boolean | null; otrasMascotas: boolean | null; tiempoDisponible: string | null; experienciaPrevia: boolean | null; porcentajeCompletitud: number }
 export interface ResumenMascotaApi { id: number; nombre: string; especie: string; raza: string | null; sexo: string; edadAproximada: number; fotoPrincipal: string | null; estado: string; fechaCreacion: string }
-export interface DetalleMascotaApi extends Omit<ResumenMascotaApi, 'fotoPrincipal' | 'fechaCreacion'> { descripcion: string | null; esterilizada: boolean; refugio: string; refugioTelefono: string | null; fotos: string[] }
+export interface DetalleMascotaApi extends Omit<ResumenMascotaApi, 'fotoPrincipal' | 'fechaCreacion'> { descripcion: string | null; esterilizada: boolean; refugio: string; refugioId?: number; refugioTelefono: string | null; fotos: string[] }
 export interface FichaMascotaPublica { id: number; nombre: string; especie: string; raza: string | null; sexo: Sexo; edadAproximada: number | null; descripcion: string | null; esterilizada: boolean; estado: EstadoMascota; refugioNombre: string; refugioTelefono: string | null; refugioId?: number; fotos: readonly string[] }
 export interface PaginadoApi<T> { items: T[]; pagina: number; tamanoPagina: number; totalRegistros: number; totalPaginas: number }
 const clave = (valor: string) => valor.trim().toLowerCase().replace(/\s/g, '');
@@ -34,7 +34,7 @@ export function paginadoApi(datos: PaginadoApi<ResumenMascotaApi>): Paginado<Mas
 export interface SolicitudResumenApi { solicitudId: number; codigo: string; mascotaNombre: string; mascotaFoto: string | null; adoptanteNombre: string; fechaEnvio: string; estado: string }
 export function estadoSolicitudApi(valor: string): EstadoSolicitud {
   const estados: Record<string, EstadoSolicitud> = { enviada: EstadoSolicitud.Enviada, enrevision: EstadoSolicitud.EnRevision, entrevista: EstadoSolicitud.EntrevistaVisita,
-    aprobada: EstadoSolicitud.Aprobada, rechazada: EstadoSolicitud.Rechazada, finalizada: EstadoSolicitud.Finalizada, cancelada: EstadoSolicitud.Cancelada };
+    aprobada: EstadoSolicitud.Aprobada, rechazada: EstadoSolicitud.Rechazada, finalizada: EstadoSolicitud.Finalizada, cerrada: EstadoSolicitud.Cerrada, cancelada: EstadoSolicitud.Cancelada };
   const estado = estados[clave(valor).normalize('NFD').replace(/[\u0300-\u036f]/g, '')];
   if (estado === undefined) throw new ErrorHttp({ titulo: 'El servidor devolvió un estado de solicitud no reconocido.', estadoHttp: 502 });
   return estado;

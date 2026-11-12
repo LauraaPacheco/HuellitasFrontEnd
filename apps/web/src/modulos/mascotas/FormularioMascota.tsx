@@ -10,6 +10,7 @@ import { SelectorCatalogo } from '@/componentes/ui/SelectorCatalogo';
 import { Insignia } from '@/componentes/ui/Insignia';
 import { Modal } from '@/componentes/ui/Modal/Modal';
 import './mascotas.css';
+import { EstadoCargando } from '@/componentes/ui/EstadoCargando';
 const errorTexto = (error: Error) => error instanceof ErrorHttp ? error.detalle ?? error.message : error.message;
 
 export function FormularioMascota({ mascota, asistente, alContinuar, modoReal = false, datosIniciales, alGuardarLocal }: { mascota?: Mascota; asistente: boolean; alContinuar?: (guardada: Mascota) => void; modoReal?: boolean; datosIniciales?: CrearMascotaDto; alGuardarLocal?: (datos: CrearMascotaDto) => void }) {
@@ -70,7 +71,7 @@ export function FormularioMascota({ mascota, asistente, alContinuar, modoReal = 
         <label className="mascota-opcion"><input type="checkbox" checked={datos.esterilizada} onChange={e => cambiar('esterilizada', e.target.checked)} /> Está esterilizad@</label>
         <label className="campo"><span className="campo__etiqueta">Descripción (opcional)</span><textarea className="campo__control" rows={4} value={datos.descripcion ?? ''} onChange={e => cambiar('descripcion', e.target.value)} placeholder="Cuéntanos cómo es y qué necesita en su nuevo hogar" /></label>
         {!modoReal && <fieldset className="mascota-temperamentos"><legend>Temperamentos (opcional)</legend>
-          {temperamentos.isPending ? <p>Cargando temperamentos…</p> : temperamentos.isError ? <Boton onClick={() => void temperamentos.refetch()}>Reintentar temperamentos</Boton>
+          {temperamentos.isPending ? <EstadoCargando variante="compacto" mensaje="Cargando temperamentos…" /> : temperamentos.isError ? <Boton onClick={() => void temperamentos.refetch()}>Reintentar temperamentos</Boton>
             : <div className="mascota-temperamentos__opciones">{temperamentos.data?.filter(t => t.activo || datos.temperamentoIds.includes(t.id)).map(t => <label className="mascota-opcion" key={t.id}><input type="checkbox" disabled={!t.activo} checked={datos.temperamentoIds.includes(t.id)} onChange={e => cambiar('temperamentoIds', e.target.checked ? [...datos.temperamentoIds, t.id] : datos.temperamentoIds.filter(id => id !== t.id))} />{t.nombre}{!t.activo ? ' (dado de baja)' : ''}</label>)}</div>}
           {temperamentos.isSuccess && !temperamentos.data.length && <p>No hay temperamentos disponibles.</p>}
         </fieldset>}

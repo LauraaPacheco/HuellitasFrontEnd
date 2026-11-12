@@ -61,6 +61,7 @@ interface OpcionesPeticion {
   readonly cuerpo?: unknown;
   readonly parametros?: Record<string, unknown>;
   readonly senal?: AbortSignal;
+  readonly formato?: 'json' | 'blob';
 }
 
 const TIEMPO_LIMITE_POR_DEFECTO = 15_000;
@@ -92,7 +93,7 @@ export class ClienteApi {
     const token = await this.config.almacen.obtener();
 
     const cabeceras: Record<string, string> = {
-      Accept: 'application/json',
+      Accept: opciones.formato === 'blob' ? 'application/pdf' : 'application/json',
       ...this.config.cabecerasExtra,
     };
     if (token) cabeceras.Authorization = `Bearer ${token}`;
@@ -143,8 +144,13 @@ export class ClienteApi {
 
     if (respuesta.status === 204) return undefined as T;
 
+    if (respuesta.ok && opciones.formato === 'blob') {
+      if (!respuesta.headers.get('content-type')?.includes('application/pdf')) throw new ErrorHttp({ titulo: 'El servidor no devolvió un PDF válido.', estadoHttp: 502 });
+      return await respuesta.blob() as T;
+    }
     const texto = await respuesta.text();
-    const datos: unknown = texto ? JSON.parse(texto) : null;
+    let datos: unknown = null;
+    try { datos = texto ? JSON.parse(texto) : null; } catch { throw new ErrorHttp({ titulo: 'El servidor devolvió una respuesta no válida.', estadoHttp: respuesta.ok ? 502 : respuesta.status }); }
 
     if (!respuesta.ok) {
       throw new ErrorHttp(this.mapearError(datos, respuesta.status));
