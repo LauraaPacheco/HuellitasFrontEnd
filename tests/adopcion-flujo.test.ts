@@ -27,6 +27,7 @@ describe('ADO-04 a ADO-07, contrato 85757de',()=>{
   it('propaga 404 y 401 en PDF, y limpia la sesión expirada',async()=>{const {api,almacen}=await preparar([Response.json({detail:'No finalizada'},{status:404}),Response.json({title:'Sesión vencida'},{status:401})]);await expect(api.adopcion.descargarConstancia(8)).rejects.toMatchObject({estadoHttp:404});await expect(api.adopcion.descargarConstancia(8)).rejects.toMatchObject({estadoHttp:401});expect(await almacen.obtener()).toBeNull();});
   it('rechaza JSON con 200 como PDF y formatos de archivo no admitidos',async()=>{const {api}=await preparar([Response.json({mensaje:'No es PDF'})]);await expect(api.adopcion.descargarConstancia(8)).rejects.toMatchObject({estadoHttp:502});expect(validarArchivoServidor('doc.pdf',1)).toBeNull();expect(validarArchivoServidor('doc.pdf',1,true)).toBeTruthy();expect(validarArchivoServidor('foto.jpg',0)).toBeTruthy();expect(validarArchivoServidor('doc.exe',10)).toBeTruthy();expect(validarArchivoServidor('doc.pdf',5*1024*1024+1)).toBeTruthy();});
   it('interpreta Cerrada para las otras solicitudes afectadas por el cierre masivo',()=>{expect(estadoSolicitudApi('Cerrada')).toBe(EstadoSolicitud.Cerrada);});
+  it('no tumba la lista si el backend manda un estado que no conoce',()=>{expect(estadoSolicitudApi('Desconocido')).toBe(EstadoSolicitud.Desconocido);});
 });
 
 it('marca en revisión por PATCH autenticado y propaga conflictos sin simular éxito', async () => {

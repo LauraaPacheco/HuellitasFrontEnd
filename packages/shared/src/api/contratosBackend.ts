@@ -36,7 +36,11 @@ export function estadoSolicitudApi(valor: string): EstadoSolicitud {
   const estados: Record<string, EstadoSolicitud> = { enviada: EstadoSolicitud.Enviada, enrevision: EstadoSolicitud.EnRevision, entrevista: EstadoSolicitud.EntrevistaVisita,
     aprobada: EstadoSolicitud.Aprobada, rechazada: EstadoSolicitud.Rechazada, finalizada: EstadoSolicitud.Finalizada, cerrada: EstadoSolicitud.Cerrada, cancelada: EstadoSolicitud.Cancelada };
   const estado = estados[clave(valor).normalize('NFD').replace(/[\u0300-\u036f]/g, '')];
-  if (estado === undefined) throw new ErrorHttp({ titulo: 'El servidor devolvió un estado de solicitud no reconocido.', estadoHttp: 502 });
+  if (estado === undefined) {
+    // Una solicitud rara no debe tumbar toda la lista: se muestra como desconocida y sin acciones.
+    console.warn(`[solicitudes] estado no reconocido del servidor: ${JSON.stringify(valor)}`);
+    return EstadoSolicitud.Desconocido;
+  }
   return estado;
 }
 const DIA_MS = 24 * 60 * 60 * 1000;

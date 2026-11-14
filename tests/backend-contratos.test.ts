@@ -101,7 +101,9 @@ describe('Contratos backend db3a4fb (solicitudes)', () => {
     const ahora = Date.parse('2026-10-26T10:00:00');
     expect(solicitudResumenApi(solicitudApi, ahora).diasSinRespuesta).toBe(6);
     expect(solicitudResumenApi({ ...solicitudApi, estado: 'Rechazada' }, ahora).diasSinRespuesta).toBe(0);
-    expect(() => solicitudResumenApi({ ...solicitudApi, estado: 'Otro' }, ahora)).toThrow();
+    const rara = solicitudResumenApi({ ...solicitudApi, estado: 'Otro' }, ahora);
+    expect(rara.estado).toBe(EstadoSolicitud.Desconocido);
+    expect(rara.diasSinRespuesta).toBe(0);
   });
   it('aprueba y rechaza con PATCH y los nombres de campo del backend', async () => {
     const { api, fetch } = await preparar([{ mensaje: 'Solicitud aprobada correctamente.' }, { mensaje: 'Solicitud rechazada correctamente.' }]);

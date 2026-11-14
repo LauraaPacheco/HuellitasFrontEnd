@@ -138,6 +138,7 @@ const EXPLICACION: Record<EstadoSolicitud, string> = {
   [EstadoSolicitud.Finalizada]: 'Adopción finalizada. ¡Gracias por adoptar!',
   [EstadoSolicitud.Cancelada]: 'Cancelaste esta solicitud.',
   [EstadoSolicitud.Cerrada]: 'Se cerró porque la mascota encontró hogar con otra familia.',
+  [EstadoSolicitud.Desconocido]: 'No pudimos leer el estado de esta solicitud. Consulta con el refugio.',
 };
 
 function ProgresoSolicitud({ estado }: { estado: EstadoSolicitud }) {

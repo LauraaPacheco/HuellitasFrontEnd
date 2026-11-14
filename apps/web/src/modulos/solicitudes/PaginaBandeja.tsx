@@ -105,7 +105,7 @@ export function PaginaBandeja() {
                 }
               >
                 <option value="">Todos los estados</option>
-                {Object.entries(ESTADO_SOLICITUD).map(([valor, descriptor]) => (
+                {Object.entries(ESTADO_SOLICITUD).filter(([valor]) => Number(valor) !== EstadoSolicitud.Desconocido).map(([valor, descriptor]) => (
                   <option key={valor} value={valor}>
                     {descriptor.etiqueta}
                   </option>
