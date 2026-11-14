@@ -5,6 +5,7 @@ import type { Paginado, ResultadoValidacion } from '../../types/comun';
 import type { EtapaLineaTiempo } from '../../types/trazabilidad';
 import type {
   Adopcion,
+  VisitaResumen,
   CrearSolicitudDto,
   CrearVisitaDto,
   DecisionSolicitudDto,
@@ -66,6 +67,12 @@ export class ServicioAdopcion {
     return this.api.post<SolicitudAdopcion>(RUTAS.solicitudes.base, datos);
   }
 
+  /** HU-ADO-02: el refugio inicia la revisión de una solicitud enviada. */
+  async marcarEnRevision(id: number): Promise<void> {
+    this.exigirServidor();
+    await this.api.patch(`/api/v1/Adopciones/${id}/revisar`);
+  }
+
   /** HU-ADO-03: solo para solicitudes Enviadas o En revisión; el backend responde 409 si no. */
   async aprobar(id: number, datos: DecisionSolicitudDto = {}): Promise<void> {
     if (this.modoDemo) return this.api.post<void>(RUTAS.solicitudes.aprobar(id), datos);
@@ -100,6 +107,14 @@ export class ServicioAdopcion {
     this.exigirServidor();
     if (!tipo.trim() || !/^https:\/\//i.test(archivoUrl)) throw new ErrorHttp({ titulo: 'Indica el tipo y un enlace HTTPS válido del documento.', estadoHttp: 400 });
     await this.api.post(RUTAS.adopciones.soportes(id), { tipo: tipo.trim(), archivoUrl });
+  }
+
+  misVisitas(): Promise<readonly VisitaResumen[]> {
+    this.exigirServidor(); return this.api.get('/api/v1/Adopciones/mis-visitas');
+  }
+
+  visitasRefugio(): Promise<readonly VisitaResumen[]> {
+    this.exigirServidor(); return this.api.get('/api/v1/Adopciones/refugio/visitas');
   }
 
   async confirmarVisita(id: number, aceptar: boolean): Promise<void> {

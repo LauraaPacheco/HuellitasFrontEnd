@@ -1,3 +1,7 @@
+import { VisitaSolicitud } from '@/componentes/VisitaSolicitud';
+import { visitaVigente } from '@huellitas/shared';
+import { MODO_DEMO } from '@/lib/api';
+import { usePantallaActiva, useActualizarAlVolver } from '@/hooks/usePantallaActiva';
 import { AccionesAdopcion } from '@/componentes/AccionesAdopcion';
 import { useState } from 'react';
 import { FlatList, Image, StyleSheet, Text, View } from 'react-native';
@@ -20,15 +24,26 @@ const POR_PAGINA = 20;
 
 export default function PantallaSolicitudes() {
   const paleta = usarPaleta();
+  const activa = usePantallaActiva();
   const { usuario } = useSesion();
   const router = useRouter();
   const [pagina, setPagina] = useState(1);
 
   const { data, isLoading, isError, error, refetch, isRefetching, isFetching } = useQuery({
-    queryKey: ['mis-solicitudes', pagina],
+    queryKey: ['mis-solicitudes', usuario?.id, pagina],
     queryFn: () => api.adopcion.misSolicitudes(pagina, POR_PAGINA),
     enabled: usuario !== null,
+    refetchInterval: activa ? 10_000 : false,
+    refetchIntervalInBackground: false,
   });
+
+  const visitas = useQuery({
+    queryKey: ['mis-visitas', usuario?.id], queryFn: () => api.adopcion.misVisitas(),
+    enabled: usuario !== null && !MODO_DEMO, refetchInterval: activa ? 10_000 : false, retry: false,
+  });
+  useActualizarAlVolver(activa && usuario !== null && !MODO_DEMO, visitas.refetch);
+
+  useActualizarAlVolver(activa && usuario !== null, refetch);
 
   if (!usuario) {
     return (
@@ -91,6 +106,9 @@ export default function PantallaSolicitudes() {
             </View>
           </View>
           <ProgresoSolicitud estado={item.estado} />
+          {visitaVigente(visitas.data ?? [], item.id) && <VisitaSolicitud visita={visitaVigente(visitas.data ?? [], item.id)!} estadoSolicitud={item.estado} />}
+          {!MODO_DEMO && item.estado === EstadoSolicitud.EntrevistaVisita && visitas.isPending && <Text style={{ color: paleta.inkMuted }}>Cargando datos de la visita…</Text>}
+          {item.estado === EstadoSolicitud.EntrevistaVisita && visitas.isError && <><Text accessibilityRole="alert" style={{ color: paleta.danger }}>No pudimos cargar los datos de la visita.</Text><Boton titulo="Reintentar visita" variante="secundario" alPresionar={() => void visitas.refetch()} /></>}
           <AccionesAdopcion solicitud={item} />
         </View>
       )}

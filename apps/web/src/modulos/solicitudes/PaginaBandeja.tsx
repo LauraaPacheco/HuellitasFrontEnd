@@ -1,3 +1,4 @@
+import { puedeDecidirSolicitud, visitaVigente } from '@huellitas/shared';
 import { AccionesSolicitud } from './AccionesSolicitud';
 import { useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
@@ -27,8 +28,7 @@ import { EstadoCargando } from '@/componentes/ui/EstadoCargando';
 const DIAS_PARA_ALERTA = 5;
 
 /** El backend solo deja decidir sobre solicitudes que siguen abiertas (409 en cualquier otro estado). */
-const sePuedeDecidir = (s: SolicitudResumen) =>
-  s.estado === EstadoSolicitud.Enviada || s.estado === EstadoSolicitud.EnRevision;
+
 
 type Decision = { readonly tipo: 'aprobar' | 'rechazar'; readonly solicitud: SolicitudResumen };
 
@@ -42,6 +42,13 @@ export function PaginaBandeja() {
   const { data, isLoading, isFetching, isError, error, refetch } = useQuery({
     queryKey: ['solicitudes', filtro],
     queryFn: () => api.adopcion.listar(filtro),
+    refetchInterval: 10_000,
+    refetchIntervalInBackground: false,
+  });
+
+  const visitas = useQuery({
+    queryKey: ['visitas-refugio'], queryFn: () => api.adopcion.visitasRefugio(),
+    enabled: !MODO_DEMO, refetchInterval: 10_000, retry: false,
   });
 
   const decidir = useMutation({
@@ -186,7 +193,7 @@ export function PaginaBandeja() {
                   </td>
                   <td className="tabla__detalle tabla__c-dato" data-etiqueta="Recibida">{formatearFecha(solicitud.fechaEnvio)}</td>
                   <td className={`${demorada ? 'tabla__alerta' : 'tabla__detalle'} tabla__c-dato tabla__c-dato--fin`} data-etiqueta="Espera">
-                    {sePuedeDecidir(solicitud)
+                    {puedeDecidirSolicitud(solicitud, visitaVigente(visitas.data ?? [], solicitud.id))
                       ? `${solicitud.diasSinRespuesta} ${solicitud.diasSinRespuesta === 1 ? 'día' : 'días'}`
                       : '—'}
                   </td>
@@ -195,8 +202,10 @@ export function PaginaBandeja() {
                   </td>
                   <td className="tabla__c-accion">
                     <AccionesSolicitud
+                      visitas={visitas.data ?? []}
+                      errorVisitas={visitas.isError}
                       solicitud={solicitud}
-                      alDecidir={sePuedeDecidir(solicitud) ? (tipo) => abrirDecision(tipo, solicitud) : undefined}
+                      alDecidir={puedeDecidirSolicitud(solicitud, visitaVigente(visitas.data ?? [], solicitud.id)) ? (tipo) => abrirDecision(tipo, solicitud) : undefined}
                     />
                   </td>
                 </tr>

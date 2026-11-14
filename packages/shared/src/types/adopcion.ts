@@ -83,3 +83,15 @@ export interface CrearVisitaDto {
   fecha: string;
   modalidad: Modalidad;
 }
+
+/** Respuesta de mis-visitas y refugio/visitas (backend 15e5973). */
+export interface VisitaResumen {
+  readonly visitaId: number;
+  readonly solicitudId: number;
+  readonly mascotaNombre: string;
+  readonly adoptanteNombre: string;
+  readonly refugioNombre: string;
+  readonly fecha: string;
+  readonly modalidad: string;
+  readonly estado: string;
+}

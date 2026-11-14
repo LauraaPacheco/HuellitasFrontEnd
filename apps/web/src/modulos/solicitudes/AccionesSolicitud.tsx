@@ -1,3 +1,4 @@
+import { visitaVigente, formatearFechaHora, type VisitaResumen } from '@huellitas/shared';
 import { useEffect, useId, useRef, useState, type ReactNode } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
@@ -11,7 +12,7 @@ import {
   type LucideIcon,
 } from 'lucide-react';
 import { ErrorHttp, EstadoSolicitud, Modalidad, formatearFecha, type SolicitudResumen } from '@huellitas/shared';
-import { api } from '@/lib/api';
+import { api, MODO_DEMO } from '@/lib/api';
 import { Boton } from '@/componentes/ui/Boton';
 import { Modal } from '@/componentes/ui/Modal/Modal';
 import { EstadoCargando } from '@/componentes/ui/EstadoCargando';
@@ -37,8 +38,12 @@ const TITULOS: Record<Accion, string> = {
 export function AccionesSolicitud({
   solicitud: s,
   alDecidir,
+  visitas = [],
+  errorVisitas = false,
 }: {
   solicitud: SolicitudResumen;
+  visitas?: readonly VisitaResumen[];
+  errorVisitas?: boolean;
   /** Solo llega si la solicitud sigue abierta y se puede aprobar o rechazar. */
   alDecidir?: (tipo: 'aprobar' | 'rechazar') => void;
 }) {
@@ -47,6 +52,14 @@ export function AccionesSolicitud({
   const [fecha, setFecha] = useState('');
   const [modalidad, setModalidad] = useState(Modalidad.Presencial);
   const [mensaje, setMensaje] = useState('');
+
+  const revision = useMutation({
+    mutationFn: () => api.adopcion.marcarEnRevision(s.id),
+    onSuccess: async () => {
+      setMensaje('La solicitud está en revisión. El adoptante podrá ver este estado.');
+      await cache.invalidateQueries({ queryKey: ['solicitudes'] });
+    },
+  });
 
   const documentos = useQuery({
     queryKey: ['soportes', s.id],
@@ -64,6 +77,7 @@ export function AccionesSolicitud({
       setMensaje(accion === 'finalizar' ? 'Adopción finalizada.' : 'Visita agendada.');
       setAccion(undefined);
       await Promise.all([
+        cache.invalidateQueries({ queryKey: ['visitas-refugio'] }),
         cache.invalidateQueries({ queryKey: ['solicitudes'] }),
         cache.invalidateQueries({ queryKey: ['mascotas'] }),
         cache.invalidateQueries({ queryKey: ['mis-solicitudes'] }),
@@ -92,22 +106,34 @@ export function AccionesSolicitud({
     setAccion(valor);
   }
 
+  const visita = visitaVigente(visitas, s.id);
   const abierta = s.estado === EstadoSolicitud.Enviada || s.estado === EstadoSolicitud.EnRevision;
   const masAcciones: OpcionMenu[] = [
-    ...(abierta ? [{ etiqueta: 'Agendar visita', icono: CalendarClock, alElegir: () => abrir('visita') }] : []),
+    ...(abierta && !visita ? [{ etiqueta: 'Agendar visita', icono: CalendarClock, alElegir: () => abrir('visita') }] : []),
     { etiqueta: 'Ver soportes', icono: FileText, alElegir: () => abrir('soportes') },
   ];
 
   return (
     <>
+      {visita && <div className="sol-acciones__aviso" role="status">
+        <strong>Visita {visita.estado === 'Confirmada' ? 'aceptada por el adoptante' : visita.estado === 'Reprogramada' ? 'rechazada: pendiente de nueva fecha' : visita.estado === 'Propuesta' ? 'pendiente de respuesta' : visita.estado.toLowerCase()}</strong>
+        <p>{formatearFechaHora(visita.fecha)} · {visita.modalidad}</p>
+      </div>}
+      {errorVisitas && s.estado === EstadoSolicitud.EntrevistaVisita && <p role="alert">No pudimos consultar la respuesta a la visita. Inténtalo de nuevo.</p>}
       <div className="sol-acciones">
+        {!MODO_DEMO && s.estado === EstadoSolicitud.Enviada && (
+          <Boton className="sol-acciones__boton" cargando={revision.isPending} onClick={() => revision.mutate()}>
+            <FileText size={16} strokeWidth={1.75} aria-hidden="true" />
+            Poner en revisión
+          </Boton>
+        )}
         {alDecidir && (
           <>
-            <Boton variante="primario" className="sol-acciones__boton" onClick={() => alDecidir('aprobar')}>
+            <Boton variante="primario" className="sol-acciones__boton" disabled={revision.isPending} onClick={() => alDecidir('aprobar')}>
               <Check size={16} strokeWidth={2.25} aria-hidden="true" />
               Aprobar
             </Boton>
-            <Boton variante="peligro" className="sol-acciones__boton" onClick={() => alDecidir('rechazar')}>
+            <Boton variante="peligro" className="sol-acciones__boton" disabled={revision.isPending} onClick={() => alDecidir('rechazar')}>
               <X size={16} strokeWidth={2.25} aria-hidden="true" />
               Rechazar
             </Boton>
@@ -125,19 +151,20 @@ export function AccionesSolicitud({
             Constancia
           </Boton>
         )}
-        {s.estado === EstadoSolicitud.EntrevistaVisita && (
+        {s.estado === EstadoSolicitud.EntrevistaVisita && visita?.estado !== 'Confirmada' && (
           <span
             className="sol-acciones__nota"
-            title="El servidor aún no devuelve la fecha de visita ni permite decidir sobre este estado."
+            title="El adoptante debe aceptar la visita para continuar."
           >
             <CalendarClock size={16} strokeWidth={1.75} aria-hidden="true" />
-            Visita en curso
+            {visita?.estado === 'Reprogramada' ? 'Pendiente de nueva fecha' : 'Esperando confirmación de visita'}
           </span>
         )}
         <MenuMas etiqueta={`Más acciones para la solicitud ${s.codigo}`} opciones={masAcciones} />
       </div>
 
       {mensaje && <p role="status" className="sol-acciones__aviso">{mensaje}</p>}
+      {revision.isError && <p role="alert" className="sol-acciones__aviso campo__error">{detalle(revision.error)}</p>}
       {pdf.isError && <p role="alert" className="sol-acciones__aviso campo__error">{detalle(pdf.error)}</p>}
 
       {accion && (

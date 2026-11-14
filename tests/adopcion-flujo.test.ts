@@ -28,3 +28,14 @@ describe('ADO-04 a ADO-07, contrato 85757de',()=>{
   it('rechaza JSON con 200 como PDF y formatos de archivo no admitidos',async()=>{const {api}=await preparar([Response.json({mensaje:'No es PDF'})]);await expect(api.adopcion.descargarConstancia(8)).rejects.toMatchObject({estadoHttp:502});expect(validarArchivoServidor('doc.pdf',1)).toBeNull();expect(validarArchivoServidor('doc.pdf',1,true)).toBeTruthy();expect(validarArchivoServidor('foto.jpg',0)).toBeTruthy();expect(validarArchivoServidor('doc.exe',10)).toBeTruthy();expect(validarArchivoServidor('doc.pdf',5*1024*1024+1)).toBeTruthy();});
   it('interpreta Cerrada para las otras solicitudes afectadas por el cierre masivo',()=>{expect(estadoSolicitudApi('Cerrada')).toBe(EstadoSolicitud.Cerrada);});
 });
+
+it('marca en revisión por PATCH autenticado y propaga conflictos sin simular éxito', async () => {
+  const { api, fetch } = await preparar([
+    Response.json({ mensaje: 'Solicitud en revisión.' }),
+    Response.json({ detail: 'Solo solicitudes enviadas.' }, { status: 409 }),
+  ]);
+  await api.adopcion.marcarEnRevision(8);
+  expect(fetch.mock.calls[0][0]).toBe('http://api.test/api/v1/Adopciones/8/revisar');
+  expect(fetch.mock.calls[0][1]).toMatchObject({ method: 'PATCH', headers: { Authorization: 'Bearer token-de-prueba' } });
+  await expect(api.adopcion.marcarEnRevision(8)).rejects.toMatchObject({ estadoHttp: 409 });
+});

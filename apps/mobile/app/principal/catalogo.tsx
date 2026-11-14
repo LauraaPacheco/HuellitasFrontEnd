@@ -1,3 +1,4 @@
+import { usePantallaActiva, useActualizarAlVolver } from '@/hooks/usePantallaActiva';
 import { HojaFiltros, contarFiltros, type FiltrosCatalogo } from '@/componentes/HojaFiltros';
 import { useState } from 'react';
 import { House, ImageOff, PawPrint, Search, ShieldCheck, SlidersHorizontal, X } from 'lucide-react-native';
@@ -33,6 +34,7 @@ const UNA_HORA = 60 * 60 * 1000;
 
 export default function PantallaCatalogo() {
   const paleta = usarPaleta();
+  const activa = usePantallaActiva();
   const [filtrosAbiertos, setFiltrosAbiertos] = useState(false);
   // Los catálogos solo los usa la hoja de filtros: se piden la primera vez que se abre,
   // no al entrar al catálogo (que es la pantalla de llegada después del login).
@@ -47,7 +49,11 @@ export default function PantallaCatalogo() {
   const { data, isLoading, isError, error, refetch, isRefetching, isFetching } = useQuery({
     queryKey: ['mascotas', filtro],
     queryFn: () => api.mascotas.buscar(filtro),
+    refetchInterval: activa ? 10_000 : false,
+    refetchIntervalInBackground: false,
   });
+
+  useActualizarAlVolver(activa, refetch);
 
   function buscar() {
     setFiltro((previo) => ({ ...previo, pagina: 1, texto: texto.trim() || undefined }));
