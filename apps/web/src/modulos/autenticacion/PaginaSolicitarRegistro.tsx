@@ -9,6 +9,7 @@ import { api, MODO_DEMO } from '@/lib/api';
 import { Link } from 'react-router-dom';
 import { Boton } from '@/componentes/ui/Boton';
 import { Campo } from '@/componentes/ui/Campo';
+import { CamposRedesSociales } from '@/componentes/ui/CamposRedesSociales/CamposRedesSociales';
 import { MarcoAuth } from './MarcoAuth';
 
 const VACIO: SolicitudRefugioDto = {
@@ -18,7 +19,7 @@ const VACIO: SolicitudRefugioDto = {
   telefono: '',
   correo: '',
   encargado: '',
-  redesSociales: '',
+  redesSociales: null,
   descripcion: '',
 };
 
@@ -137,14 +138,14 @@ export function PaginaSolicitarRegistro() {
           valor={datos.encargado}
           alCambiar={cambiar('encargado')}
         />
-        <Campo
-          id="redes"
-          etiqueta="Redes sociales (opcional)"
-          valor={datos.redesSociales ?? ''}
-          alCambiar={cambiar('redesSociales')}
-          marcador="@fundacionpatitas"
-          ayuda="Ayuda al administrador a verificar que el refugio existe"
-        />
+        <div className="marco-auth__ancho-completo">
+          <CamposRedesSociales
+            id="redes"
+            valor={datos.redesSociales}
+            alCambiar={(redesSociales) => setDatos((previo) => ({ ...previo, redesSociales }))}
+            ayuda="Ayuda al administrador a verificar que el refugio existe"
+          />
+        </div>
         <div className="marco-auth__ancho-completo">
           <Campo
             id="descripcion"

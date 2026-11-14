@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { ErrorHttp, EstadoVerificacion, ESTADO_VERIFICACION, type Refugio } from '@huellitas/shared';
+import { describirRedesSociales, ErrorHttp, EstadoVerificacion, ESTADO_VERIFICACION, type Refugio } from '@huellitas/shared';
 import { api, MODO_DEMO } from '@/lib/api';
 import { Encabezado } from '@/componentes/layout/Encabezado';
 import { Boton } from '@/componentes/ui/Boton';
@@ -66,7 +66,7 @@ export function PaginaVerificacionRefugios() {
       <dl className="refugio-datos">
         {seleccion.nit && <div><dt>NIT</dt><dd>{seleccion.nit}</dd></div>}<div><dt>Persona encargada</dt><dd>{seleccion.encargado ?? 'Sin información'}</dd></div>
         <div><dt>Dirección</dt><dd>{seleccion.direccion}</dd></div><div><dt>Teléfono</dt><dd>{seleccion.telefono ?? 'Sin información'}</dd></div>
-        <div><dt>Correo</dt><dd>{seleccion.correo ?? 'Sin información'}</dd></div><div><dt>Redes sociales</dt><dd>{seleccion.redesSociales || 'Sin información'}</dd></div>
+        <div><dt>Correo</dt><dd>{seleccion.correo ?? 'Sin información'}</dd></div><div><dt>Redes sociales</dt><dd>{describirRedesSociales(seleccion.redesSociales) || 'Sin información'}</dd></div>
         <div><dt>Descripción</dt><dd>{seleccion.descripcion || 'Sin descripción'}</dd></div>
       </dl>
       {seleccion.motivoRechazo && <p>Motivo registrado: {seleccion.motivoRechazo}</p>}

@@ -14,7 +14,7 @@ import {
   Star,
   type LucideIcon,
 } from 'lucide-react-native';
-import { EstadoVerificacion } from '@huellitas/shared';
+import { describirRedesSociales, EstadoVerificacion } from '@huellitas/shared';
 import { api } from '@/lib/api';
 import { EstadoCargando } from '@/componentes/EstadoCargando';
 import { EstadoError } from '@/componentes/EstadoError';
@@ -151,7 +151,7 @@ export default function PantallaRefugio() {
             accion={telefono ? { texto: 'Llamar', abrir: () => void Linking.openURL(`tel:${telefono}`) } : undefined}
           />
           <Contacto icono={Mail} etiqueta="Correo de contacto" valor={refugio.correo} />
-          <Contacto icono={AtSign} etiqueta="Redes sociales" valor={refugio.redesSociales} />
+          <Contacto icono={AtSign} etiqueta="Redes sociales" valor={describirRedesSociales(refugio.redesSociales) || null} />
         </View>
       ) : (
         <View style={estilos.seccion}>

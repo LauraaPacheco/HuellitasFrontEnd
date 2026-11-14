@@ -8,7 +8,7 @@
 
 import { ClienteApi, ErrorHttp, type ConfiguracionCliente } from '../api/client';
 import type { Usuario, PerfilAdoptanteDto, EditarPerfilDto } from '../types/usuarios';
-import { validarRefugio, normalizarRefugio } from '../utils/refugios';
+import { validarRefugio, normalizarRefugio, limpiarRedesSociales } from '../utils/refugios';
 import type { Refugio, SolicitudRefugioDto, EditarRefugioDto } from '../types/refugios';
 import { validarDatosPersonales, validarPerfilAdoptante } from '../utils/perfil';
 import { EstadoMascota, EstadoVerificacion, NivelRol, TipoMultimedia } from '../types/enums';
@@ -236,7 +236,7 @@ export class ClienteDemo extends ClienteApi {
       const nuevo: Refugio = {
         ...normalizarRefugio(datos), id: Math.max(...this.refugios.map(r => r.id), 0) + 1,
         activo: true, fechaCreacion: new Date().toISOString(), fechaModificacion: null,
-        redesSociales: datos.redesSociales?.trim() ?? null, descripcion: datos.descripcion?.trim() ?? null,
+        redesSociales: limpiarRedesSociales(datos.redesSociales), descripcion: datos.descripcion?.trim() ?? null,
         estadoVerificacion: EstadoVerificacion.Pendiente, fechaVerificacion: null,
         motivoRechazo: null, promedioCalificacion: null, totalAdopciones: 0, requisitos: [],
       };

@@ -1,5 +1,6 @@
 import { ErrorHttp, type ClienteApi } from '../client';
 import { EstadoVerificacion } from '../../types/enums';
+import { leerRedesSociales, limpiarRedesSociales } from '../../utils/refugios';
 import { RUTAS } from '../rutas';
 import type { FiltroPaginado, Paginado } from '../../types/comun';
 import type {
@@ -18,7 +19,8 @@ const BASE = '/api/v1/Refugios';
 interface RequisitoApi { requisitoId: number; descripcion: string; esObligatorio: boolean; orden: number }
 interface PerfilApi {
   nombre: string; descripcion: string; direccion: string; telefono: string | null;
-  redesSociales: string | null; requisitos: RequisitoApi[];
+  /** Objeto en mi-perfil; la ficha pública aún devuelve el JSON como texto. */
+  redesSociales: Record<string, string> | string | null; requisitos: RequisitoApi[];
 }
 interface PerfilPropioApi extends PerfilApi { estadoVerificacion: EstadoVerificacion }
 interface PublicoApi extends PerfilApi { refugioId: number; correo: string | null; verificado: boolean }
@@ -43,7 +45,7 @@ export class ServicioRefugios {
     const dto = await this.api.get<PerfilPropioApi>(`${BASE}/mi-perfil`);
     // La consulta pública sí carga los requisitos asociados; mi-perfil puede omitirlos.
     const publico = await this.obtener(refugioId);
-    return { ...publico, ...dto, id: refugioId,
+    return { ...publico, ...dto, id: refugioId, redesSociales: leerRedesSociales(dto.redesSociales),
       requisitos: publico.requisitos, estadoVerificacion: dto.estadoVerificacion };
   }
 
@@ -65,7 +67,7 @@ export class ServicioRefugios {
     if (!this.modoDemo) {
       const dto = await this.api.get<PublicoApi>(`${BASE}/${id}`);
       return { ...refugioBase(dto.refugioId, dto.nombre, dto.direccion), descripcion: dto.descripcion,
-        telefono: dto.telefono, correo: dto.correo, redesSociales: dto.redesSociales,
+        telefono: dto.telefono, correo: dto.correo, redesSociales: leerRedesSociales(dto.redesSociales),
         estadoVerificacion: dto.verificado ? EstadoVerificacion.Verificado : EstadoVerificacion.Pendiente,
         requisitos: requisitosApi(dto.requisitos, dto.refugioId) };
     }
@@ -79,8 +81,9 @@ export class ServicioRefugios {
 
   async editar(id: number, datos: EditarRefugioDto): Promise<Refugio> {
     if (!this.modoDemo) {
-      const { descripcion = '', direccion, telefono, redesSociales = '' } = datos;
-      await this.api.put(`${BASE}/mi-perfil`, { descripcion, direccion, telefono, redesSociales });
+      const { descripcion = '', direccion, telefono } = datos;
+      // El backend serializa el diccionario a JSON; null deja la columna vacía.
+      await this.api.put(`${BASE}/mi-perfil`, { descripcion, direccion, telefono, redesSociales: limpiarRedesSociales(datos.redesSociales) });
       return this.miPerfil(id);
     }
     return this.api.put<Refugio>(RUTAS.refugios.porId(id), datos);

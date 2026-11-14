@@ -2,11 +2,12 @@ import { useState, type FormEvent } from 'react';
 import { Link } from 'react-router-dom';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { BadgeCheck, ExternalLink, FileText, Heart, Pencil, Star, Trash2, type LucideIcon } from 'lucide-react';
-import { ErrorHttp, ESTADO_VERIFICACION, normalizarRefugio, validarRefugio, type EditarRefugioDto, type Refugio } from '@huellitas/shared';
+import { ErrorHttp, ESTADO_VERIFICACION, limpiarRedesSociales, normalizarRefugio, validarRefugio, type EditarRefugioDto, type RedesSociales, type Refugio } from '@huellitas/shared';
 import { api, MODO_DEMO } from '@/lib/api';
 import { useSesion } from '@/modulos/autenticacion/ContextoSesion';
 import { Encabezado } from '@/componentes/layout/Encabezado';
 import { Campo } from '@/componentes/ui/Campo';
+import { CamposRedesSociales } from '@/componentes/ui/CamposRedesSociales/CamposRedesSociales';
 import { Boton } from '@/componentes/ui/Boton';
 import { Insignia } from '@/componentes/ui/Insignia';
 import { EstadoVacio } from '@/componentes/ui/EstadoVacio';
@@ -98,14 +99,16 @@ function FormularioRefugio({ refugio }: { refugio: Refugio }) {
   const cliente = useQueryClient();
   const inicial: EditarRefugioDto = {
     nombre: refugio.nombre, direccion: refugio.direccion, telefono: refugio.telefono ?? '', correo: refugio.correo ?? '',
-    encargado: refugio.encargado ?? '', redesSociales: refugio.redesSociales ?? '', descripcion: refugio.descripcion ?? '',
+    encargado: refugio.encargado ?? '', redesSociales: refugio.redesSociales, descripcion: refugio.descripcion ?? '',
   };
   const [datos, setDatos] = useState<EditarRefugioDto>(inicial);
   const [errorLocal, setErrorLocal] = useState('');
-  const sinCambios = (Object.keys(inicial) as (keyof EditarRefugioDto)[]).every((campo) => (datos[campo] ?? '') === (inicial[campo] ?? ''));
+  const comparable = (campo: keyof EditarRefugioDto, d: EditarRefugioDto) =>
+    campo === 'redesSociales' ? JSON.stringify(limpiarRedesSociales(d.redesSociales)) : d[campo] ?? '';
+  const sinCambios = (Object.keys(inicial) as (keyof EditarRefugioDto)[]).every((campo) => comparable(campo, datos) === comparable(campo, inicial));
   const guardar = useMutation({ mutationFn: () => api.refugios.editar(refugio.id, normalizarRefugio(datos)),
     onSuccess: () => { void cliente.invalidateQueries({ queryKey: ['refugios'] }); } });
-  function cambiar(campo: keyof EditarRefugioDto, valor: string) {
+  function cambiar(campo: keyof EditarRefugioDto, valor: string | RedesSociales) {
     setDatos(prev => ({ ...prev, [campo]: valor })); guardar.reset(); setErrorLocal('');
   }
   function enviar(evento: FormEvent) {
@@ -131,7 +134,7 @@ function FormularioRefugio({ refugio }: { refugio: Refugio }) {
             <Campo id="refugio-telefono" etiqueta="Teléfono" tipo="tel" valor={datos.telefono} alCambiar={v => cambiar('telefono', v)} ayuda="10 dígitos" />
             {MODO_DEMO && <Campo id="refugio-correo" etiqueta="Correo de contacto" tipo="email" valor={datos.correo} alCambiar={v => cambiar('correo', v)} />}
           </div>
-          <Campo id="refugio-redes" etiqueta="Redes sociales (opcional)" valor={datos.redesSociales ?? ''} alCambiar={v => cambiar('redesSociales', v)} />
+          <CamposRedesSociales id="refugio-redes" valor={datos.redesSociales} alCambiar={v => cambiar('redesSociales', v)} />
           <div className="campo">
             <label className="campo__etiqueta" htmlFor="refugio-descripcion">Descripción (opcional)</label>
             <textarea className="campo__control refugio-descripcion" id="refugio-descripcion" value={datos.descripcion ?? ''} onChange={e => cambiar('descripcion', e.target.value)} />

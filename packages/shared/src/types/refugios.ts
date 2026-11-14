@@ -7,6 +7,13 @@ import type {
   TipoNecesidad,
 } from './enums';
 
+/**
+ * Redes del refugio como pares red → usuario o enlace. El backend lo guarda
+ * como JSON (`Dictionary<string, string>`), así que se admiten claves que
+ * el front no conozca y se conservan al editar.
+ */
+export type RedesSociales = Readonly<Record<string, string>>;
+
 export interface Refugio extends EntidadBase {
   readonly nombre: string;
   readonly nit: string;
@@ -14,7 +21,7 @@ export interface Refugio extends EntidadBase {
   readonly telefono: string | null;
   readonly correo: string | null;
   readonly encargado: string | null;
-  readonly redesSociales: string | null;
+  readonly redesSociales: RedesSociales | null;
   readonly descripcion: string | null;
   readonly estadoVerificacion: EstadoVerificacion;
   readonly fechaVerificacion: string | null;
@@ -70,7 +77,7 @@ export interface SolicitudRefugioDto {
   telefono: string;
   correo: string;
   encargado: string;
-  redesSociales?: string;
+  redesSociales?: RedesSociales | null;
   descripcion?: string;
 }
 

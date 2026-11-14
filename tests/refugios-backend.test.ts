@@ -1,8 +1,9 @@
 import { afterEach, expect, it, vi } from 'vitest';
-import { crearApi, AlmacenMemoria, EstadoVerificacion } from '../packages/shared/src';
+import { crearApi, AlmacenMemoria, EstadoVerificacion, describirRedesSociales, leerRedesSociales, limpiarRedesSociales } from '../packages/shared/src';
 
-const propio = { nombre: 'Refugio', descripcion: 'Descripción', direccion: 'Cali', telefono: '3001234567', redesSociales: '', estadoVerificacion: 1, requisitos: [] };
-const publico = { ...propio, refugioId: 7, correo: 'refugio@test.co', verificado: true,
+const propio = { nombre: 'Refugio', descripcion: 'Descripción', direccion: 'Cali', telefono: '3001234567', redesSociales: { instagram: '@refugio' }, estadoVerificacion: 1, requisitos: [] };
+// La ficha pública todavía devuelve la columna cruda: el JSON como texto.
+const publico = { ...propio, redesSociales: '{"instagram":"@refugio"}', refugioId: 7, correo: 'refugio@test.co', verificado: true,
   requisitos: [{ requisitoId: 12, descripcion: 'Visita previa', esObligatorio: true, orden: 2 }], mascotasDisponibles: [] };
 async function preparar(...respuestas: Response[]) {
   const fetch = vi.fn(); respuestas.forEach(r => fetch.mockResolvedValueOnce(r));
@@ -41,11 +42,21 @@ it('adapta tamano y totalRegistros al paginado del frontend', async () => {
 
 it('envía solo los cuatro campos editables y vuelve a consultar después del mensaje de éxito', async () => {
   const { api, fetch } = await preparar(Response.json({ mensaje: 'Guardado' }), Response.json(propio), Response.json(publico));
-  const r = await api.refugios.editar(7, { nombre: 'No editable', encargado: 'No editable', correo: 'ignorado@test.co', descripcion: 'Descripción', direccion: 'Cali', telefono: '3001234567', redesSociales: '' });
+  const r = await api.refugios.editar(7, { nombre: 'No editable', encargado: 'No editable', correo: 'ignorado@test.co', descripcion: 'Descripción', direccion: 'Cali', telefono: '3001234567', redesSociales: { instagram: ' @refugio ', facebook: '  ' } });
   expect(fetch.mock.calls[0][0]).toBe('http://api.test/api/v1/Refugios/mi-perfil');
   expect(fetch.mock.calls[0][1].method).toBe('PUT');
-  expect(JSON.parse(fetch.mock.calls[0][1].body)).toEqual({ descripcion: 'Descripción', direccion: 'Cali', telefono: '3001234567', redesSociales: '' });
+  expect(JSON.parse(fetch.mock.calls[0][1].body)).toEqual({ descripcion: 'Descripción', direccion: 'Cali', telefono: '3001234567', redesSociales: { instagram: '@refugio' } });
   expect(r.id).toBe(7);
+  expect(r.redesSociales).toEqual({ instagram: '@refugio' });
+});
+
+it('lee las redes como objeto, como JSON en texto o como texto suelto de antes', () => {
+  expect(leerRedesSociales({ instagram: '@a', vacia: ' ' })).toEqual({ instagram: '@a' });
+  expect(leerRedesSociales('{"facebook":"fb.com/a"}')).toEqual({ facebook: 'fb.com/a' });
+  expect(leerRedesSociales('@antiguo')).toEqual({ otra: '@antiguo' });
+  expect(leerRedesSociales('') ).toBeNull();
+  expect(describirRedesSociales({ instagram: '@a', otra: 'x' })).toBe('Instagram: @a · Otra: x');
+  expect(limpiarRedesSociales({ tiktok: '  ' })).toBeNull();
 });
 
 it('agrega un requisito con orden sin fabricar una entidad desde el mensaje de respuesta', async () => {
