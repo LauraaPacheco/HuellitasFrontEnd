@@ -1,0 +1,95 @@
+.estado-cargando {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-3);
+  text-align: center;
+  color: var(--ink-muted);
+  /* Retraso corto: una respuesta rapida no alcanza a mostrar el spinner. */
+  animation: estado-cargando-aparece 200ms ease-out 150ms both;
+}
+
+/* El mismo alto que EstadoError: cargar, fallar o mostrar no mueve nada. */
+.estado-cargando--pagina {
+  min-height: 300px;
+  padding: var(--space-6) var(--space-4);
+}
+
+.estado-cargando--pantalla {
+  min-height: 100dvh;
+  padding: var(--space-6) var(--space-4);
+}
+
+.estado-cargando--bloque {
+  min-height: 240px;
+  padding: var(--space-6) var(--space-4);
+}
+
+.estado-cargando--compacto {
+  flex-direction: row;
+  justify-content: flex-start;
+  gap: var(--space-2);
+  padding: var(--space-2) 0;
+  font-size: 0.875rem;
+}
+
+.estado-cargando__spinner {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  border: 3px solid var(--border);
+  border-top-color: var(--brand);
+  animation: estado-cargando-gira 0.8s linear infinite;
+}
+
+.estado-cargando--compacto .estado-cargando__spinner {
+  width: 18px;
+  height: 18px;
+  border-width: 2px;
+}
+
+.estado-cargando__mensaje {
+  font-size: 0.9375rem;
+}
+
+.estado-cargando--compacto .estado-cargando__mensaje {
+  font-size: inherit;
+}
+
+@keyframes estado-cargando-gira {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes estado-cargando-aparece {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes estado-cargando-late {
+  0%,
+  100% {
+    opacity: 0.35;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+
+/*
+ * Con menos movimiento pedido, el aro no gira: late despacio. Sigue
+ * diciendo que algo esta pasando sin poner nada a dar vueltas.
+ */
+@media (prefers-reduced-motion: reduce) {
+  .estado-cargando__spinner {
+    border-color: var(--brand);
+    animation: estado-cargando-late 1.6s ease-in-out infinite;
+  }
+}
+

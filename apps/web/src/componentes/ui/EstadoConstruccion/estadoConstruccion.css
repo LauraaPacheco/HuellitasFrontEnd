@@ -1,0 +1,76 @@
+/*
+ * Igual que .estado-error: llena el espacio libre de la pagina (ver
+ * layout.css) y centra el contenido, sin fondo.
+ */
+.estado-construccion {
+  min-height: 300px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-3);
+  padding: var(--space-6) var(--space-4);
+  text-align: center;
+}
+
+.estado-construccion__arte {
+  position: relative;
+  margin-bottom: var(--space-2);
+}
+
+.estado-construccion .ilustracion {
+  height: clamp(120px, 24vh, 220px);
+}
+
+/* Sello con el cono, en la esquina de la ilustracion. */
+.estado-construccion__sello {
+  position: absolute;
+  right: -6px;
+  bottom: 4px;
+  display: grid;
+  place-items: center;
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  background: color-mix(in srgb, var(--warn) 18%, var(--surface-100));
+  color: var(--warn);
+  border: 3px solid var(--surface-100);
+}
+
+.estado-construccion__etiqueta {
+  padding: 4px 12px;
+  border-radius: var(--radius-pill);
+  background: var(--brand-tint);
+  color: var(--brand-strong);
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.estado-construccion__titulo {
+  margin: 0;
+  font-size: clamp(1.25rem, 2vw, 1.5rem);
+  line-height: 1.25;
+}
+
+.estado-construccion__texto {
+  margin: 0;
+  max-width: 46ch;
+  color: var(--ink-muted);
+  line-height: 1.5;
+}
+
+.estado-construccion__historias {
+  margin: 0;
+  font-size: 0.8125rem;
+  color: var(--ink-muted);
+}
+
+.estado-construccion__acciones {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: var(--space-2);
+  margin-top: var(--space-3);
+}

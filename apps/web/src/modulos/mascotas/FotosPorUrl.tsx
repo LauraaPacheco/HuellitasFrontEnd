@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { Link2 } from 'lucide-react';
 import { MAX_ARCHIVOS_MASCOTA, validarUrlFoto } from '@huellitas/shared';
 import { Boton } from '@/componentes/ui/Boton';
 import { Campo } from '@/componentes/ui/Campo';
@@ -13,7 +14,7 @@ interface Props {
 /**
  * Fotos por URL para la ficha real.
  *
- * El backend todavía no recibe archivos: guarda las direcciones tal cual en
+ * Las imágenes subidas y los enlaces se guardan como direcciones en
  * Multimedia y marca la primera como principal. Por eso "Usar como principal"
  * solo mueve la foto al inicio de la lista.
  */
@@ -23,6 +24,7 @@ export function FotosPorUrl({ fotos, alCambiar, deshabilitado }: Props) {
   const [fallidas, setFallidas] = useState<ReadonlySet<string>>(new Set());
 
   function agregar() {
+    if (deshabilitado) return;
     const problema = validarUrlFoto(url, fotos);
     if (problema) { setError(problema); return; }
     alCambiar([...fotos, url.trim()]);
@@ -33,14 +35,23 @@ export function FotosPorUrl({ fotos, alCambiar, deshabilitado }: Props) {
 
   return (
     <div className="fotos-url">
+      <div className="fotos-url__separador" aria-hidden="true"><span>o</span></div>
+      <div className="fotos-url__intro">
+        <p className="fotos-url__titulo"><Link2 size={18} strokeWidth={1.75} aria-hidden="true" /> ¿Prefieres no subir archivos? Usa el enlace de una foto</p>
+        <p className="multimedia__ayuda">
+          Si la foto ya está en un espacio público, como OneDrive, Google Drive, Dropbox o Google Fotos, pega aquí su enlace.
+          Asegúrate de que esté compartida como <strong>"Cualquier persona con el enlace"</strong> y de que el enlace abra directamente la imagen.
+          Si la vista previa no aparece, el enlace no es público o no apunta a una imagen.
+        </p>
+      </div>
       <form className="fotos-url__agregar" onSubmit={e => { e.preventDefault(); agregar(); }}>
         <Campo id="foto-url" etiqueta="Dirección de la foto" tipo="url" marcador="https://…/luna.jpg"
           valor={url} alCambiar={v => { setUrl(v); if (error) setError(''); }} error={error || undefined}
-          ayuda={`Pega el enlace público de una imagen. Hasta ${MAX_ARCHIVOS_MASCOTA} fotos; la primera es la principal.`} />
+          ayuda={`Hasta ${MAX_ARCHIVOS_MASCOTA} fotos entre subidas y enlaces; la primera es la principal.`} />
         <Boton tipo="submit" disabled={deshabilitado || fotos.length >= MAX_ARCHIVOS_MASCOTA}>Agregar foto</Boton>
       </form>
 
-      {fotos.length === 0 ? <p className="multimedia__vacio">Todavía no agregaste fotos. Puedes publicar sin ellas y agregarlas después.</p> : (
+      {fotos.length === 0 ? <p className="multimedia__vacio">Todavía no agregaste fotos. Puedes publicar sin ellas.</p> : (
         <ul className="multimedia__rejilla" aria-label="Fotos agregadas">
           {fotos.map((foto, i) => (
             <li key={foto} className="multimedia__tarjeta">

@@ -1,3 +1,4 @@
+import { EstadoCargando } from '@/componentes/EstadoCargando';
 import { useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useRouter } from 'expo-router';
@@ -15,8 +16,8 @@ export default function PantallaPerfil() {
   const { usuario, cerrarSesion, cargando } = useSesion();
   const [saliendo, setSaliendo] = useState(false);
   const [error, setError] = useState('');
-  if (cargando) return <Text style={{ color: paleta.ink, padding: 24 }}>Cargando sesión…</Text>;
-  if (!usuario) return <AvisoSesion mensaje="Inicia sesión para ver y editar tu perfil de adoptante." />;
+  if (cargando) return <EstadoCargando mensaje="Cargando tu perfil…" />;
+  if (!usuario) return <AvisoSesion titulo="Tu perfil de adoptante" mensaje="Crea tu cuenta para guardar tus datos y postularte más rápido." />;
   const completitud = Math.max(0, Math.min(100, usuario.perfil?.porcentajeCompletitud ?? 0));
   const iniciales = usuario.nombre.trim().split(/\s+/).slice(0, 2).map(p => p[0]).join('').toUpperCase();
   async function salir() {

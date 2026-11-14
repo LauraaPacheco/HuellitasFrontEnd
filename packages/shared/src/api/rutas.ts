@@ -33,6 +33,7 @@ export const RUTAS = {
     cambiarRol: (id: number) => `/api/usuarios/${id}/rol`,
     desactivar: (id: number) => `/api/usuarios/${id}/desactivar`,
   },
+  // Contrato del demo. ServicioRefugios adapta el backend real versionado.
   refugios: {
     base: '/api/refugios',
     porId: (id: number) => `/api/refugios/${id}`,
@@ -80,8 +81,13 @@ export const RUTAS = {
     visitas: '/api/visitas',
   },
   adopciones: {
-    /** Backend real (db3a4fb). */
+    /** Backend real (85757de). */
     postular: '/api/v1/Adopciones',
+    finalizar: (id: number) => `/api/v1/Adopciones/${id}/finalizar`,
+    agendarVisita: (id: number) => `/api/v1/Adopciones/${id}/agendar-visita`,
+    confirmarVisita: (id: number) => `/api/v1/Adopciones/${id}/confirmar-visita`,
+    soportes: (id: number) => `/api/v1/Adopciones/${id}/soportes`,
+    constanciaPdf: (id: number) => `/api/v1/Adopciones/${id}/constancia`,
     misSolicitudes: '/api/v1/Adopciones/mis-solicitudes',
     bandeja: '/api/v1/Adopciones/refugio/bandeja',
     aprobar: (id: number) => `/api/v1/Adopciones/${id}/aprobar`,

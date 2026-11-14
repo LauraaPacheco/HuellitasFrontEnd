@@ -23,7 +23,7 @@ export class ServicioUsuarios {
     const base = contexto ?? sesionDesdeRespuesta({ accessToken: token, refreshToken: '', expiraEnSegundos: 0, nombre: '', rol }).usuario;
     const datos = await this.api.get<PerfilUsuarioApi>(RUTAS.usuarios.yo);
     const perfil = base.rol.nivel === NivelRol.Adoptante ? await this.perfilAdoptante(datos.id) : null;
-    return { ...base, id: datos.id, nombre: datos.nombre, correo: datos.correo, telefono: datos.telefono,
+    return { ...base, id: datos.id, refugioId: datos.refugioId ?? null, nombre: datos.nombre, correo: datos.correo, telefono: datos.telefono,
       fotoUrl: datos.fotoUrl, estado: datos.estado === 'Activo' ? EstadoUsuario.Activo : EstadoUsuario.PendienteVerificacion,
       activo: datos.estado === 'Activo', fechaRegistro: datos.fechaRegistro, fechaCreacion: datos.fechaRegistro,
       politicaAceptada: datos.politicaAceptada, fechaAceptacionPolitica: datos.fechaAceptacionPolitica, perfil };

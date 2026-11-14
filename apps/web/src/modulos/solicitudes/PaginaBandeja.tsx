@@ -1,3 +1,5 @@
+import { puedeDecidirSolicitud, visitaVigente } from '@huellitas/shared';
+import { AccionesSolicitud } from './AccionesSolicitud';
 import { useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
@@ -14,18 +16,19 @@ import { api, MODO_DEMO } from '@/lib/api';
 import { Encabezado } from '@/componentes/layout/Encabezado';
 import { Boton } from '@/componentes/ui/Boton';
 import { EstadoVacio } from '@/componentes/ui/EstadoVacio';
+import { EstadoError } from '@/componentes/ui/EstadoError';
 import { Insignia } from '@/componentes/ui/Insignia';
 import { Modal } from '@/componentes/ui/Modal/Modal';
 import '@/estilos/tabla.css';
 import '@/modulos/mascotas/mascotas.css';
 import '@/modulos/mascotas/multimedia.css';
+import { EstadoCargando } from '@/componentes/ui/EstadoCargando';
 
 /** Solicitudes con esta espera o mas se resaltan en ambar. */
 const DIAS_PARA_ALERTA = 5;
 
 /** El backend solo deja decidir sobre solicitudes que siguen abiertas (409 en cualquier otro estado). */
-const sePuedeDecidir = (s: SolicitudResumen) =>
-  s.estado === EstadoSolicitud.Enviada || s.estado === EstadoSolicitud.EnRevision;
+
 
 type Decision = { readonly tipo: 'aprobar' | 'rechazar'; readonly solicitud: SolicitudResumen };
 
@@ -36,9 +39,16 @@ export function PaginaBandeja() {
   const [texto, setTexto] = useState('');
   const [mensaje, setMensaje] = useState('');
 
-  const { data, isLoading, isError, error, refetch } = useQuery({
+  const { data, isLoading, isFetching, isError, error, refetch } = useQuery({
     queryKey: ['solicitudes', filtro],
     queryFn: () => api.adopcion.listar(filtro),
+    refetchInterval: 10_000,
+    refetchIntervalInBackground: false,
+  });
+
+  const visitas = useQuery({
+    queryKey: ['visitas-refugio'], queryFn: () => api.adopcion.visitasRefugio(),
+    enabled: !MODO_DEMO, refetchInterval: 10_000, retry: false,
   });
 
   const decidir = useMutation({
@@ -95,7 +105,7 @@ export function PaginaBandeja() {
                 }
               >
                 <option value="">Todos los estados</option>
-                {Object.entries(ESTADO_SOLICITUD).map(([valor, descriptor]) => (
+                {Object.entries(ESTADO_SOLICITUD).filter(([valor]) => Number(valor) !== EstadoSolicitud.Desconocido).map(([valor, descriptor]) => (
                   <option key={valor} value={valor}>
                     {descriptor.etiqueta}
                   </option>
@@ -108,13 +118,14 @@ export function PaginaBandeja() {
 
       {mensaje && <p role="status" className="mascotas-mensaje">{mensaje}</p>}
 
-      {isLoading && <p style={{ color: 'var(--ink-muted)' }}>Cargando solicitudes…</p>}
+      {isLoading && <EstadoCargando mensaje="Cargando solicitudes…" />}
 
       {isError && (
-        <EstadoVacio
+        <EstadoError
           titulo="No pudimos cargar las solicitudes"
-          descripcion={error instanceof ErrorHttp ? error.detalle ?? error.message : 'Revisa tu conexión y vuelve a intentarlo.'}
-          accion={<Boton onClick={() => void refetch()}>Reintentar</Boton>}
+          error={error}
+          alReintentar={() => void refetch()}
+          reintentando={isFetching}
         />
       )}
 
@@ -147,7 +158,7 @@ export function PaginaBandeja() {
       )}
 
       {data && data.items.length > 0 && (
-        <div className="tabla-scroll" role="region" aria-label="Solicitudes recibidas, tabla desplazable" tabIndex={0}><table className="tabla">
+        <div className="tabla-scroll" role="region" aria-label="Solicitudes recibidas, tabla desplazable" tabIndex={0}><table className="tabla tabla--tarjetas">
           <thead>
             <tr>
               <th scope="col">Adoptante</th>
@@ -155,7 +166,7 @@ export function PaginaBandeja() {
               <th scope="col">Recibida</th>
               <th scope="col">Espera</th>
               <th scope="col">Estado</th>
-              {!MODO_DEMO && <th scope="col">Acciones</th>}
+              <th scope="col"><span className="visualmente-oculto">Acciones</span></th>
             </tr>
           </thead>
           <tbody>
@@ -163,7 +174,7 @@ export function PaginaBandeja() {
               const demorada = solicitud.diasSinRespuesta >= DIAS_PARA_ALERTA;
               return (
                 <tr key={solicitud.id}>
-                  <td>
+                  <td className="tabla__c-titulo">
                     {/* El detalle y la línea de tiempo aún no existen en el backend real. */}
                     {MODO_DEMO
                       ? <Link to={`/solicitudes/${solicitud.id}`} className="tabla__nombre">{solicitud.nombreAdoptante}</Link>
@@ -174,31 +185,29 @@ export function PaginaBandeja() {
                         : solicitud.perfilCompleto ? 'Perfil completo' : 'Perfil incompleto'}
                     </span>
                   </td>
-                  <td>
+                  <td className="tabla__c-ancho" data-etiqueta="Mascota">
                     <span className="mascota-miniatura">
                       {solicitud.fotoMascota && <img src={solicitud.fotoMascota} alt="" referrerPolicy="no-referrer" />}
                       {solicitud.nombreMascota}
                     </span>
                   </td>
-                  <td className="tabla__detalle">{formatearFecha(solicitud.fechaEnvio)}</td>
-                  <td className={demorada ? 'tabla__alerta' : 'tabla__detalle'}>
-                    {sePuedeDecidir(solicitud)
+                  <td className="tabla__detalle tabla__c-dato" data-etiqueta="Recibida">{formatearFecha(solicitud.fechaEnvio)}</td>
+                  <td className={`${demorada ? 'tabla__alerta' : 'tabla__detalle'} tabla__c-dato tabla__c-dato--fin`} data-etiqueta="Espera">
+                    {puedeDecidirSolicitud(solicitud, visitaVigente(visitas.data ?? [], solicitud.id))
                       ? `${solicitud.diasSinRespuesta} ${solicitud.diasSinRespuesta === 1 ? 'día' : 'días'}`
                       : '—'}
                   </td>
-                  <td>
+                  <td className="tabla__c-estado">
                     <Insignia estado={ESTADO_SOLICITUD[solicitud.estado]} />
                   </td>
-                  {!MODO_DEMO && (
-                    <td>
-                      {sePuedeDecidir(solicitud) ? (
-                        <span style={{ display: 'flex', gap: 8 }}>
-                          <Boton variante="primario" onClick={() => abrirDecision('aprobar', solicitud)}>Aprobar</Boton>
-                          <Boton variante="peligro" onClick={() => abrirDecision('rechazar', solicitud)}>Rechazar</Boton>
-                        </span>
-                      ) : <span className="tabla__detalle">Sin acciones</span>}
-                    </td>
-                  )}
+                  <td className="tabla__c-accion">
+                    <AccionesSolicitud
+                      visitas={visitas.data ?? []}
+                      errorVisitas={visitas.isError}
+                      solicitud={solicitud}
+                      alDecidir={puedeDecidirSolicitud(solicitud, visitaVigente(visitas.data ?? [], solicitud.id)) ? (tipo) => abrirDecision(tipo, solicitud) : undefined}
+                    />
+                  </td>
                 </tr>
               );
             })}

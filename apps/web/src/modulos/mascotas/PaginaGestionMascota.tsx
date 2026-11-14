@@ -17,9 +17,11 @@ import { Boton } from '@/componentes/ui/Boton';
 import { Campo } from '@/componentes/ui/Campo';
 import { SelectorCatalogo } from '@/componentes/ui/SelectorCatalogo';
 import { EstadoVacio } from '@/componentes/ui/EstadoVacio';
+import { EstadoError } from '@/componentes/ui/EstadoError';
 import { Insignia } from '@/componentes/ui/Insignia';
 import { Modal } from '@/componentes/ui/Modal/Modal';
 import './mascotas.css';
+import { EstadoCargando } from '@/componentes/ui/EstadoCargando';
 
 const errorTexto = (error: Error) => error instanceof ErrorHttp ? error.detalle ?? error.message : error.message;
 
@@ -38,8 +40,8 @@ function PaginaGestionMascotaDemo() {
   const volver = <Link className="boton boton--secundario mascota-enlace" to="/mascotas">← Volver a mascotas</Link>;
   if (!refugioId) return <EstadoVacio titulo="Tu cuenta no tiene un refugio asociado" descripcion="Solicita al administrador que revise la asociación." accion={volver} />;
   if (id !== undefined && (!Number.isSafeInteger(id) || id <= 0)) return <EstadoVacio titulo="No encontramos esa mascota" descripcion="Vuelve al listado y selecciona una mascota válida." accion={volver} />;
-  if (refugio.isPending || (id !== undefined && mascota.isPending)) return <p>Cargando información…</p>;
-  if (refugio.isError || (id !== undefined && mascota.isError)) return <EstadoVacio titulo="No pudimos cargar la información" descripcion="Revisa tu conexión o el identificador de la mascota." accion={<><Boton onClick={() => { void refugio.refetch(); if (id) void mascota.refetch(); }}>Reintentar</Boton>{volver}</>} />;
+  if (refugio.isPending || (id !== undefined && mascota.isPending)) return <EstadoCargando mensaje="Cargando información…" />;
+  if (refugio.isError || (id !== undefined && mascota.isError)) return <EstadoError titulo="No pudimos cargar la información" error={refugio.error ?? mascota.error} alReintentar={() => { void refugio.refetch(); if (id) void mascota.refetch(); }} reintentando={refugio.isFetching || mascota.isFetching} accionExtra={volver} />;
   if (refugio.data?.estadoVerificacion !== EstadoVerificacion.Verificado || !refugio.data.activo) return <EstadoVacio titulo="Tu refugio necesita estar verificado" descripcion="El administrador debe verificarlo antes de publicar o gestionar mascotas." accion={volver} />;
   if (mascota.data && mascota.data.refugioId !== refugioId) return <EstadoVacio ilustracion="bloqueo" titulo="Esta mascota pertenece a otro refugio" descripcion="Solo puedes gestionar las mascotas de tu refugio." accion={volver} />;
   const asistente = !id || mascota.data?.estado === EstadoMascota.Borrador;

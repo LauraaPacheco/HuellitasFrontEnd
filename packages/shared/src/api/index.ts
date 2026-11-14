@@ -1,6 +1,7 @@
 import { ClienteApi, type ConfiguracionCliente } from './client';
 import { ClienteDemo } from '../demo/clienteDemo';
 import {
+  ServicioArchivos,
   ServicioAdministracion,
   ServicioAdopcion,
   ServicioAutenticacion,
@@ -21,6 +22,7 @@ export * from './services';
 /** Todos los servicios, ya construidos sobre un mismo cliente. */
 export interface ApiHuellitas {
   readonly cliente: ClienteApi;
+  readonly archivos: ServicioArchivos;
   readonly autenticacion: ServicioAutenticacion;
   readonly usuarios: ServicioUsuarios;
   readonly refugios: ServicioRefugios;
@@ -45,9 +47,10 @@ export function crearApi(config: OpcionesApi): ApiHuellitas {
   const cliente = config.modoDemo ? new ClienteDemo(config) : new ClienteApi(config);
   return {
     cliente,
+    archivos: new ServicioArchivos(cliente, config.modoDemo ?? false),
     autenticacion: new ServicioAutenticacion(cliente),
     usuarios: new ServicioUsuarios(cliente, config),
-    refugios: new ServicioRefugios(cliente),
+    refugios: new ServicioRefugios(cliente, config.modoDemo ?? false),
     mascotas: new ServicioMascotas(cliente, config.modoDemo ?? false),
     catalogos: new ServicioCatalogos(cliente),
     adopcion: new ServicioAdopcion(cliente, config.modoDemo ?? false),

@@ -1,0 +1,248 @@
+/*
+ * Mi cuenta: dos tarjetas lado a lado en escritorio (perfil a la
+ * izquierda, seguridad a la derecha) para que todo quepa sin desplazar.
+ * En celular y tableta (900 px o menos) se apilan.
+ */
+.cuenta {
+  display: grid;
+  grid-template-columns: minmax(0, 5fr) minmax(0, 6fr);
+  gap: var(--space-5);
+  align-items: start;
+}
+
+/* Varias tarjetas apiladas dentro de una misma columna. */
+.cuenta__columna {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-5);
+  min-width: 0;
+}
+
+.cuenta__tarjeta {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-5);
+  padding: var(--space-5);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  background: var(--surface-100);
+  min-width: 0;
+}
+
+/* Perfil: iniciales grandes, nombre y rol. */
+.cuenta__perfil {
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+  min-width: 0;
+}
+
+.cuenta__avatar {
+  flex-shrink: 0;
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  background: var(--brand-tint);
+  color: var(--brand-strong);
+  font-family: var(--fuente-display);
+  font-size: 1.375rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+}
+
+.cuenta__identidad {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 6px;
+}
+
+.cuenta__nombre {
+  margin: 0;
+  font-size: 1.25rem;
+  line-height: 1.2;
+  overflow-wrap: anywhere;
+}
+
+.cuenta__rol {
+  padding: 2px 10px;
+  border-radius: var(--radius-pill);
+  background: var(--surface-200);
+  border: 1px solid var(--border);
+  color: var(--ink-muted);
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+/* Datos de solo lectura, cada uno con su icono. */
+.cuenta__datos {
+  margin: 0;
+  display: grid;
+  gap: var(--space-3);
+  padding: var(--space-4);
+  border-radius: var(--radius-md);
+  background: var(--surface-200);
+}
+
+.cuenta__dato {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-3);
+  min-width: 0;
+}
+
+.cuenta__dato-icono {
+  flex-shrink: 0;
+  margin-top: 2px;
+  color: var(--brand-strong);
+}
+
+.cuenta__dato dt {
+  font-size: 0.75rem;
+  color: var(--ink-muted);
+}
+
+.cuenta__dato dd {
+  margin: 0;
+  font-size: 0.875rem;
+  font-weight: 500;
+  overflow-wrap: anywhere;
+}
+
+.cuenta__titulo {
+  margin: 0;
+  font-size: 1.125rem;
+}
+
+.cuenta__subtitulo {
+  margin: 0;
+  font-size: 0.9375rem;
+}
+
+.cuenta__descripcion {
+  margin: 4px 0 0;
+  font-size: 0.875rem;
+  color: var(--ink-muted);
+}
+
+.cuenta__form,
+.cuenta__form fieldset {
+  display: grid;
+  gap: var(--space-4);
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+/* Dos campos lado a lado mientras quepan; si no, uno debajo del otro. */
+.cuenta__fila {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 160px), 1fr));
+  gap: var(--space-4);
+  align-items: start;
+}
+
+.cuenta__acciones {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.cuenta__ok {
+  margin: 0;
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--brand-strong);
+}
+
+.cuenta__aviso,
+.cuenta__alerta {
+  margin: 0;
+  padding: var(--space-3) var(--space-4);
+  border-radius: var(--radius-md);
+  font-size: 0.875rem;
+  line-height: 1.45;
+}
+
+.cuenta__aviso {
+  background: var(--surface-200);
+  color: var(--ink-muted);
+}
+
+.cuenta__alerta {
+  background: var(--accent-tint);
+  color: var(--danger);
+  font-weight: 500;
+}
+
+/* Selector de que cambiar: tres botones tipo pestana. */
+.cuenta__opciones {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 4px;
+  padding: 4px;
+  border-radius: var(--radius-md);
+  background: var(--surface-200);
+  border: 1px solid var(--border);
+}
+
+.cuenta__opcion {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  min-height: 40px;
+  padding: 0 var(--space-2);
+  border: 0;
+  border-radius: calc(var(--radius-md) - 4px);
+  background: transparent;
+  color: var(--ink-muted);
+  font: inherit;
+  font-size: 0.875rem;
+  font-weight: 600;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: background-color 120ms ease, color 120ms ease;
+}
+
+.cuenta__opcion:hover {
+  color: var(--ink);
+}
+
+.cuenta__opcion--activa {
+  background: var(--surface-100);
+  color: var(--ink);
+  box-shadow: 0 1px 3px rgb(0 0 0 / 0.12);
+}
+
+.cuenta__opcion--peligro.cuenta__opcion--activa {
+  color: var(--danger);
+}
+
+.cuenta__opcion:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 2px;
+}
+
+@media (max-width: 900px) {
+  .cuenta {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+@media (max-width: 540px) {
+  .cuenta__tarjeta {
+    padding: var(--space-4);
+  }
+
+  .cuenta__acciones > .boton {
+    width: 100%;
+  }
+
+  .cuenta__opcion svg {
+    display: none;
+  }
+}

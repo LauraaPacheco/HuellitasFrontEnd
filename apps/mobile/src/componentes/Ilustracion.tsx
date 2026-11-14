@@ -1,12 +1,24 @@
 import { Image, StyleSheet, type ImageSourcePropType } from 'react-native';
 
+import bloqueo from '../../assets/bloqueo.webp';
+import confundido from '../../assets/confundido.webp';
+import durmiendo from '../../assets/durmiendo.webp';
 import restablecer from '../../assets/restablecer.webp';
+import trio from '../../assets/trio.webp';
 
-export type VarianteIlustracion = 'restablecer';
+export type VarianteIlustracion = 'trio' | 'restablecer' | 'confundido' | 'bloqueo' | 'durmiendo';
 
 const FUENTES: Record<VarianteIlustracion, ImageSourcePropType> = {
+  /** Las tres mascotas tranquilas: una invitacion, sin error. */
+  trio,
   /** Frente al portatil con el sobre y el campo de contrasena. */
   restablecer,
+  /** Con signos de pregunta: algo fallo o la busqueda no encontro nada. */
+  confundido,
+  /** Con un candado: acceso denegado de verdad. */
+  bloqueo,
+  /** Dormidas: todavia no ha pasado nada, no hay error. */
+  durmiendo,
 };
 
 interface Props {

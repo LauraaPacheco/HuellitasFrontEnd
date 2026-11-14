@@ -1,0 +1,139 @@
+/*
+ * Barra inferior flotante, solo en celular y tableta.
+ *
+ * Verde de la marca con el icono en --on-brand: en tema claro es verde
+ * oscuro con iconos blancos y en oscuro verde menta con iconos oscuros,
+ * igual que el item activo del menu lateral.
+ */
+.barra-inferior {
+  display: none;
+}
+
+@media (max-width: 900px) {
+  .barra-inferior {
+    display: block;
+    position: fixed;
+    left: var(--space-3);
+    right: var(--space-3);
+    bottom: calc(var(--space-3) + env(safe-area-inset-bottom, 0px));
+    /* Por encima de la capa oscura del menu: el + sigue a la vista para
+       cerrarlo. */
+    z-index: 35;
+    height: 64px;
+    max-width: 520px;
+    margin-inline: auto;
+    color: var(--on-brand);
+    filter: drop-shadow(0 8px 18px rgb(0 0 0 / 0.18));
+  }
+
+  .barra-inferior__fondo {
+    position: absolute;
+    inset: 0;
+    overflow: visible;
+  }
+
+  .barra-inferior__fondo path {
+    fill: var(--brand-strong);
+    transition: d 320ms cubic-bezier(0.3, 0.8, 0.3, 1);
+  }
+
+  /* El circulo activo: 52 px, con el centro justo sobre el borde. */
+  .barra-inferior__burbuja {
+    position: absolute;
+    top: -26px;
+    left: 0;
+    width: 52px;
+    height: 52px;
+    border-radius: 50%;
+    display: grid;
+    place-items: center;
+    background: var(--brand-strong);
+    color: var(--on-brand);
+    transition: transform 320ms cubic-bezier(0.3, 0.8, 0.3, 1);
+  }
+
+  .barra-inferior__mas {
+    transition: transform 240ms cubic-bezier(0.3, 0.8, 0.3, 1);
+  }
+
+  .barra-inferior__mas--abierto {
+    transform: rotate(45deg);
+  }
+
+  .barra-inferior__etiqueta {
+    position: absolute;
+    left: 0;
+    bottom: 7px;
+    font-size: 0.6875rem;
+    font-weight: 600;
+    line-height: 1;
+    white-space: nowrap;
+    transition: transform 320ms cubic-bezier(0.3, 0.8, 0.3, 1);
+  }
+
+  .barra-inferior__lista {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+  }
+
+  .barra-inferior__lista > li {
+    position: absolute;
+    top: 10px;
+    transform: translateX(-50%);
+  }
+
+  .barra-inferior__boton {
+    width: 44px;
+    height: 44px;
+    display: grid;
+    place-items: center;
+    padding: 0;
+    border: 0;
+    border-radius: 50%;
+    background: transparent;
+    color: var(--on-brand);
+    opacity: 0.85;
+    cursor: pointer;
+    transition: opacity 160ms ease;
+  }
+
+  .barra-inferior__boton:hover {
+    opacity: 1;
+  }
+
+  .barra-inferior__boton:focus-visible {
+    opacity: 1;
+    outline: 2px solid var(--on-brand);
+    outline-offset: 2px;
+  }
+
+  /*
+   * El activo ya se dibuja en la burbuja. Su boton sube a cubrirla (52 px,
+   * centro sobre el borde) con el icono transparente: asi tocar la burbuja
+   * funciona, el anillo de foco la rodea a ella y el icono nunca aparece
+   * duplicado al pasar el mouse.
+   */
+  .barra-inferior__boton--activo,
+  .barra-inferior__boton--activo:hover,
+  .barra-inferior__boton--activo:focus-visible {
+    width: 52px;
+    height: 52px;
+    transform: translateY(-36px);
+    opacity: 1;
+    color: transparent;
+  }
+
+  .barra-inferior__boton--activo:focus-visible {
+    outline-color: var(--focus);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .barra-inferior__fondo path,
+  .barra-inferior__burbuja,
+  .barra-inferior__mas,
+  .barra-inferior__etiqueta {
+    transition: none;
+  }
+}

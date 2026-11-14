@@ -1,8 +1,10 @@
-import { Boton } from '@/componentes/Boton';
+import { usePantallaActiva, useActualizarAlVolver } from '@/hooks/usePantallaActiva';
 import { HojaFiltros, contarFiltros, type FiltrosCatalogo } from '@/componentes/HojaFiltros';
 import { useState } from 'react';
+import { House, ImageOff, PawPrint, Search, ShieldCheck, SlidersHorizontal, X } from 'lucide-react-native';
+import { DatosMascota, datosMascota } from '@/componentes/DatosMascota';
+import { Paginacion } from '@/componentes/Paginacion';
 import {
-  ActivityIndicator,
   Image,
   FlatList,
   Pressable,
@@ -11,11 +13,11 @@ import {
   TextInput,
   View,
 } from 'react-native';
-import { Link } from 'expo-router';
+import { Link, useRouter } from 'expo-router';
+import { useSesion } from '@/lib/sesion';
 import { useQuery } from '@tanstack/react-query';
 import {
   ESTADO_MASCOTA,
-  ETIQUETA_SEXO,
   tiempoRelativo,
   type FiltroMascota,
   type MascotaResumen,
@@ -23,12 +25,16 @@ import {
 import { api, MODO_DEMO } from '@/lib/api';
 import { Insignia } from '@/componentes/Insignia';
 import { AvisoDemo } from '@/componentes/AvisoDemo';
+import { EstadoCargando } from '@/componentes/EstadoCargando';
+import { EstadoError } from '@/componentes/EstadoError';
+import { EstadoVacio } from '@/componentes/EstadoVacio';
 import { espaciado, radios, usarPaleta } from '@/temas';
 
 const UNA_HORA = 60 * 60 * 1000;
 
 export default function PantallaCatalogo() {
   const paleta = usarPaleta();
+  const activa = usePantallaActiva();
   const [filtrosAbiertos, setFiltrosAbiertos] = useState(false);
   // Los catálogos solo los usa la hoja de filtros: se piden la primera vez que se abre,
   // no al entrar al catálogo (que es la pantalla de llegada después del login).
@@ -40,10 +46,14 @@ export default function PantallaCatalogo() {
   const filtrosAplicados: FiltrosCatalogo = { especieId: filtro.especieId, tamanoId: filtro.tamanoId, sexo: filtro.sexo };
   const filtrosActivos = contarFiltros(filtrosAplicados);
 
-  const { data, isLoading, isError, refetch, isRefetching } = useQuery({
+  const { data, isLoading, isError, error, refetch, isRefetching, isFetching } = useQuery({
     queryKey: ['mascotas', filtro],
     queryFn: () => api.mascotas.buscar(filtro),
+    refetchInterval: activa ? 10_000 : false,
+    refetchIntervalInBackground: false,
   });
+
+  useActualizarAlVolver(activa, refetch);
 
   function buscar() {
     setFiltro((previo) => ({ ...previo, pagina: 1, texto: texto.trim() || undefined }));
@@ -56,13 +66,15 @@ export default function PantallaCatalogo() {
 
         <View style={estilos.barra}>
           {MODO_DEMO ? (
+            <View style={estilos.campoBusqueda}>
+            <Search size={18} strokeWidth={1.75} color={paleta.inkMuted} style={estilos.lupa} pointerEvents="none" />
             <TextInput
               accessibilityLabel="Buscar mascota"
               value={texto}
               onChangeText={setTexto}
               onSubmitEditing={buscar}
               returnKeyType="search"
-              placeholder="Buscar por nombre o raza"
+              placeholder="Nombre o raza"
               placeholderTextColor={paleta.inkMuted}
               style={[
                 estilos.entrada,
@@ -73,6 +85,7 @@ export default function PantallaCatalogo() {
                 },
               ]}
             />
+            </View>
           ) : (
             <Text style={[estilos.resumen, { color: paleta.inkMuted }]}>
               {data ? `${data.total} ${data.total === 1 ? 'mascota' : 'mascotas'}` : ' '}
@@ -91,14 +104,17 @@ export default function PantallaCatalogo() {
               },
             ]}
           >
-            <Text style={{ color: filtrosActivos ? paleta.brand : paleta.ink, fontSize: 15, fontWeight: '600' }}>Filtros</Text>
+            <SlidersHorizontal size={18} strokeWidth={1.75} color={filtrosActivos ? paleta.brandStrong : paleta.ink} />
+            <Text style={{ color: filtrosActivos ? paleta.brandStrong : paleta.ink, fontSize: 15, fontWeight: '600' }}>Filtros</Text>
             {filtrosActivos > 0 && (
-              <View style={[estilos.contador, { backgroundColor: paleta.accent }]}>
-                <Text style={{ color: paleta.surface100, fontSize: 12, fontWeight: '700' }}>{filtrosActivos}</Text>
+              <View style={[estilos.contador, { backgroundColor: paleta.brandStrong }]}>
+                <Text style={{ color: paleta.onBrand, fontSize: 12, fontWeight: '700' }}>{filtrosActivos}</Text>
               </View>
             )}
           </Pressable>
         </View>
+
+        <InvitacionCuenta />
       </View>
 
       <HojaFiltros
@@ -116,40 +132,35 @@ export default function PantallaCatalogo() {
         }}
       />
 
-      {isLoading && <ActivityIndicator style={{ marginTop: espaciado.s6 }} />}
+      {isLoading && <EstadoCargando mensaje="Cargando mascotas…" />}
 
       {isError && (
-        <View style={estilos.vacio}>
-          <Text style={[estilos.vacioTitulo, { color: paleta.ink }]}>
-            No pudimos cargar las mascotas
-          </Text>
-          <Text style={[estilos.vacioTexto, { color: paleta.inkMuted }]}>
-            Revisa tu conexión y desliza hacia abajo para reintentar.
-          </Text>
-        </View>
+        <EstadoError
+          titulo="No pudimos cargar las mascotas"
+          error={error}
+          alReintentar={() => void refetch()}
+          reintentando={isFetching}
+        />
       )}
 
-      <FlatList
+      {!isLoading && !isError && <FlatList
         data={data?.items ?? []}
         keyExtractor={(mascota) => String(mascota.id)}
         contentContainerStyle={estilos.lista}
         refreshing={isRefetching}
         onRefresh={() => void refetch()}
         ListEmptyComponent={
-          !isLoading && !isError ? (
-            <View style={estilos.vacio}>
-              <Text style={[estilos.vacioTitulo, { color: paleta.ink }]}>
-                No encontramos mascotas
-              </Text>
-              <Text style={[estilos.vacioTexto, { color: paleta.inkMuted }]}>
-                Prueba con otra búsqueda o quita algún filtro.
-              </Text>
-            </View>
-          ) : null
+          <EstadoVacio
+            ilustracion="confundido"
+            titulo="No encontramos mascotas"
+            descripcion="Prueba con otra búsqueda o quita algún filtro."
+          />
         }
-        ListFooterComponent={data && data.totalPaginas > 1 ? <View style={{gap:12,paddingVertical:16}}><Text style={{color:paleta.ink}}>Página {data.pagina} de {data.totalPaginas}</Text><Boton titulo="Anterior" deshabilitado={data.pagina<=1||isRefetching} alPresionar={()=>setFiltro(p=>({...p,pagina:(p.pagina??1)-1}))} /><Boton titulo="Siguiente" deshabilitado={data.pagina>=data.totalPaginas||isRefetching} alPresionar={()=>setFiltro(p=>({...p,pagina:(p.pagina??1)+1}))} /></View> : null}
+        ListFooterComponent={data ? (
+          <Paginacion pagina={data.pagina} totalPaginas={data.totalPaginas} ocupado={isRefetching} alCambiar={(pagina) => setFiltro((p) => ({ ...p, pagina }))} />
+        ) : undefined}
         renderItem={({ item }) => <TarjetaMascota mascota={item} />}
-      />
+      />}
     </View>
   );
 }
@@ -173,42 +184,82 @@ function TarjetaMascota({ mascota }: { readonly mascota: MascotaResumen }) {
 
         <View style={estilos.cuerpo}>
           <View style={estilos.fila}>
-            <Text style={[estilos.nombre, { color: paleta.ink }]}>{mascota.nombre}</Text>
+            <Text numberOfLines={1} style={[estilos.nombre, { color: paleta.ink }]}>{mascota.nombre}</Text>
             <Insignia estado={ESTADO_MASCOTA[mascota.estado]} />
           </View>
 
-          <Text style={[estilos.detalle, { color: paleta.inkMuted }]}>
-            {[
-              mascota.especie,
-              mascota.raza,
-              mascota.edadAproximada !== null ? `${mascota.edadAproximada} años` : null,
-              mascota.tamano,
-              ETIQUETA_SEXO[mascota.sexo],
-            ]
-              .filter(Boolean)
-              .join(' · ')}
-          </Text>
+          {/* Los datos de dos en dos con su icono, como en Mi cuenta de la web. */}
+          <DatosMascota datos={datosMascota(mascota)} />
 
-          <Text style={[estilos.refugio, { color: paleta.ink }]}>
-            {mascota.refugioNombre}
-            {mascota.refugioVerificado && (
-              <Text style={{ color: paleta.inkMuted }}> · verificado</Text>
-            )}
-          </Text>
-
-          {/* La frescura del dato fue la queja principal de la encuesta. */}
-          <Text style={[estilos.detalle, { color: paleta.inkMuted }]}>
-            {mascota.fechaUltimaActualizacion ? tiempoRelativo(mascota.fechaUltimaActualizacion) : ''}
-          </Text>
+          {(mascota.refugioNombre || mascota.fechaUltimaActualizacion) && (
+            <View style={[estilos.pieTarjeta, { borderTopColor: paleta.border }]}>
+              {mascota.refugioNombre && (
+                <View style={estilos.refugio}>
+                  {mascota.refugioVerificado
+                    ? <ShieldCheck size={15} strokeWidth={1.75} color={paleta.brandStrong} />
+                    : <House size={15} strokeWidth={1.75} color={paleta.inkMuted} />}
+                  <Text numberOfLines={1} style={[estilos.refugioTexto, { color: paleta.ink }]}>{mascota.refugioNombre}</Text>
+                </View>
+              )}
+              {/* La frescura del dato fue la queja principal de la encuesta. */}
+              {mascota.fechaUltimaActualizacion && (
+                <Text style={[estilos.detalle, { color: paleta.inkMuted }]}>{tiempoRelativo(mascota.fechaUltimaActualizacion)}</Text>
+              )}
+            </View>
+          )}
         </View>
       </Pressable>
     </Link>
   );
 }
 
-function FotoCatalogo({uri,nombre}:{uri:string|null;nombre:string}) {
-  const [fallo,setFallo]=useState(false);const paleta=usarPaleta();
-  return uri && !fallo ? <Image source={{uri}} accessibilityLabel={`Foto de ${nombre}`} resizeMode="cover" onError={()=>setFallo(true)} style={{width:'100%',height:148}} /> : <View style={[estilos.foto,{backgroundColor:paleta.surface300}]}><Text style={{color:paleta.inkMuted}}>Sin foto disponible</Text></View>;
+function FotoCatalogo({ uri, nombre }: { uri: string | null; nombre: string }) {
+  const [fallo, setFallo] = useState(false);
+  const paleta = usarPaleta();
+  return uri && !fallo ? (
+    <Image source={{ uri }} accessibilityLabel={`Foto de ${nombre}`} resizeMode="cover" onError={() => setFallo(true)} style={estilos.foto} />
+  ) : (
+    <View style={[estilos.foto, estilos.sinFoto, { backgroundColor: paleta.surface300 }]}>
+      <ImageOff size={28} strokeWidth={1.5} color={paleta.inkMuted} />
+      <Text style={{ color: paleta.inkMuted, fontSize: 13 }}>Sin foto disponible</Text>
+    </View>
+  );
+}
+
+/**
+ * Para quien mira sin sesion: el catalogo es la puerta de entrada y la
+ * cuenta se pide aqui, a la vista, no solo al tocar "Postularme".
+ */
+function InvitacionCuenta() {
+  const paleta = usarPaleta();
+  const router = useRouter();
+  const { usuario } = useSesion();
+  const [cerrada, setCerrada] = useState(false);
+  if (usuario || cerrada) return null;
+
+  return (
+    <View style={[estilos.invitacion, { backgroundColor: paleta.brandTint, borderColor: paleta.brand }]}>
+      <View style={[estilos.invitacionIcono, { backgroundColor: paleta.brandStrong }]}>
+        <PawPrint size={20} strokeWidth={1.75} color={paleta.onBrand} />
+      </View>
+      <View style={{ flex: 1, gap: 2 }}>
+        <Text style={[estilos.invitacionTitulo, { color: paleta.ink }]}>¿Ya tienes a tu favorita?</Text>
+        <Text style={[estilos.invitacionTexto, { color: paleta.inkMuted }]}>Crea tu cuenta para postularte y seguir tu solicitud.</Text>
+        <View style={estilos.invitacionAcciones}>
+          <Pressable accessibilityRole="button" onPress={() => router.push('/registro')}
+            style={({ pressed }) => [estilos.invitacionBoton, { backgroundColor: paleta.brandStrong, opacity: pressed ? 0.85 : 1 }]}>
+            <Text style={{ color: paleta.onBrand, fontSize: 14, fontWeight: '600' }}>Crear cuenta</Text>
+          </Pressable>
+          <Pressable accessibilityRole="button" hitSlop={8} onPress={() => router.push('/login')}>
+            <Text style={{ color: paleta.brandStrong, fontSize: 14, fontWeight: '600', textDecorationLine: 'underline' }}>Iniciar sesión</Text>
+          </Pressable>
+        </View>
+      </View>
+      <Pressable accessibilityRole="button" accessibilityLabel="Ocultar invitación" hitSlop={10} onPress={() => setCerrada(true)}>
+        <X size={18} strokeWidth={1.75} color={paleta.inkMuted} />
+      </Pressable>
+    </View>
+  );
 }
 
 const estilos = StyleSheet.create({
@@ -226,23 +277,31 @@ const estilos = StyleSheet.create({
     borderRadius: radios.md,
   },
   contador: { minWidth: 20, height: 20, paddingHorizontal: 5, borderRadius: radios.pill, alignItems: 'center', justifyContent: 'center' },
+  campoBusqueda: { flex: 1, justifyContent: 'center' },
+  lupa: { position: 'absolute', left: espaciado.s3, zIndex: 1 },
   entrada: {
-    flex: 1,
     height: 48,
-    paddingHorizontal: espaciado.s4,
+    paddingLeft: espaciado.s3 + 26,
+    paddingRight: espaciado.s4,
     borderWidth: 1,
     borderRadius: radios.md,
     fontSize: 15,
   },
-  lista: { paddingHorizontal: espaciado.s4, paddingBottom: espaciado.s6, gap: espaciado.s4 },
+  lista: { flexGrow: 1, paddingHorizontal: espaciado.s4, paddingBottom: espaciado.s6, gap: espaciado.s4 },
   tarjeta: { borderWidth: 1, borderRadius: radios.lg, overflow: 'hidden' },
-  foto: { height: 148, alignItems: 'center', justifyContent: 'center' },
-  cuerpo: { padding: espaciado.s4, gap: espaciado.s2 },
-  fila: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-  nombre: { fontSize: 22, fontWeight: '700' },
+  foto: { width: '100%', height: 200 },
+  sinFoto: { alignItems: 'center', justifyContent: 'center', gap: espaciado.s2 },
+  cuerpo: { padding: espaciado.s4, gap: espaciado.s3 },
+  fila: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: espaciado.s2 },
+  nombre: { flexShrink: 1, fontSize: 20, fontWeight: '700' },
   detalle: { fontSize: 13 },
-  refugio: { fontSize: 13, fontWeight: '600' },
-  vacio: { padding: espaciado.s6, alignItems: 'center', gap: espaciado.s2 },
-  vacioTitulo: { fontSize: 17, fontWeight: '600' },
-  vacioTexto: { fontSize: 14, textAlign: 'center' },
+  pieTarjeta: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: espaciado.s3, paddingTop: espaciado.s3, borderTopWidth: 1 },
+  refugio: { flexDirection: 'row', alignItems: 'center', gap: 6, flexShrink: 1 },
+  refugioTexto: { fontSize: 13, fontWeight: '600', flexShrink: 1 },
+  invitacion: { flexDirection: 'row', alignItems: 'flex-start', gap: espaciado.s3, padding: espaciado.s3, borderWidth: 1, borderRadius: radios.md },
+  invitacionIcono: { width: 40, height: 40, borderRadius: radios.pill, alignItems: 'center', justifyContent: 'center' },
+  invitacionTitulo: { fontSize: 15, fontWeight: '600' },
+  invitacionTexto: { fontSize: 13, lineHeight: 19 },
+  invitacionAcciones: { flexDirection: 'row', alignItems: 'center', gap: espaciado.s4, marginTop: espaciado.s2 },
+  invitacionBoton: { minHeight: 36, paddingHorizontal: espaciado.s4, borderRadius: radios.pill, justifyContent: 'center' },
 });

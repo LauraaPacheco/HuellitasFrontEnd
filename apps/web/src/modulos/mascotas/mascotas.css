@@ -26,3 +26,343 @@ a.mascota-enlace { text-decoration: none; }
 @media (max-width: 640px) { .mascota-estado { padding: 20px; } .mascota-estado > .boton { width: 100%; } }
 
 .mascota-estado__nota { font-size: 13px; line-height: 1.5; color: var(--ink-muted); margin: 8px 0 0; }
+
+/* ---------------------------------------------------------------------
+ * Filtros de mascotas
+ *
+ * Escritorio: una sola fila, el buscador mas ancho y los desplegables
+ * del mismo tamano. Celular: buscador y boton "Filtros" en una fila; el
+ * boton despliega los selectores en dos columnas. Antes en celular eran
+ * cuatro cajas grandes apiladas que empujaban la lista hacia abajo.
+ * ------------------------------------------------------------------ */
+.filtros.filtros--plegables {
+  display: flex;
+  flex-wrap: wrap;
+  /* Abajo: los selectores llevan titulo encima y el buscador no; asi
+     los controles quedan alineados por su borde inferior. */
+  align-items: flex-end;
+  gap: var(--space-2);
+  margin-bottom: var(--space-5);
+}
+
+.filtros--plegables .filtros__busqueda {
+  position: relative;
+  flex: 2 1 260px;
+  min-width: 0;
+}
+
+.filtros--plegables .filtros__busqueda input {
+  width: 100%;
+  padding-left: calc(var(--space-3) + 26px);
+}
+
+.filtros__lupa {
+  position: absolute;
+  left: var(--space-3);
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--ink-muted);
+  pointer-events: none;
+}
+
+/* En escritorio el panel no existe como caja: sus hijos son parte de la fila. */
+.filtros__panel {
+  display: contents;
+}
+
+.filtros__panel > .campo {
+  flex: 1 1 170px;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+/* Titulo de cada filtro: pequeno y gris, encima del selector. */
+.filtros--plegables .campo__etiqueta {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--ink-muted);
+}
+
+/* El texto elegido nunca se sale del selector: se corta con puntos. */
+.filtros--plegables select {
+  width: 100%;
+  min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.filtros__alternar {
+  display: none;
+}
+
+.filtros__alternar,
+.filtros__limpiar {
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  height: 44px;
+  padding: 0 var(--space-4);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  background: var(--surface-100);
+  color: var(--ink);
+  font: inherit;
+  font-size: 0.875rem;
+  font-weight: 600;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.filtros__limpiar {
+  display: inline-flex;
+  flex: 0 0 auto;
+  border-color: transparent;
+  background: transparent;
+  color: var(--ink-muted);
+}
+
+.filtros__limpiar:hover {
+  color: var(--ink);
+  background: var(--surface-200);
+}
+
+.filtros__alternar--activo {
+  border-color: var(--brand);
+}
+
+.filtros__cuenta {
+  min-width: 20px;
+  height: 20px;
+  padding: 0 6px;
+  display: grid;
+  place-items: center;
+  border-radius: var(--radius-pill);
+  background: var(--brand-strong);
+  color: var(--on-brand);
+  font-size: 0.75rem;
+  font-weight: 700;
+}
+
+.filtros__alternar:focus-visible,
+.filtros__limpiar:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 2px;
+}
+
+/* Tableta y portatil angosto: el buscador arriba a todo el ancho y los
+   desplegables debajo, en columnas iguales. Asi no queda uno suelto
+   estirado en una segunda fila. */
+@media (min-width: 641px) and (max-width: 1100px) {
+  .filtros.filtros--plegables {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr)) auto;
+    align-items: end;
+  }
+
+  .filtros--plegables .filtros__busqueda {
+    grid-column: 1 / -1;
+  }
+}
+
+@media (max-width: 640px) {
+  .filtros.filtros--plegables {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: var(--space-2);
+    margin-bottom: var(--space-4);
+  }
+
+  /* Sin buscador (backend real), el boton ocupa toda la fila. */
+  .filtros--plegables:not(:has(.filtros__busqueda)) {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .filtros__alternar {
+    display: inline-flex;
+  }
+
+  .filtros__panel {
+    display: none;
+  }
+
+  /* Flex y no rejilla: de a dos por fila, y si uno queda solo, se
+     estira a todo el ancho en vez de quedar cortado en media fila. */
+  .filtros__panel.filtros__panel--abierto {
+    grid-column: 1 / -1;
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-2);
+    padding: var(--space-3);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    background: var(--surface-200);
+  }
+
+  .filtros__panel--abierto > .campo {
+    flex: 1 1 calc(50% - var(--space-2));
+    width: auto;
+  }
+
+  .filtros__panel--abierto .filtros__limpiar {
+    flex: 1 1 100%;
+  }
+}
+
+/* ---------------------------------------------------------------------
+ * Gestionar mascota (backend real): composicion de Mi cuenta con la
+ * galeria a la izquierda y los datos a la derecha.
+ * ------------------------------------------------------------------ */
+.ficha__galeria {
+  gap: var(--space-3);
+  padding: var(--space-3);
+}
+
+.ficha__foto {
+  position: relative;
+  aspect-ratio: 4 / 3;
+  overflow: hidden;
+  border-radius: var(--radius-md);
+  background: var(--surface-200);
+}
+
+/* La foto completa sobre una copia desenfocada que llena el marco. */
+.ficha__foto-fondo {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  filter: blur(24px) saturate(1.1);
+  transform: scale(1.15);
+  opacity: 0.7;
+}
+
+.ficha__foto-principal {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+.ficha__foto-etiqueta {
+  position: absolute;
+  left: var(--space-3);
+  bottom: var(--space-3);
+  padding: 4px 10px;
+  border-radius: var(--radius-pill);
+  background: rgb(0 0 0 / 0.55);
+  color: #fff;
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+.ficha__foto--vacia {
+  display: grid;
+  place-content: center;
+  justify-items: center;
+  gap: var(--space-2);
+  color: var(--ink-muted);
+  text-align: center;
+  padding: var(--space-4);
+}
+
+.ficha__foto--vacia p {
+  margin: 0;
+  font-size: 0.875rem;
+}
+
+.ficha__miniaturas {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(64px, 1fr));
+  gap: var(--space-2);
+}
+
+.ficha__miniatura {
+  display: block;
+  width: 100%;
+  aspect-ratio: 1;
+  padding: 0;
+  overflow: hidden;
+  border: 2px solid transparent;
+  border-radius: var(--radius-sm);
+  background: var(--surface-200);
+  cursor: pointer;
+  opacity: 0.7;
+}
+
+.ficha__miniatura img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.ficha__miniatura:hover,
+.ficha__miniatura--activa {
+  opacity: 1;
+}
+
+.ficha__miniatura--activa {
+  border-color: var(--brand);
+}
+
+.ficha__miniatura:focus-visible {
+  outline: 2px solid var(--brand);
+  outline-offset: 2px;
+}
+
+.ficha__datos {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+@media (max-width: 420px) {
+  .ficha__datos { grid-template-columns: minmax(0, 1fr); }
+}
+
+.ficha__descripcion p {
+  margin: var(--space-2) 0 0;
+  line-height: 1.6;
+  white-space: pre-wrap;
+}
+
+/* Estado actual de la publicacion con su accion al lado. */
+.ficha__estado {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+  padding: var(--space-3);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+}
+
+.ficha__estado-icono {
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: var(--brand-tint);
+  color: var(--brand-strong);
+  flex-shrink: 0;
+}
+
+.ficha__estado-icono--pausa {
+  background: var(--surface-200);
+  color: var(--ink-muted);
+}
+
+.ficha__estado-texto {
+  flex: 1 1 140px;
+  font-weight: 600;
+}
+
+.ficha__estado .boton {
+  min-height: 40px;
+}

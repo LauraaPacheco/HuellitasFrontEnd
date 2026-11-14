@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { EstadoCargando } from '@/componentes/EstadoCargando';
 import { ActivityIndicator, Modal, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Cat, Dog, Mars, PawPrint, Venus, type LucideIcon } from 'lucide-react-native';
@@ -70,7 +71,7 @@ export function HojaFiltros({ visible, filtro, especies, tamanos, cargandoCatalo
           </View>
 
           <ScrollView contentContainerStyle={{ gap: espaciado.s5 }} bounces={false}>
-            {cargandoCatalogos ? <ActivityIndicator /> : errorCatalogos ? (
+            {cargandoCatalogos ? <EstadoCargando compacto mensaje="Cargando opciones…" /> : errorCatalogos ? (
               <View style={{ gap: espaciado.s2 }}>
                 <Text style={{ color: paleta.inkMuted }}>No pudimos cargar especies y tamaños.</Text>
                 <Pressable accessibilityRole="button" onPress={alReintentar}>

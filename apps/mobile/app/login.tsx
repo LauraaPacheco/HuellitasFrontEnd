@@ -1,5 +1,6 @@
 import { useState } from 'react';
-import { ScrollView, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
+import { X } from 'lucide-react-native';
 import { Link, useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ErrorHttp, esCorreoValido } from '@huellitas/shared';
@@ -11,17 +12,21 @@ import { AvisoDemo } from '@/componentes/AvisoDemo';
 import { BotonTema } from '@/componentes/BotonTema';
 import { espaciado, radios, usarPaleta } from '@/temas';
 
+/**
+ * Inicio de sesion.
+ *
+ * Misma composicion que el login de la web en celular: barra con la marca
+ * y el tema, titulo con su ayuda, formulario, la opcion de crear cuenta
+ * y las notas legales en pequeño al final.
+ */
 export default function PantallaLogin() {
   const paleta = usarPaleta();
   const router = useRouter();
-  // Esta pantalla va sin encabezado, asi que nada la protege de la barra
-  // de estado: el relleno de arriba lo tiene que poner ella.
+  // Sin encabezado: el relleno contra la barra de estado lo pone la pantalla.
   const margenes = useSafeAreaInsets();
   const { height } = useWindowDimensions();
-  const altoDisponible = height - margenes.top - margenes.bottom;
-  const escala = Math.min(1, Math.max(0.65, altoDisponible / 950));
-  const separacion = Math.max(4, Math.min(16, (altoDisponible - 580) / 14));
-  const rellenoVertical = Math.max(8, Math.min(24, (altoDisponible - 580) / 8));
+  // Aire sobre el titulo como en la web (6 % del alto), sin forzar scroll.
+  const aireSuperior = Math.max(espaciado.s4, Math.min(64, height * 0.06));
   const { iniciarSesion } = useSesion();
   const [correo, setCorreo] = useState('');
   const [contrasena, setContrasena] = useState('');
@@ -49,36 +54,51 @@ export default function PantallaLogin() {
     }
   }
 
+  const enlace = { color: paleta.brandStrong, fontWeight: '600' as const, textDecorationLine: 'underline' as const };
+
   return (
     <ScrollView
       style={{ flex: 1, backgroundColor: paleta.surface100 }}
       contentContainerStyle={[
         estilos.contenido,
-        {
-          paddingTop: margenes.top + rellenoVertical,
-          paddingBottom: margenes.bottom + rellenoVertical,
-          gap: separacion * 2,
-        },
+        { paddingTop: margenes.top + espaciado.s3, paddingBottom: margenes.bottom + espaciado.s5 },
       ]}
       keyboardShouldPersistTaps="handled"
       automaticallyAdjustKeyboardInsets
       alwaysBounceVertical={false}
     >
       <View style={estilos.barra}>
-        <BotonTema escala={escala} />
+        {/* Se llega aqui desde el catalogo o al intentar una accion: la X
+            devuelve a donde estaba. Sin historial, al catalogo. */}
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel="Cerrar y volver"
+          hitSlop={8}
+          onPress={() => (router.canGoBack() ? router.back() : router.replace('/principal/catalogo'))}
+          style={({ pressed }) => [estilos.cerrar, { borderColor: paleta.border, backgroundColor: pressed ? paleta.surface300 : paleta.surface100 }]}
+        >
+          <X size={20} strokeWidth={1.75} color={paleta.ink} />
+        </Pressable>
+        <View style={estilos.marca}>
+          <Isotipo tamano={36} />
+          <Text style={[estilos.nombre, { color: paleta.ink }]}>Huellitas</Text>
+        </View>
+        <BotonTema conEtiqueta />
       </View>
 
-      <View style={[estilos.marca, { gap: espaciado.s2 * escala }]}>
-        <Isotipo tamano={88 * escala} />
-        <Text style={[estilos.nombre, { color: paleta.ink, fontSize: 40 * escala }]}>Huellitas</Text>
-        <Text style={{ color: paleta.inkMuted, fontSize: 14 * escala }}>Adopta y acompaña</Text>
-      </View>
+      <View style={[estilos.formulario, { marginTop: aireSuperior }]}>
+        <View style={estilos.titulos}>
+          <Text accessibilityRole="header" style={[estilos.titulo, { color: paleta.ink }]}>
+            Iniciar sesión
+          </Text>
+          <Text style={[estilos.ayuda, { color: paleta.inkMuted }]}>
+            Ingresa con tu cuenta para postularte y seguir tus solicitudes
+          </Text>
+        </View>
 
-      <View style={{ gap: separacion }}>
-        <AvisoDemo conCredenciales escala={escala} />
+        <AvisoDemo conCredenciales />
 
         <Campo
-          escala={escala}
           etiqueta="Correo"
           valor={correo}
           alCambiar={setCorreo}
@@ -87,52 +107,36 @@ export default function PantallaLogin() {
           autoComplete="email"
         />
         <Campo
-          escala={escala}
           etiqueta="Contraseña"
           valor={contrasena}
           alCambiar={setContrasena}
-          marcador="Mínimo 8 caracteres"
           esContrasena
           autoComplete="password"
           error={error ?? undefined}
         />
 
-        <Boton escala={escala} titulo="Iniciar sesión" cargando={enviando} alPresionar={() => void entrar()} />
-
-        <Link
-          href="/olvide-contrasena"
-          style={{
-            color: paleta.brandStrong,
-            fontWeight: '600',
-            textAlign: 'center',
-            paddingVertical: espaciado.s2 * escala,
-            fontSize: 14 * escala,
-          }}
-        >
-          Olvidé mi contraseña
-        </Link>
-
-        <View style={[estilos.aviso, { backgroundColor: paleta.brandTint, padding: 16 * escala }]}>
-          <Text style={{ color: paleta.ink, fontSize: 13 * escala, lineHeight: 20 * escala }}>
-            Si aún no confirmas tu correo, puedes entrar y mirar, pero no
-            postularte ni reportar.
-          </Text>
+        <View style={estilos.fila}>
+          <Link href="/olvide-contrasena" style={[enlace, { fontSize: 14 }]}>
+            Olvidé mi contraseña
+          </Link>
         </View>
+
+        <Boton titulo="Iniciar sesión" cargando={enviando} alPresionar={() => void entrar()} />
+
+        {/* Crear cuenta con el mismo peso que entrar: es la otra puerta. */}
+        <View style={estilos.separador}>
+          <View style={[estilos.linea, { backgroundColor: paleta.border }]} />
+          <Text style={[estilos.separadorTexto, { color: paleta.inkMuted }]}>¿No tienes cuenta?</Text>
+          <View style={[estilos.linea, { backgroundColor: paleta.border }]} />
+        </View>
+        <Boton titulo="Crear cuenta" variante="secundario" alPresionar={() => router.push('/registro')} />
       </View>
 
-      <View style={[estilos.pie, { gap: separacion }]}>
-        <Boton
-          escala={escala}
-          titulo="Entrar como visitante"
-          variante="secundario"
-          alPresionar={() => router.replace('/principal/catalogo')}
-        />
-        <Text style={{ color: paleta.inkMuted, textAlign: 'center', fontSize: 14 * escala }}>
-          ¿No tienes cuenta?{' '}
-          <Link href="/registro" style={{ color: paleta.brandStrong, fontWeight: '600' }}>
-            Regístrate
-          </Link>
+      <View style={estilos.notas}>
+        <Text style={[estilos.nota, { color: paleta.inkMuted }]}>
+          Si aún no confirmas tu correo, puedes entrar y mirar, pero no postularte ni reportar.
         </Text>
+        <Text style={[estilos.nota, { color: paleta.inkMuted }]}>Tus datos se tratan según la Ley 1581 de 2012</Text>
       </View>
     </ScrollView>
   );
@@ -141,14 +145,20 @@ export default function PantallaLogin() {
 const estilos = StyleSheet.create({
   contenido: {
     flexGrow: 1,
-    paddingHorizontal: espaciado.s5,
+    paddingHorizontal: espaciado.s4,
   },
-  // El relleno de arriba lo pone la pantalla con los margenes del
-  // telefono, no esta hoja: sin eso el boton quedaba pegado a la barra
-  // de estado y se leia como un control del sistema.
-  barra: { alignItems: 'flex-end' },
-  marca: { alignItems: 'center' },
-  nombre: { fontSize: 40, fontWeight: '700', letterSpacing: -1 },
-  aviso: { padding: espaciado.s4, borderRadius: radios.md },
-  pie: { marginTop: 'auto', gap: espaciado.s3 },
+  barra: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: espaciado.s3 },
+  marca: { flex: 1, flexDirection: 'row', alignItems: 'center', gap: espaciado.s2 },
+  cerrar: { width: 44, height: 44, borderRadius: radios.pill, borderWidth: 1, alignItems: 'center', justifyContent: 'center' },
+  separador: { flexDirection: 'row', alignItems: 'center', gap: espaciado.s3, marginTop: espaciado.s2 },
+  linea: { flex: 1, height: 1 },
+  separadorTexto: { fontSize: 13 },
+  nombre: { fontSize: 24, fontWeight: '700', letterSpacing: -0.5 },
+  formulario: { gap: espaciado.s4 },
+  titulos: { gap: espaciado.s2, marginBottom: espaciado.s1 },
+  titulo: { fontSize: 28, fontWeight: '700', letterSpacing: -0.5 },
+  ayuda: { fontSize: 15, lineHeight: 23 },
+  fila: { alignItems: 'flex-end', marginTop: -espaciado.s1 },
+  notas: { marginTop: 'auto', paddingTop: espaciado.s5, gap: 2, alignItems: 'center' },
+  nota: { fontSize: 12, lineHeight: 18, textAlign: 'center' },
 });

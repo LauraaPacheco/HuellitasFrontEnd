@@ -64,6 +64,17 @@ describe('Contratos backend 29bbef0',()=>{
     expect(()=>api.mascotas.registrar({...datos,fotosUrls:[`https://example.com/${'a'.repeat(400)}.jpg`]})).toThrow();
     expect(fetch).not.toHaveBeenCalled();
   });
+  it('edita con PUT solo los campos de ActualizarMascotaDTO y manda todas las fotos',async()=>{
+    const {api,fetch}=await preparar([{mensaje:'Mascota actualizada.'}]);
+    await api.mascotas.actualizar(4,{...datos,nombre:' Luna ',edadAproximada:3,fotosUrls:['https://example.com/a.jpg','https://example.com/b.jpg']});
+    expect(fetch.mock.calls[0][0]).toBe('http://api.test/api/v1/Mascotas/4');expect(fetch.mock.calls[0][1].method).toBe('PUT');
+    const cuerpo=JSON.parse(fetch.mock.calls[0][1].body);
+    expect(cuerpo).toMatchObject({nombre:'Luna',edadAproximada:3,fotosUrls:['https://example.com/a.jpg','https://example.com/b.jpg']});
+    expect(cuerpo).not.toHaveProperty('especieId');expect(cuerpo).not.toHaveProperty('procedencia');
+  });
+  it('no edita con edad negativa',async()=>{
+    const {api,fetch}=await preparar([]);await expect(api.mascotas.actualizar(4,{...datos,edadAproximada:-2})).rejects.toThrow();expect(fetch).not.toHaveBeenCalled();
+  });
   it('rechaza edades fraccionarias antes de enviar una petición',async()=>{
     const {api,fetch}=await preparar([]);expect(()=>api.mascotas.registrar({...datos,edadAproximada:0.5})).toThrow();expect(fetch).not.toHaveBeenCalled();
   });
@@ -101,7 +112,9 @@ describe('Contratos backend db3a4fb (solicitudes)', () => {
     const ahora = Date.parse('2026-10-26T10:00:00');
     expect(solicitudResumenApi(solicitudApi, ahora).diasSinRespuesta).toBe(6);
     expect(solicitudResumenApi({ ...solicitudApi, estado: 'Rechazada' }, ahora).diasSinRespuesta).toBe(0);
-    expect(() => solicitudResumenApi({ ...solicitudApi, estado: 'Otro' }, ahora)).toThrow();
+    const rara = solicitudResumenApi({ ...solicitudApi, estado: 'Otro' }, ahora);
+    expect(rara.estado).toBe(EstadoSolicitud.Desconocido);
+    expect(rara.diasSinRespuesta).toBe(0);
   });
   it('aprueba y rechaza con PATCH y los nombres de campo del backend', async () => {
     const { api, fetch } = await preparar([{ mensaje: 'Solicitud aprobada correctamente.' }, { mensaje: 'Solicitud rechazada correctamente.' }]);

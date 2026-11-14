@@ -19,6 +19,7 @@ import { PaginaMascotas } from '@/modulos/mascotas/PaginaMascotas';
 import { PaginaBandeja } from '@/modulos/solicitudes/PaginaBandeja';
 import { PaginaDetalleSolicitud } from '@/modulos/solicitudes/PaginaDetalleSolicitud';
 import { PaginaPendiente } from '@/modulos/PaginaPendiente';
+import { EstadoCargando } from '@/componentes/ui/EstadoCargando';
 
 const REFUGIO_Y_ADMIN = [NivelRol.Refugio, NivelRol.Administrador] as const;
 
@@ -50,7 +51,7 @@ const rutasDesarrollo: RouteObject[] = import.meta.hot
             })),
           );
           return (
-            <Suspense fallback={<p style={{ padding: 'var(--space-7)' }}>Cargando…</p>}>
+            <Suspense fallback={<EstadoCargando variante="pantalla" />}>
               <Galeria />
             </Suspense>
           );

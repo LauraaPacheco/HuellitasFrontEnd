@@ -1,6 +1,6 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import Constants from 'expo-constants';
-import { crearApi, type AlmacenToken } from '@huellitas/shared';
+import { crearApi, type AlmacenToken, type SesionGuardada } from '@huellitas/shared';
 
 const CLAVE_TOKEN = 'huellitas.token';
 const CLAVE_SESION = 'huellitas.sesion';
@@ -71,10 +71,18 @@ function cabecerasDelTunel(): Record<string, string> | undefined {
   return token ? { 'X-Tunnel-Authorization': `tunnel ${token}` } : undefined;
 }
 
+const renovaciones = new Set<(sesion: SesionGuardada) => void>();
+export function registrarRenovacionSesion(callback: (sesion: SesionGuardada) => void): () => void {
+  renovaciones.add(callback);
+  return () => { renovaciones.delete(callback); };
+}
+
 export const api = crearApi({
   urlBase: resolverUrlApi(),
   almacen: almacenMovil,
   modoDemo: MODO_DEMO,
+  almacenSesion: almacenSesionMovil,
+  alRenovarSesion: sesion => { renovaciones.forEach(callback => callback(sesion)); },
   cabecerasExtra: cabecerasDelTunel(),
   alExpirarSesion: () => alExpirar?.(),
 });

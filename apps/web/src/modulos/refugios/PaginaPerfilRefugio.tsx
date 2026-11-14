@@ -8,6 +8,7 @@ import { Insignia } from '@/componentes/ui/Insignia';
 import { EstadoVacio } from '@/componentes/ui/EstadoVacio';
 import { Isotipo } from '@/componentes/ui/Isotipo';
 import './refugios.css';
+import { EstadoCargando } from '@/componentes/ui/EstadoCargando';
 
 export function PaginaPerfilRefugio() {
   const id = Number(useParams<{ id: string }>().id);
@@ -28,7 +29,7 @@ export function PaginaPerfilRefugio() {
       <Link className="refugio-marca" to={volverA}><Isotipo tamano={36} /><span>Huellitas</span></Link>
       <Link className="boton boton--secundario refugio-enlace" to={volverA}><span aria-hidden="true">←</span> Volver</Link>
     </header>
-    {consulta.isPending && valido && <p>Cargando perfil del refugio…</p>}
+    {consulta.isPending && valido && <EstadoCargando mensaje="Cargando perfil del refugio…" />}
     {(!valido || consulta.isError || (refugio && !puedeVer)) && <EstadoVacio titulo="Perfil no disponible" descripcion="El refugio no existe, aún no está verificado o no se pudo consultar." accion={valido ? <Boton onClick={() => void consulta.refetch()}>Reintentar</Boton> : undefined} />}
     {refugio && puedeVer && <>
       <header className="refugio-perfil__presentacion">

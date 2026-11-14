@@ -6,10 +6,6 @@
     "orientation": "portrait",
     "scheme": "huellitas",
     "userInterfaceStyle": "automatic",
-    "splash": {
-      "resizeMode": "contain",
-      "backgroundColor": "#00694a"
-    },
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "co.huellitas.app",
@@ -44,7 +40,17 @@
         {
           "photosPermission": "Necesitamos tus fotos para adjuntar la evidencia del reporte."
         }
-      ]
+      ],
+      [
+        "expo-splash-screen",
+        {
+          "resizeMode": "contain",
+          "backgroundColor": "#00694a"
+        }
+      ],
+      "expo-sharing",
+      "expo-font",
+      "expo-status-bar"
     ],
     "extra": {
       "urlApi": "https://localhost:7296"

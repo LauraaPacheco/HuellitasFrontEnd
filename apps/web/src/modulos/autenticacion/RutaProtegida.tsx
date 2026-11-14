@@ -2,6 +2,7 @@ import type { ReactNode } from 'react';
 import { Navigate, useLocation } from 'react-router-dom';
 import type { NivelRol } from '@huellitas/shared';
 import { useSesion } from './ContextoSesion';
+import { EstadoCargando } from '@/componentes/ui/EstadoCargando';
 
 interface Props {
   readonly children: ReactNode;
@@ -19,9 +20,7 @@ export function RutaProtegida({ children, niveles }: Props) {
 
   if (cargando) {
     return (
-      <div style={{ padding: 'var(--space-7)', color: 'var(--ink-muted)' }}>
-        Cargando…
-      </div>
+      <EstadoCargando variante="pantalla" mensaje="Verificando tu sesión…" />
     );
   }
 
