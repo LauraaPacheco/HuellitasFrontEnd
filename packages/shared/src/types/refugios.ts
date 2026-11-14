@@ -21,7 +21,7 @@ export interface Refugio extends EntidadBase {
   readonly motivoRechazo: string | null;
   /** Calculados por el backend para el perfil publico. */
   readonly promedioCalificacion: number | null;
-  readonly totalAdopciones: number;
+  readonly totalAdopciones: number | null;
   readonly requisitos: readonly RequisitoAdopcion[];
 }
 

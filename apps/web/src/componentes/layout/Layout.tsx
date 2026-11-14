@@ -16,6 +16,7 @@ import {
   type LucideIcon,
 } from 'lucide-react';
 import { NivelRol } from '@huellitas/shared';
+import { MODO_DEMO } from '@/lib/api';
 import { useSesion } from '@/modulos/autenticacion/ContextoSesion';
 import { Isotipo } from '@/componentes/ui/Isotipo';
 import { BotonTema } from '@/componentes/ui/BotonTema';
@@ -48,7 +49,7 @@ const MENU: readonly ItemMenu[] = [
   { ruta: '/reportes', etiqueta: 'Reportes ciudadanos', icono: Megaphone, niveles: [NivelRol.Refugio, NivelRol.Administrador], enBarra: true },
   { ruta: '/seguimientos', etiqueta: 'Seguimientos', icono: ClipboardCheck, niveles: [NivelRol.Refugio], enBarra: true },
   { ruta: '/indicadores', etiqueta: 'Indicadores', icono: ChartColumn, niveles: [NivelRol.Refugio, NivelRol.Administrador] },
-  { ruta: '/refugios', etiqueta: 'Verificar refugios', icono: BadgeCheck, niveles: [NivelRol.Administrador], enBarra: true },
+  { ruta: '/refugios', etiqueta: MODO_DEMO ? 'Verificar refugios' : 'Refugios', icono: BadgeCheck, niveles: [NivelRol.Administrador], enBarra: true },
   { ruta: '/usuarios', etiqueta: 'Usuarios', icono: Users, niveles: [NivelRol.Administrador] },
 ];
 

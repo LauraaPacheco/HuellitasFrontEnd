@@ -105,15 +105,15 @@ export default function PantallaRefugio() {
       </Text>
 
       {/* Cifras que dan confianza antes de postularse. */}
-      <View style={[estilos.cifras, { backgroundColor: paleta.surface200 }]}>
-        <Cifra icono={HeartHandshake} valor={String(refugio.totalAdopciones)} etiqueta={refugio.totalAdopciones === 1 ? 'Adopción entregada' : 'Adopciones entregadas'} />
+      {(refugio.totalAdopciones !== null || refugio.promedioCalificacion !== null) && <View style={[estilos.cifras, { backgroundColor: paleta.surface200 }]}>
+        {refugio.totalAdopciones !== null && <Cifra icono={HeartHandshake} valor={String(refugio.totalAdopciones)} etiqueta={refugio.totalAdopciones === 1 ? 'Adopción entregada' : 'Adopciones entregadas'} />}
         <View style={[estilos.divisor, { backgroundColor: paleta.border }]} />
         <Cifra
           icono={Star}
           valor={refugio.promedioCalificacion === null ? '—' : refugio.promedioCalificacion.toFixed(1)}
           etiqueta={refugio.promedioCalificacion === null ? 'Sin calificaciones' : 'Calificación promedio'}
         />
-      </View>
+      </View>}
 
       <View accessibilityRole="tablist" accessibilityLabel="Información del refugio" style={[estilos.selector, { backgroundColor: paleta.surface200, borderColor: paleta.border }]}>
         {(['informacion', 'requisitos'] as const).map((valor) => {

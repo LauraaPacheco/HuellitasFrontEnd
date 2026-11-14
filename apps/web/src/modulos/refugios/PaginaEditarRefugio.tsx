@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { BadgeCheck, ExternalLink, FileText, Heart, Pencil, Star, Trash2, type LucideIcon } from 'lucide-react';
 import { ErrorHttp, ESTADO_VERIFICACION, normalizarRefugio, validarRefugio, type EditarRefugioDto, type Refugio } from '@huellitas/shared';
-import { api } from '@/lib/api';
+import { api, MODO_DEMO } from '@/lib/api';
 import { useSesion } from '@/modulos/autenticacion/ContextoSesion';
 import { Encabezado } from '@/componentes/layout/Encabezado';
 import { Campo } from '@/componentes/ui/Campo';
@@ -32,7 +32,7 @@ function iniciales(nombre: string) {
 export function PaginaEditarRefugio() {
   const { usuario } = useSesion();
   const id = usuario?.refugioId;
-  const consulta = useQuery({ queryKey: ['refugios', 'edicion', id], queryFn: () => api.refugios.obtener(id!), enabled: !!id, retry: false, gcTime: 0 });
+  const consulta = useQuery({ queryKey: ['refugios', 'edicion', id], queryFn: () => api.refugios.miPerfil(id!), enabled: !!id, retry: false, gcTime: 0 });
   return <>
     <Encabezado titulo="Mi refugio" resumen="Actualiza la información pública y los requisitos de adopción." />
     {!id ? <EstadoVacio titulo="Tu cuenta no tiene un refugio asociado" descripcion="Solicita al administrador que revise la asociación antes de editar o publicar mascotas." />
@@ -52,6 +52,7 @@ export function PaginaEditarRefugio() {
 }
 
 function PerfilRefugio({ refugio }: { refugio: Refugio }) {
+  const tieneDatos = !!refugio.nit || !!refugio.fechaVerificacion || refugio.totalAdopciones != null || refugio.promedioCalificacion != null;
   return (
     <section className="cuenta__tarjeta" aria-labelledby="refugio-perfil">
       <div className="cuenta__perfil">
@@ -62,14 +63,14 @@ function PerfilRefugio({ refugio }: { refugio: Refugio }) {
         </div>
       </div>
 
-      <dl className="cuenta__datos refugio-datos">
-        <Dato icono={FileText} etiqueta="NIT" valor={refugio.nit} />
+      {tieneDatos && <dl className="cuenta__datos refugio-datos">
+        {refugio.nit && <Dato icono={FileText} etiqueta="NIT" valor={refugio.nit} />}
         {refugio.fechaVerificacion && <Dato icono={BadgeCheck} etiqueta="Verificado el" valor={fecha(refugio.fechaVerificacion)} />}
-        <Dato icono={Heart} etiqueta="Adopciones entregadas" valor={String(refugio.totalAdopciones)} />
+        {refugio.totalAdopciones !== null && <Dato icono={Heart} etiqueta="Adopciones entregadas" valor={String(refugio.totalAdopciones)} />}
         {refugio.promedioCalificacion !== null && (
           <Dato icono={Star} etiqueta="Calificación promedio" valor={`${refugio.promedioCalificacion.toFixed(1)} de 5`} />
         )}
-      </dl>
+      </dl>}
 
       <p className="cuenta__descripcion">Editar el contacto no cambia el estado de verificación.</p>
 
@@ -110,7 +111,7 @@ function FormularioRefugio({ refugio }: { refugio: Refugio }) {
   function enviar(evento: FormEvent) {
     evento.preventDefault();
     if (guardar.isPending) return;
-    const error = validarRefugio(datos); setErrorLocal(error ?? '');
+    const error = MODO_DEMO ? validarRefugio(datos) : !datos.direccion.trim() ? 'Escribe la dirección del refugio.' : !/^\d{10}$/.test(normalizarRefugio(datos).telefono) ? 'El teléfono debe tener 10 dígitos.' : null; setErrorLocal(error ?? '');
     if (!error) guardar.mutate();
   }
   return (
@@ -121,14 +122,14 @@ function FormularioRefugio({ refugio }: { refugio: Refugio }) {
       </div>
       <form className="cuenta__form" onSubmit={enviar} noValidate>
         <fieldset disabled={guardar.isPending}>
-          <div className="cuenta__fila">
+          {MODO_DEMO && <div className="cuenta__fila">
             <Campo id="refugio-nombre" etiqueta="Nombre del refugio" valor={datos.nombre} alCambiar={v => cambiar('nombre', v)} />
             <Campo id="refugio-encargado" etiqueta="Persona encargada" valor={datos.encargado} alCambiar={v => cambiar('encargado', v)} />
-          </div>
+          </div>}
           <Campo id="refugio-direccion" etiqueta="Dirección" valor={datos.direccion} alCambiar={v => cambiar('direccion', v)} />
           <div className="cuenta__fila">
             <Campo id="refugio-telefono" etiqueta="Teléfono" tipo="tel" valor={datos.telefono} alCambiar={v => cambiar('telefono', v)} ayuda="10 dígitos" />
-            <Campo id="refugio-correo" etiqueta="Correo de contacto" tipo="email" valor={datos.correo} alCambiar={v => cambiar('correo', v)} />
+            {MODO_DEMO && <Campo id="refugio-correo" etiqueta="Correo de contacto" tipo="email" valor={datos.correo} alCambiar={v => cambiar('correo', v)} />}
           </div>
           <Campo id="refugio-redes" etiqueta="Redes sociales (opcional)" valor={datos.redesSociales ?? ''} alCambiar={v => cambiar('redesSociales', v)} />
           <div className="campo">
@@ -161,7 +162,7 @@ function GestionRequisitos({ refugio }: { refugio: Refugio }) {
         await api.refugios.eliminarRequisito(refugio.id, borrado);
       } else if (edicion !== null) {
         await api.refugios.editarRequisito(refugio.id, edicion, { descripcion: descripcion.trim(), esObligatorio: obligatorio });
-      } else await api.refugios.guardarRequisito(refugio.id, descripcion.trim(), obligatorio);
+      } else await api.refugios.guardarRequisito(refugio.id, descripcion.trim(), obligatorio, Math.min(255, Math.max(-1, ...refugio.requisitos.map(r => r.orden)) + 1));
     },
     onSuccess: (_data, accion) => {
       setMensaje(accion === 'eliminar' ? 'Requisito eliminado.' : 'Requisito guardado.');
@@ -187,7 +188,7 @@ function GestionRequisitos({ refugio }: { refugio: Refugio }) {
                 <span className={`requisitos__tipo${r.esObligatorio ? ' requisitos__tipo--obligatorio' : ''}`}>
                   {r.esObligatorio ? 'Obligatorio' : 'Opcional'}
                 </span>
-                <span className="requisitos__acciones">
+                {MODO_DEMO && <span className="requisitos__acciones">
                   <button type="button" className="requisitos__icono" aria-label={`Editar requisito: ${r.descripcion}`} title="Editar" disabled={guardar.isPending}
                     onClick={() => { setEdicion(r.id); setBorrado(null); setDescripcion(r.descripcion); setObligatorio(r.esObligatorio); setMensaje(''); setErrorLocal(''); guardar.reset(); }}>
                     <Pencil size={16} strokeWidth={1.75} aria-hidden="true" />
@@ -196,7 +197,7 @@ function GestionRequisitos({ refugio }: { refugio: Refugio }) {
                     onClick={() => { setBorrado(r.id); setMensaje(''); guardar.reset(); }}>
                     <Trash2 size={16} strokeWidth={1.75} aria-hidden="true" />
                   </button>
-                </span>
+                </span>}
               </div>
               {borrado === r.id && (
                 <div className="requisitos__confirmar" role="group" aria-label="Confirmar eliminación del requisito">

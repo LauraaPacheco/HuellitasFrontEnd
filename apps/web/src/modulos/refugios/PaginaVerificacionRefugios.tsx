@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { ErrorHttp, EstadoVerificacion, ESTADO_VERIFICACION, type Refugio } from '@huellitas/shared';
-import { api } from '@/lib/api';
+import { api, MODO_DEMO } from '@/lib/api';
 import { Encabezado } from '@/componentes/layout/Encabezado';
 import { Boton } from '@/componentes/ui/Boton';
 import { Insignia } from '@/componentes/ui/Insignia';
@@ -37,20 +37,23 @@ export function PaginaVerificacionRefugios() {
       void cliente.invalidateQueries({ queryKey: ['refugios'] });
     },
   });
-  function elegir(refugio: Refugio) {
-    setSeleccion(refugio); setDecision(null); setMotivo(''); setErrorLocal(''); setMensaje(''); guardar.reset();
+  async function elegir(refugio: Refugio) {
+    try { setSeleccion(MODO_DEMO ? refugio : await api.refugios.obtener(refugio.id)); }
+    catch { setMensaje('No pudimos consultar el refugio. Inténtalo nuevamente.'); return; }
+    setDecision(null); setMotivo(''); setErrorLocal(''); setMensaje(''); guardar.reset();
   }
   return <>
-    <Encabezado titulo="Verificación de refugios" resumen="Revisa la información antes de habilitar la publicación de mascotas." />
+    <Encabezado titulo={MODO_DEMO ? "Verificación de refugios" : "Refugios verificados"} resumen={MODO_DEMO ? "Revisa la información antes de habilitar la publicación de mascotas." : "Consulta los refugios y su información pública."} />
+    {!MODO_DEMO && <p className="cuenta__aviso">Las solicitudes pendientes de verificación aún no están disponibles en este listado.</p>}
     {mensaje && <p role="status">{mensaje}</p>}
-    {consulta.isPending && <EstadoCargando mensaje="Cargando solicitudes de refugios…" />}
+    {consulta.isPending && <EstadoCargando mensaje="Cargando refugios…" />}
     {consulta.isError && <EstadoError titulo="No pudimos cargar los refugios" error={consulta.error} alReintentar={() => void consulta.refetch()} reintentando={consulta.isFetching} />}
-    {consulta.data && consulta.data.items.length === 0 && <EstadoVacio titulo="Sin solicitudes de refugios" descripcion="Las solicitudes de registro aparecerán aquí para su revisión." />}
+    {consulta.data && consulta.data.items.length === 0 && <EstadoVacio titulo={MODO_DEMO ? "Sin solicitudes de refugios" : "Sin refugios verificados"} descripcion={MODO_DEMO ? "Las solicitudes de registro aparecerán aquí para su revisión." : "Los refugios aparecerán cuando estén verificados."} />}
     {!!consulta.data?.items.length && <div className="refugio-tabla"><table className="tabla tabla--tarjetas">
-      <thead><tr><th scope="col">Refugio</th><th scope="col">NIT</th><th scope="col">Estado</th><th scope="col">Acción</th></tr></thead>
+      <thead><tr><th scope="col">Refugio</th><th scope="col">Dirección</th><th scope="col">Estado</th><th scope="col">Acción</th></tr></thead>
       <tbody>{consulta.data.items.map(refugio => <tr key={refugio.id}>
-        <td className="tabla__c-titulo"><span className="tabla__nombre">{refugio.nombre}</span></td><td className="tabla__c-dato" data-etiqueta="NIT">{refugio.nit}</td><td className="tabla__c-estado"><Insignia estado={ESTADO_VERIFICACION[refugio.estadoVerificacion]} /></td>
-        <td className="tabla__c-accion"><Boton variante="primario" className="refugio-revisar" aria-label={`Revisar ${refugio.nombre}`} disabled={guardar.isPending} onClick={() => elegir(refugio)}>Revisar <span aria-hidden="true">↗</span></Boton></td>
+        <td className="tabla__c-titulo"><span className="tabla__nombre">{refugio.nombre}</span></td><td className="tabla__c-dato" data-etiqueta="Dirección">{refugio.direccion}</td><td className="tabla__c-estado"><Insignia estado={ESTADO_VERIFICACION[refugio.estadoVerificacion]} /></td>
+        <td className="tabla__c-accion"><Boton variante="primario" className="refugio-revisar" aria-label={`Revisar ${refugio.nombre}`} disabled={guardar.isPending} onClick={() => elegir(refugio)}>{MODO_DEMO ? "Revisar" : "Consultar"} <span aria-hidden="true">↗</span></Boton></td>
       </tr>)}</tbody>
     </table></div>}
     {consulta.data && consulta.data.totalPaginas > 1 && <div className="refugio-acciones">
@@ -61,7 +64,7 @@ export function PaginaVerificacionRefugios() {
     {seleccion && <Modal titulo={seleccion.nombre} alCerrar={() => setSeleccion(null)} ocupado={guardar.isPending}>
       <div className="refugio-resumen-modal"><Insignia estado={ESTADO_VERIFICACION[seleccion.estadoVerificacion]} /><span>Revisión del refugio</span></div>
       <dl className="refugio-datos">
-        <div><dt>NIT</dt><dd>{seleccion.nit}</dd></div><div><dt>Persona encargada</dt><dd>{seleccion.encargado ?? 'Sin información'}</dd></div>
+        {seleccion.nit && <div><dt>NIT</dt><dd>{seleccion.nit}</dd></div>}<div><dt>Persona encargada</dt><dd>{seleccion.encargado ?? 'Sin información'}</dd></div>
         <div><dt>Dirección</dt><dd>{seleccion.direccion}</dd></div><div><dt>Teléfono</dt><dd>{seleccion.telefono ?? 'Sin información'}</dd></div>
         <div><dt>Correo</dt><dd>{seleccion.correo ?? 'Sin información'}</dd></div><div><dt>Redes sociales</dt><dd>{seleccion.redesSociales || 'Sin información'}</dd></div>
         <div><dt>Descripción</dt><dd>{seleccion.descripcion || 'Sin descripción'}</dd></div>
@@ -74,7 +77,7 @@ export function PaginaVerificacionRefugios() {
           <Boton variante="peligro" disabled={guardar.isPending} onClick={() => { setDecision('rechazar'); guardar.reset(); setErrorLocal(''); }}>Rechazar solicitud</Boton>
         </div>
       </>}
-      {seleccion.estadoVerificacion === EstadoVerificacion.Verificado && <div className="refugio-acciones">
+      {MODO_DEMO && seleccion.estadoVerificacion === EstadoVerificacion.Verificado && <div className="refugio-acciones">
         <Boton variante="peligro" onClick={() => { setDecision('suspender'); setMotivo(''); guardar.reset(); setErrorLocal(''); }}>Suspender refugio</Boton>
       </div>}
       {seleccion.estadoVerificacion === EstadoVerificacion.Suspendido && <p>El refugio está suspendido. La reactivación requiere un flujo definido con el equipo.</p>}

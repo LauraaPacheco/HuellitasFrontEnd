@@ -33,6 +33,7 @@ export const RUTAS = {
     cambiarRol: (id: number) => `/api/usuarios/${id}/rol`,
     desactivar: (id: number) => `/api/usuarios/${id}/desactivar`,
   },
+  // Contrato del demo. ServicioRefugios adapta el backend real versionado.
   refugios: {
     base: '/api/refugios',
     porId: (id: number) => `/api/refugios/${id}`,
