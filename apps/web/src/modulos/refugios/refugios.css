@@ -85,24 +85,24 @@
   align-items: start;
 }
 
-/* Agregar un requisito en una sola fila: campo, casilla y boton. */
-.requisitos__nuevo fieldset {
-  grid-template-columns: minmax(0, 1fr) auto auto;
-  align-items: end;
+/* Agregar un requisito: el campo a todo el ancho y debajo, la casilla a la
+ * izquierda y los botones a la derecha. La tarjeta vive en una columna
+ * angosta, asi que no se intenta meter todo en una sola fila. */
+.requisitos__pie {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
 }
 
-.requisitos__nuevo .requisitos__check {
-  height: 52px;
+.requisitos__pie .cuenta__acciones {
+  margin-left: auto;
 }
 
-.requisitos__nuevo [role='alert'],
-.requisitos__nuevo [role='status'] {
-  grid-column: 1 / -1;
-}
-
-@media (max-width: 640px) {
-  .requisitos__nuevo fieldset { grid-template-columns: minmax(0, 1fr); }
-  .requisitos__nuevo .requisitos__check { height: auto; }
+@media (max-width: 420px) {
+  .requisitos__pie .cuenta__acciones { flex: 1 1 100%; }
+  .requisitos__pie .cuenta__acciones > .boton { flex: 1 1 auto; }
 }
 
 .requisitos__item {
@@ -198,7 +198,16 @@
   display: inline-flex;
   align-items: center;
   gap: var(--space-2);
+  min-height: 44px;
   font-size: 0.875rem;
+  cursor: pointer;
+}
+
+.requisitos__check input {
+  width: 18px;
+  height: 18px;
+  margin: 0;
+  accent-color: var(--brand-strong);
 }
 
 .cuenta__acciones {

@@ -218,14 +218,16 @@ function GestionRequisitos({ refugio }: { refugio: Refugio }) {
       }} noValidate>
         <fieldset disabled={guardar.isPending}>
           <Campo id="nuevo-requisito" etiqueta={edicion === null ? 'Nuevo requisito' : 'Editar requisito'} valor={descripcion} alCambiar={v => { setDescripcion(v); setMensaje(''); }} />
-          <label className="requisitos__check">
-            <input type="checkbox" checked={obligatorio} onChange={e => setObligatorio(e.target.checked)} /> Es obligatorio
-          </label>
           {(errorLocal || guardar.isError) && <p role="alert" className="campo__error">{errorLocal || (guardar.error && mensajeError(guardar.error))}</p>}
           {mensaje && <p className="cuenta__ok" role="status">{mensaje}</p>}
-          <div className="cuenta__acciones">
-            {edicion !== null && <Boton disabled={guardar.isPending} onClick={() => { setEdicion(null); setDescripcion(''); setObligatorio(true); setErrorLocal(''); }}>Cancelar</Boton>}
-            <Boton tipo="submit" variante="primario" cargando={guardar.isPending}>{edicion === null ? 'Agregar requisito' : 'Guardar requisito'}</Boton>
+          <div className="requisitos__pie">
+            <label className="requisitos__check">
+              <input type="checkbox" checked={obligatorio} onChange={e => setObligatorio(e.target.checked)} /> Es obligatorio
+            </label>
+            <div className="cuenta__acciones">
+              {edicion !== null && <Boton disabled={guardar.isPending} onClick={() => { setEdicion(null); setDescripcion(''); setObligatorio(true); setErrorLocal(''); }}>Cancelar</Boton>}
+              <Boton tipo="submit" variante="primario" cargando={guardar.isPending}>{edicion === null ? 'Agregar requisito' : 'Guardar requisito'}</Boton>
+            </div>
           </div>
         </fieldset>
       </form>
