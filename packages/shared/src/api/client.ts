@@ -5,6 +5,8 @@
  */
 
 import type { ErrorApi } from '../types/comun';
+import type { Usuario } from '../types/usuarios';
+import { sesionDesdeRespuesta, type RespuestaTokenApi, type SesionGuardada } from './sesion';
 
 export class ErrorHttp extends Error {
   readonly estadoHttp: number;
@@ -43,7 +45,12 @@ export interface AlmacenToken {
 export interface ConfiguracionCliente {
   readonly urlBase: string;
   readonly almacen: AlmacenToken;
-  /** Se dispara cuando la API responde 401, para cerrar sesion en la app. */
+  /** Sesión completa: permite rotar el refresh token y persistir ambos tokens. */
+  readonly almacenSesion?: AlmacenToken;
+  readonly alRenovarSesion?: (sesion: SesionGuardada) => void;
+  /** En web, coordina la rotación entre pestañas que comparten localStorage. */
+  readonly ejecutarRenovacionExclusiva?: (accion: () => Promise<string | null>) => Promise<string | null>;
+  /** Se dispara cuando la sesión ya no puede renovarse. */
   readonly alExpirarSesion?: () => void;
   readonly tiempoLimiteMs?: number;
   /**
@@ -65,6 +72,7 @@ interface OpcionesPeticion {
 }
 
 const TIEMPO_LIMITE_POR_DEFECTO = 15_000;
+const identidadSesion = (sesion: SesionGuardada) => sesion.idSesion ?? `${sesion.usuario.id}:${sesion.expiraEn}`;
 
 function construirConsulta(parametros?: Record<string, unknown>): string {
   if (!parametros) return '';
@@ -83,14 +91,156 @@ function construirConsulta(parametros?: Record<string, unknown>): string {
 
 export class ClienteApi {
   private readonly config: ConfiguracionCliente;
+  private generacion = 0;
+  private escritura: Promise<unknown> = Promise.resolve();
+
+  private conEscritura<T>(accion: () => Promise<T>): Promise<T> {
+    const tarea = this.escritura.then(accion, accion);
+    this.escritura = tarea.catch(() => undefined);
+    return tarea;
+  }
+
+  async guardarSesion(sesion: SesionGuardada): Promise<void> {
+    this.invalidarRenovacion();
+    const generacion = this.generacion;
+    await this.conEscritura(async () => {
+      if (generacion !== this.generacion) return;
+      await this.config.almacenSesion?.guardar(JSON.stringify({ ...sesion, idSesion: sesion.idSesion ?? `${Date.now()}:${Math.random()}` }));
+      await this.config.almacen.guardar(sesion.token);
+      this.tokenExpirado = null;
+    });
+  }
+
+  async limpiarSesion(): Promise<void> {
+    this.invalidarRenovacion();
+    await this.conEscritura(async () => {
+      await this.config.almacen.limpiar();
+      await this.config.almacenSesion?.limpiar();
+    });
+  }
+
+  async actualizarUsuarioSesion(usuario: Usuario): Promise<SesionGuardada> {
+    return this.conEscritura(async () => {
+      const crudo = await this.config.almacenSesion?.obtener();
+      if (!crudo) throw new Error('La sesión terminó.');
+      const actual = JSON.parse(crudo) as SesionGuardada;
+      if (actual.usuario.id !== usuario.id || actual.token !== await this.config.almacen.obtener()) throw new Error('La sesión cambió.');
+      const sesion = { ...actual, usuario: { ...usuario, rol: actual.usuario.rol } };
+      await this.config.almacenSesion?.guardar(JSON.stringify(sesion));
+      return sesion;
+    });
+  }
+  private renovacion: Promise<string | null> | null = null;
+  private reemplazos = new Map<string, string>();
+  private tokenExpirado: string | null = null;
+
+  /** Se llama antes de iniciar o cerrar sesión para cancelar renovaciones anteriores. */
+  invalidarRenovacion(): void {
+    this.generacion++;
+    this.renovacion = null;
+    this.reemplazos.clear();
+  }
+
+  private async expirar(token: string | null): Promise<void> {
+    await this.conEscritura(async () => {
+      if (token !== await this.config.almacen.obtener() || (token !== null && this.tokenExpirado === token)) return;
+      this.tokenExpirado = token;
+      this.invalidarRenovacion();
+      await this.config.almacen.limpiar();
+      await this.config.almacenSesion?.limpiar();
+      this.config.alExpirarSesion?.();
+    });
+  }
+
+  private async renovarToken(token: string, identidad: string | null): Promise<string | null> {
+    if (this.renovacion) return this.renovacion;
+    const generacion = this.generacion;
+    const ejecutar = () => this.ejecutarRenovacion(token, generacion, identidad);
+    const trabajo = this.config.ejecutarRenovacionExclusiva?.(ejecutar) ?? ejecutar();
+    this.renovacion = trabajo;
+    try { return await trabajo; }
+    finally { if (this.renovacion === trabajo) this.renovacion = null; }
+  }
+
+  private async ejecutarRenovacion(token: string, generacion: number, identidad: string | null): Promise<string | null> {
+    if (generacion !== this.generacion) return null;
+    const actual = await this.config.almacen.obtener();
+    if (actual !== token) {
+      // Un 401 puede llegar tarde, después de que otra petición ya renovó.
+      let siguiente = token;
+      while (this.reemplazos.has(siguiente)) siguiente = this.reemplazos.get(siguiente)!;
+      const guardada = await this.config.almacenSesion?.obtener();
+      let mismaSesion = false;
+      try {
+        const sesion = guardada ? JSON.parse(guardada) as SesionGuardada : null;
+        mismaSesion = !!sesion && !!identidad && identidadSesion(sesion) === identidad && sesion.token === actual;
+      } catch { /* una sesión incompleta no puede renovarse */ }
+      return actual && (siguiente === actual || mismaSesion) ? actual : null;
+    }
+    const almacenSesion = this.config.almacenSesion;
+    const crudo = await almacenSesion?.obtener();
+    if (!crudo || !almacenSesion) return null;
+    let anterior: SesionGuardada;
+    try { anterior = JSON.parse(crudo) as SesionGuardada; } catch { return null; }
+    if (anterior.token !== token || !anterior.refreshToken) return null;
+
+    let respuesta: RespuestaTokenApi;
+    try {
+      respuesta = await this.peticion<RespuestaTokenApi>('/api/v1/Auth/refresh', {
+        metodo: 'POST', cuerpo: { refreshToken: anterior.refreshToken },
+      });
+    } catch (error) {
+      if (generacion !== this.generacion) return null;
+      if (error instanceof ErrorHttp && (error.estadoHttp === 401 || error.estadoHttp === 403)) {
+        await this.expirar(token);
+      }
+      // Un fallo de red o del servidor no elimina una sesión recuperable.
+      throw error;
+    }
+    if (typeof respuesta?.accessToken !== 'string' || !respuesta.accessToken || typeof respuesta.refreshToken !== 'string' || !respuesta.refreshToken || !Number.isFinite(respuesta.expiraEnSegundos) || respuesta.expiraEnSegundos <= 0) {
+      throw new ErrorHttp({ titulo: 'El servidor no devolvió una sesión válida.', estadoHttp: 502 });
+    }
+    return this.conEscritura(async () => {
+      if (generacion !== this.generacion || await this.config.almacen.obtener() !== token) return null;
+      const guardada = await almacenSesion.obtener();
+      if (!guardada) return null;
+      const actual = JSON.parse(guardada) as SesionGuardada;
+      if (actual.token !== token || actual.refreshToken !== anterior.refreshToken) return null;
+      const nueva = sesionDesdeRespuesta(respuesta, actual.usuario.correo);
+      const sesion: SesionGuardada = { ...nueva, idSesion: identidadSesion(actual), usuario: { ...actual.usuario,
+        nombre: respuesta.nombre || actual.usuario.nombre, rol: nueva.usuario.rol } };
+      await almacenSesion.guardar(JSON.stringify(sesion));
+      await this.config.almacen.guardar(sesion.token);
+      if (generacion !== this.generacion) return null;
+      this.reemplazos.set(token, sesion.token);
+      if (this.reemplazos.size > 10) this.reemplazos.delete(this.reemplazos.keys().next().value!);
+      this.tokenExpirado = null;
+      this.config.alRenovarSesion?.(sesion);
+      return sesion.token;
+    });
+  }
 
   constructor(config: ConfiguracionCliente) {
     this.config = config;
   }
 
   async peticion<T>(ruta: string, opciones: OpcionesPeticion = {}): Promise<T> {
+    return this.ejecutarPeticion<T>(ruta, opciones);
+  }
+
+  private async ejecutarPeticion<T>(ruta: string, opciones: OpcionesPeticion, reintentada = false, tokenEsperado?: string): Promise<T> {
     const { metodo = 'GET', cuerpo, parametros, senal } = opciones;
+    await this.escritura;
     const token = await this.config.almacen.obtener();
+    const sesionCruda = await this.config.almacenSesion?.obtener();
+    let identidad: string | null = null;
+    try {
+      const sesion = sesionCruda ? JSON.parse(sesionCruda) as SesionGuardada : null;
+      if (sesion?.token === token) identidad = identidadSesion(sesion);
+    } catch { /* la renovación tratará la sesión inválida */ }
+    if (tokenEsperado !== undefined && token !== tokenEsperado) {
+      throw new ErrorHttp({ titulo: 'La sesión cambió durante la petición.', estadoHttp: 401 });
+    }
 
     const cabeceras: Record<string, string> = {
       Accept: opciones.formato === 'blob' ? 'application/pdf' : 'application/json',
@@ -109,7 +259,9 @@ export class ClienteApi {
       () => controlador.abort(),
       this.config.tiempoLimiteMs ?? TIEMPO_LIMITE_POR_DEFECTO,
     );
-    senal?.addEventListener('abort', () => controlador.abort());
+    const abortar = () => controlador.abort();
+    if (senal?.aborted) controlador.abort();
+    senal?.addEventListener('abort', abortar, { once: true });
 
     let respuesta: Response;
     try {
@@ -124,6 +276,7 @@ export class ClienteApi {
       );
     } catch (causa) {
       clearTimeout(temporizador);
+      senal?.removeEventListener('abort', abortar);
       const abortado = causa instanceof Error && causa.name === 'AbortError';
       throw new ErrorHttp({
         titulo: abortado
@@ -136,10 +289,16 @@ export class ClienteApi {
       });
     }
     clearTimeout(temporizador);
+    senal?.removeEventListener('abort', abortar);
 
-    if (respuesta.status === 401) {
-      await this.config.almacen.limpiar();
-      this.config.alExpirarSesion?.();
+    // Login, refresh y logout no deben entrar en un ciclo de renovación.
+    const autenticacion = /^\/api\/v1\/Auth(?:\/|$)/i.test(ruta);
+    if (respuesta.status === 401 && !autenticacion) {
+      if (!reintentada && token && this.config.almacenSesion) {
+        const renovado = await this.renovarToken(token, identidad);
+        if (renovado) return this.ejecutarPeticion<T>(ruta, opciones, true, renovado);
+      }
+      await this.expirar(token);
     }
 
     if (respuesta.status === 204) return undefined as T;

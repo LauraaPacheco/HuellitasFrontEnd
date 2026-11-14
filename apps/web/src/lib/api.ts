@@ -1,4 +1,4 @@
-import { crearApi, type AlmacenToken } from '@huellitas/shared';
+import { crearApi, type AlmacenToken, type SesionGuardada } from '@huellitas/shared';
 
 const CLAVE_TOKEN = 'huellitas.token';
 const CLAVE_SESION = 'huellitas.sesion';
@@ -45,10 +45,22 @@ const almacenWeb = almacenDe(CLAVE_TOKEN);
  */
 const almacenSesionWeb = almacenDe(CLAVE_SESION);
 
+const renovaciones = new Set<(sesion: SesionGuardada) => void>();
+export function registrarRenovacionSesion(callback: (sesion: SesionGuardada) => void): () => void {
+  renovaciones.add(callback);
+  return () => { renovaciones.delete(callback); };
+}
+
 export const api = crearApi({
   urlBase: import.meta.env.VITE_URL_API ?? '',
   almacen: almacenWeb,
   modoDemo: MODO_DEMO,
+  almacenSesion: almacenSesionWeb,
+  ejecutarRenovacionExclusiva: async accion =>
+    typeof navigator !== 'undefined' && navigator.locks
+      ? navigator.locks.request('huellitas:renovar-sesion', accion)
+      : accion(),
+  alRenovarSesion: sesion => { renovaciones.forEach(callback => callback(sesion)); },
   alExpirarSesion: () => {
     // Fuerza volver al login cuando la API responde 401.
     if (window.location.pathname !== '/login') {

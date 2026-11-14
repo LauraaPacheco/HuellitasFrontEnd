@@ -17,7 +17,7 @@ import {
   type SesionGuardada,
   type Usuario,
 } from '@huellitas/shared';
-import { almacen, almacenSesion, api, MODO_DEMO, registrarExpiracionSesion } from './api';
+import { almacen, almacenSesion, api, MODO_DEMO, registrarExpiracionSesion, registrarRenovacionSesion } from './api';
 
 interface ValorSesion {
   readonly usuario: Usuario | null;
@@ -41,6 +41,8 @@ export function ProveedorSesion({ children }: { children: ReactNode }) {
     registrarExpiracionSesion(() => setUsuario(null));
   }, []);
 
+  useEffect(() => registrarRenovacionSesion(sesion => setUsuario(sesion.usuario)), []);
+
   /** Recupera la sesión y consulta el perfil vigente del servidor. */
   useEffect(() => {
     let vigente = true;
@@ -50,10 +52,10 @@ export function ProveedorSesion({ children }: { children: ReactNode }) {
         if (crudo && vigente) {
           const sesion = JSON.parse(crudo) as SesionGuardada;
           try {
-            const actualizado = { ...sesion, usuario: await api.usuarios.yo(sesion.usuario) };
-            if (vigente) { setUsuario(actualizado.usuario); await almacenSesion.guardar(JSON.stringify(actualizado)); }
+            const actualizado = await api.cliente.actualizarUsuarioSesion(await api.usuarios.yo(sesion.usuario));
+            if (vigente) { setUsuario(actualizado.usuario); }
           } catch (error) {
-            if (error instanceof ErrorHttp && error.estadoHttp === 401) throw error;
+            if ((error instanceof ErrorHttp && error.estadoHttp === 401) || !await almacen.obtener()) throw error;
             // Un fallo temporal de red no elimina una sesión previamente guardada.
             if (vigente) setUsuario(sesion.usuario);
           }
@@ -72,14 +74,15 @@ export function ProveedorSesion({ children }: { children: ReactNode }) {
 
   const iniciarSesion = useCallback(async (datos: LoginDto) => {
     const respuesta = await api.autenticacion.login(datos);
-    await almacen.guardar(respuesta.token);
+    await api.cliente.guardarSesion(respuesta);
     try {
-      const sesion = { ...respuesta, usuario: await api.usuarios.yo(respuesta.usuario) };
-      await almacenSesion.guardar(JSON.stringify(sesion)); cache.clear(); setUsuario(sesion.usuario);
-    } catch (error) { await almacen.limpiar(); await almacenSesion.limpiar(); throw error; }
+      const sesion = await api.cliente.actualizarUsuarioSesion(await api.usuarios.yo(respuesta.usuario));
+      cache.clear(); setUsuario(sesion.usuario);
+    } catch (error) { await api.cliente.limpiarSesion(); throw error; }
   }, [cache]);
 
   const cerrarSesion = useCallback(async () => {
+    api.cliente.invalidarRenovacion();
     try {
       // El backend revoca el refresh token, asi que hay que mandarselo.
       const crudo = await almacenSesion.obtener();
@@ -88,38 +91,25 @@ export function ProveedorSesion({ children }: { children: ReactNode }) {
     } catch {
       /* si falla, igual se cierra del lado del front */
     } finally {
-      await almacen.limpiar();
-      await almacenSesion.limpiar();
+      await api.cliente.limpiarSesion();
       await cache.cancelQueries(); cache.clear();
       setUsuario(null);
     }
   }, [cache]);
 
   const guardarDatosPersonales = useCallback(async (datos: EditarPerfilDto) => {
-    const token = await almacen.obtener();
-    if (!token) throw new Error('Inicia sesión para guardar tus datos.');
     const actualizado = await api.usuarios.editarPerfil(datos);
-    if (await almacen.obtener() !== token) throw new Error('La sesión cambió. Vuelve a ingresar.');
-    const crudo = await almacenSesion.obtener();
-    if (!crudo) throw new Error('La sesión terminó.');
-    const sesion = JSON.parse(crudo) as SesionGuardada;
-    if (sesion.token !== token) throw new Error('La sesión cambió.');
-    await almacenSesion.guardar(JSON.stringify({ ...sesion, usuario: actualizado }));
-    setUsuario(actualizado);
+    const sesion = await api.cliente.actualizarUsuarioSesion(actualizado);
+    setUsuario(sesion.usuario);
   }, []);
 
   const guardarPerfilAdoptante = useCallback(async (datos: PerfilAdoptanteDto) => {
-    const token = await almacen.obtener();
-    if (!token) throw new Error('Inicia sesión para guardar tu perfil.');
-    const perfil = await api.usuarios.guardarPerfilAdoptante(datos);
-    if (await almacen.obtener() !== token) throw new Error('La sesión cambió. Vuelve a ingresar.');
     const crudo = await almacenSesion.obtener();
-    if (!crudo) throw new Error('La sesión terminó.');
-    const sesion = JSON.parse(crudo) as SesionGuardada;
-    if (sesion.token !== token) throw new Error('La sesión cambió.');
-    const actualizado = { ...sesion.usuario, perfil };
-    await almacenSesion.guardar(JSON.stringify({ ...sesion, usuario: actualizado }));
-    setUsuario(actualizado);
+    if (!crudo) throw new Error('Inicia sesión para guardar tu perfil.');
+    const anterior = JSON.parse(crudo) as SesionGuardada;
+    const perfil = await api.usuarios.guardarPerfilAdoptante(datos);
+    const sesion = await api.cliente.actualizarUsuarioSesion({ ...anterior.usuario, perfil });
+    setUsuario(sesion.usuario);
   }, []);
 
   const valor = useMemo<ValorSesion>(
