@@ -6,8 +6,10 @@ import type { Paginado } from '../types/comun';
 export interface PerfilUsuarioApi { id: number; refugioId?: number | null; nombre: string; correo: string; telefono: string | null; fotoUrl: string | null; estado: string; fechaRegistro: string; politicaAceptada?: string | null; fechaAceptacionPolitica?: string | null }
 export interface PerfilAdoptanteApi { tipoVivienda: string | null; espacioDisponible: string | null; presenciaDeNinos: boolean | null; otrasMascotas: boolean | null; tiempoDisponible: string | null; experienciaPrevia: boolean | null; porcentajeCompletitud: number }
 export interface ResumenMascotaApi { id: number; nombre: string; especie: string; raza: string | null; sexo: string; edadAproximada: number; fotoPrincipal: string | null; estado: string; fechaCreacion: string }
-export interface DetalleMascotaApi extends Omit<ResumenMascotaApi, 'fotoPrincipal' | 'fechaCreacion'> { descripcion: string | null; esterilizada: boolean; refugio: string; refugioId?: number; refugioTelefono: string | null; fotos: string[] }
-export interface FichaMascotaPublica { id: number; nombre: string; especie: string; raza: string | null; sexo: Sexo; edadAproximada: number | null; descripcion: string | null; esterilizada: boolean; estado: EstadoMascota; refugioNombre: string; refugioTelefono: string | null; refugioId?: number; fotos: readonly string[] }
+export interface DetalleMascotaApi extends Omit<ResumenMascotaApi, 'fotoPrincipal' | 'fechaCreacion'> { descripcion: string | null; esterilizada: boolean; refugio: string; refugioId?: number; refugioTelefono: string | null; fotos: string[]; especieId?: number; razaId?: number | null; tamanoId?: number; colorId?: number }
+export interface FichaMascotaPublica { id: number; nombre: string; especie: string; raza: string | null; sexo: Sexo; edadAproximada: number | null; descripcion: string | null; esterilizada: boolean; estado: EstadoMascota; refugioNombre: string; refugioTelefono: string | null; refugioId?: number; fotos: readonly string[];
+  /** Ids de catálogo para editar. Opcionales: un backend sin el cambio de MascotaDetalleDTO no los manda. */
+  especieId?: number; razaId?: number | null; tamanoId?: number; colorId?: number }
 export interface PaginadoApi<T> { items: T[]; pagina: number; tamanoPagina: number; totalRegistros: number; totalPaginas: number }
 const clave = (valor: string) => valor.trim().toLowerCase().replace(/\s/g, '');
 export function estadoMascotaApi(valor: string): EstadoMascota {

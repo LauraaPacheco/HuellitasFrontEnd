@@ -27,3 +27,22 @@
 .fotos-url .multimedia__rejilla { margin-top: 0; padding: 0; list-style: none; }
 @media (max-width: 540px) { .fotos-url__agregar { grid-template-columns: 1fr; } .fotos-url__agregar > .boton { margin-top: 0; } }
 .publicacion-revision > .multimedia__rejilla { padding: 0; list-style: none; }
+
+/* Subir varias fotos: zona grande clicable que también acepta arrastrar. */
+.subir-fotos { display: grid; gap: var(--space-2); margin-block: var(--space-4); }
+.subir-fotos__zona { display: grid; justify-items: center; gap: var(--space-2); padding: var(--space-6) var(--space-4); text-align: center; border: 2px dashed var(--border); border-radius: var(--radius-md); background: var(--surface-200); cursor: pointer; transition: border-color .15s, background .15s; }
+.subir-fotos__zona:hover, .subir-fotos__zona--encima { border-color: var(--brand); background: var(--brand-tint); }
+.subir-fotos input:focus-visible + .subir-fotos__contador, .subir-fotos:focus-within .subir-fotos__zona { outline: 2px solid var(--focus); outline-offset: 2px; }
+.subir-fotos__zona--deshabilitada { cursor: default; opacity: .75; }
+.subir-fotos__zona--deshabilitada:hover { border-color: var(--border); background: var(--surface-200); }
+.subir-fotos__icono { display: grid; place-items: center; width: 56px; height: 56px; border-radius: var(--radius-pill); background: var(--brand-tint); color: var(--brand-strong); }
+.subir-fotos__titulo { font-family: var(--fuente-display); font-size: 18px; font-weight: 600; color: var(--ink); }
+.subir-fotos__ayuda { max-width: 46ch; font-size: 14px; line-height: 1.5; color: var(--ink-muted); }
+.subir-fotos__boton { margin-top: var(--space-2); pointer-events: none; }
+.subir-fotos__contador { margin: 0; font-size: 13px; color: var(--ink-muted); }
+.subir-fotos__errores { margin: 0; padding-left: var(--space-4); display: grid; gap: var(--space-1); }
+.fotos-url__separador { display: flex; align-items: center; gap: var(--space-3); color: var(--ink-muted); font-size: 13px; text-transform: uppercase; letter-spacing: .08em; }
+.fotos-url__separador::before, .fotos-url__separador::after { content: ''; flex: 1; height: 1px; background: var(--border); }
+.fotos-url__intro { display: grid; gap: var(--space-1); }
+.fotos-url__titulo { display: flex; align-items: center; gap: var(--space-2); margin: 0; font-weight: 600; color: var(--ink); }
+.fotos-url__intro .multimedia__ayuda { margin: 0; }

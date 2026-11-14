@@ -13,7 +13,11 @@ import './mascotas.css';
 import { EstadoCargando } from '@/componentes/ui/EstadoCargando';
 const errorTexto = (error: Error) => error instanceof ErrorHttp ? error.detalle ?? error.message : error.message;
 
-export function FormularioMascota({ mascota, asistente, alContinuar, modoReal = false, datosIniciales, alGuardarLocal }: { mascota?: Mascota; asistente: boolean; alContinuar?: (guardada: Mascota) => void; modoReal?: boolean; datosIniciales?: CrearMascotaDto; alGuardarLocal?: (datos: CrearMascotaDto) => void }) {
+/**
+ * `especieFija`: en la edición real la especie no se puede cambiar (ActualizarMascotaDTO no la recibe), así que se muestra como texto.
+ * `guardandoExterno` y `alCancelar`: para cuando quien guarda es la página (alGuardarLocal) y no este formulario.
+ */
+export function FormularioMascota({ mascota, asistente, alContinuar, modoReal = false, datosIniciales, alGuardarLocal, especieFija, guardandoExterno = false, alCancelar }: { mascota?: Mascota; asistente: boolean; alContinuar?: (guardada: Mascota) => void; modoReal?: boolean; datosIniciales?: CrearMascotaDto; alGuardarLocal?: (datos: CrearMascotaDto) => void; especieFija?: string; guardandoExterno?: boolean; alCancelar?: () => void }) {
   const navegar = useNavigate();
   const [datos, setDatos] = useState<CrearMascotaDto>(() => datosIniciales ?? (mascota ? {
     nombre: mascota.nombre, especieId: mascota.especieId, razaId: mascota.razaId ?? undefined,
@@ -37,7 +41,7 @@ export function FormularioMascota({ mascota, asistente, alContinuar, modoReal = 
   }
   function enviar(evento: FormEvent) {
     evento.preventDefault();
-    if (guardar.isPending || !catalogosListos) return;
+    if (guardar.isPending || guardandoExterno || !catalogosListos) return;
     const nuevos = validarMascota(datos);
     if (modoReal && datos.edadAproximada !== undefined && (!Number.isInteger(datos.edadAproximada) || datos.edadAproximada > 255)) nuevos.edadAproximada = 'Indica un número entero entre 0 y 255 años.';
     setErrores(nuevos);
@@ -54,19 +58,24 @@ export function FormularioMascota({ mascota, asistente, alContinuar, modoReal = 
   return <div className="mascota-gestion">
     {mascota && !asistente && <GestionEstado mascota={mascota} />}
     <form className="mascota-formulario" onSubmit={enviar} noValidate>
-      <fieldset disabled={guardar.isPending}>
+      <fieldset disabled={guardar.isPending || guardandoExterno}>
         <legend>Información de la mascota</legend>
         <p className="mascota-ayuda">{modoReal ? 'Completa nombre, especie, tamaño y color. La edad se expresa en años enteros.' : 'Nombre, especie, tamaño, color y fecha de ingreso son obligatorios. La edad se expresa en años y puede incluir decimales.'}</p>
         <div className="mascota-formulario__grid">
           <Campo id="mascota-nombre" etiqueta="Nombre" valor={datos.nombre} alCambiar={v => cambiar('nombre', v)} requerido error={errores.nombre} />
-          {selector('especieId', 'Especie', especies)}
+          {especieFija !== undefined
+            ? <div className="campo"><span className="campo__etiqueta">Especie</span><p className="campo__control" aria-readonly="true" style={{ display: 'flex', alignItems: 'center', margin: 0, opacity: .8 }}>{especieFija || 'Sin especie'}</p><small className="mascota-ayuda">La especie no se puede cambiar después de publicar.</small></div>
+            : selector('especieId', 'Especie', especies)}
           {selector('razaId', 'Raza (opcional)', razas, false)}
           {selector('tamanoId', 'Tamaño', tamanos)}
           {selector('colorId', 'Color', colores)}
           <label className="campo"><span className="campo__etiqueta">Sexo</span><select className="campo__control" value={datos.sexo} onChange={e => cambiar('sexo', Number(e.target.value) as Sexo)}><option value={Sexo.Macho}>Macho</option><option value={Sexo.Hembra}>Hembra</option></select></label>
-          <Campo id="mascota-edad" etiqueta="Edad aproximada en años (opcional)" tipo="number" valor={datos.edadAproximada?.toString() ?? ''} alCambiar={v => cambiar('edadAproximada', v === '' ? undefined : Number(v))} error={errores.edadAproximada} />
+          <Campo id="mascota-edad" etiqueta="Edad aproximada en años (opcional)" tipo="number" min={0} max={modoReal ? 255 : undefined} paso={modoReal ? 1 : 0.1}
+            valor={datos.edadAproximada?.toString() ?? ''}
+            alCambiar={v => { if (v === '') { cambiar('edadAproximada', undefined); return; } const n = Number(v); if (Number.isFinite(n) && n >= 0) cambiar('edadAproximada', n); }}
+            error={errores.edadAproximada} />
           {!modoReal && <Calendario id="mascota-ingreso" etiqueta="Fecha de ingreso" valor={datos.fechaIngreso} alCambiar={v => cambiar('fechaIngreso', v)} error={errores.fechaIngreso} />}
-          <label className="campo"><span className="campo__etiqueta">Procedencia</span><select className="campo__control" value={datos.procedencia} onChange={e => cambiar('procedencia', Number(e.target.value) as Procedencia)}><option value={Procedencia.Rescate}>Rescate</option><option value={Procedencia.EntregaVoluntaria}>Entrega voluntaria</option><option value={Procedencia.ReporteCiudadano}>Reporte ciudadano</option></select></label>
+          {especieFija === undefined && <label className="campo"><span className="campo__etiqueta">Procedencia</span><select className="campo__control" value={datos.procedencia} onChange={e => cambiar('procedencia', Number(e.target.value) as Procedencia)}><option value={Procedencia.Rescate}>Rescate</option><option value={Procedencia.EntregaVoluntaria}>Entrega voluntaria</option><option value={Procedencia.ReporteCiudadano}>Reporte ciudadano</option></select></label>}
         </div>
         <label className="mascota-opcion"><input type="checkbox" checked={datos.esterilizada} onChange={e => cambiar('esterilizada', e.target.checked)} /> Está esterilizad@</label>
         <label className="campo"><span className="campo__etiqueta">Descripción (opcional)</span><textarea className="campo__control" rows={4} value={datos.descripcion ?? ''} onChange={e => cambiar('descripcion', e.target.value)} placeholder="Cuéntanos cómo es y qué necesita en su nuevo hogar" /></label>
@@ -78,7 +87,7 @@ export function FormularioMascota({ mascota, asistente, alContinuar, modoReal = 
         {!catalogosListos && <p className="mascota-ayuda">Espera a que carguen los catálogos. Si no hay especies, tamaños o colores, el administrador debe configurarlos antes de publicar.</p>}
         {Object.keys(errores).length > 0 && <p role="alert" className="campo__error">Revisa los campos indicados antes de guardar.</p>}
         {guardar.isError && <p role="alert" className="campo__error">{errorTexto(guardar.error)}</p>}
-        <div className="mascota-acciones"><Boton variante="primario" tipo="submit" cargando={guardar.isPending} disabled={!catalogosListos}>{asistente ? 'Guardar y continuar →' : 'Guardar cambios'}</Boton><Link className="boton boton--secundario mascota-enlace" to="/mascotas">{asistente && mascota ? 'Salir y conservar borrador' : 'Cancelar'}</Link></div>
+        <div className="mascota-acciones"><Boton variante="primario" tipo="submit" cargando={guardar.isPending || guardandoExterno} disabled={!catalogosListos}>{asistente ? 'Guardar y continuar →' : 'Guardar cambios'}</Boton>{alCancelar ? <Boton onClick={alCancelar}>Cancelar</Boton> : <Link className="boton boton--secundario mascota-enlace" to="/mascotas">{asistente && mascota ? 'Salir y conservar borrador' : 'Cancelar'}</Link>}</div>
       </fieldset>
     </form>
   </div>;

@@ -12,6 +12,10 @@ interface Props {
   readonly error?: string;
   readonly autoComplete?: string;
   readonly requerido?: boolean;
+  /** Solo para tipo number. */
+  readonly min?: number;
+  readonly max?: number;
+  readonly paso?: number;
 }
 
 /** Todo campo lleva etiqueta visible, no solo marcador de posicion. */
@@ -26,6 +30,9 @@ export function Campo({
   error,
   autoComplete,
   requerido,
+  min,
+  max,
+  paso,
 }: Props) {
   const [visible, setVisible] = useState(false);
   const esContrasena = tipo === 'password';
@@ -46,6 +53,10 @@ export function Campo({
         placeholder={marcador}
         autoComplete={autoComplete}
         required={requerido}
+        min={min}
+        max={max}
+        step={paso}
+        inputMode={tipo === 'number' && paso === 1 ? 'numeric' : undefined}
         aria-invalid={error ? true : undefined}
         aria-describedby={[idAyuda, idError].filter(Boolean).join(' ') || undefined}
         onChange={(evento) => alCambiar(evento.target.value)}

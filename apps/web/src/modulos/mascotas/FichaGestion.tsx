@@ -15,7 +15,12 @@ import {
   Venus,
   type LucideIcon,
 } from 'lucide-react';
-import { ErrorHttp, EstadoMascota, ESTADO_MASCOTA, ETIQUETA_SEXO, Sexo, type FichaMascotaPublica } from '@huellitas/shared';
+import { ErrorHttp, EstadoMascota, ESTADO_MASCOTA, ETIQUETA_SEXO, Procedencia, Sexo, type CrearMascotaDto, type FichaMascotaPublica } from '@huellitas/shared';
+import { Pencil } from 'lucide-react';
+import { usarEspecies, usarRazas } from '@/casos/catalogos';
+import { FormularioMascota } from './FormularioMascota';
+import { SubirFotos } from './SubirFotos';
+import { FotosPorUrl } from './FotosPorUrl';
 import { api } from '@/lib/api';
 import { clavesMascotas } from '@/casos/mascotas';
 import { Encabezado } from '@/componentes/layout/Encabezado';
@@ -40,11 +45,13 @@ const volver = (
  * Gestionar una mascota publicada (backend real).
  *
  * Misma composicion que Mi cuenta: a la izquierda las fotos, a la derecha
- * quien es y su disponibilidad. El backend todavia no permite editar la
- * ficha, asi que lo unico que se cambia aqui es si sigue publicada.
+ * quien es y su disponibilidad. "Editar" cambia la vista por el formulario
+ * con sus datos y fotos (PUT /api/v1/Mascotas/{id}).
  */
 export function FichaGestion({ id }: { id: number }) {
   const valido = Number.isSafeInteger(id) && id > 0;
+  const [editando, setEditando] = useState(false);
+  const [mensaje, setMensaje] = useState('');
   const ficha = useQuery({
     queryKey: ['ficha-real', id],
     queryFn: () => api.mascotas.obtenerFicha(id),
@@ -55,10 +62,11 @@ export function FichaGestion({ id }: { id: number }) {
   return (
     <>
       <Encabezado
-        titulo={ficha.data?.nombre ?? 'Gestionar mascota'}
-        resumen={ficha.data ? 'Consulta su ficha y decide si sigue visible en el catálogo.' : undefined}
-        acciones={volver}
+        titulo={ficha.data ? (editando ? `Editar a ${ficha.data.nombre}` : ficha.data.nombre) : 'Gestionar mascota'}
+        resumen={ficha.data ? (editando ? 'Actualiza sus datos y sus fotos. Los cambios se ven en el catálogo al guardar.' : 'Consulta su ficha, edítala o decide si sigue visible en el catálogo.') : undefined}
+        acciones={<>{ficha.data && !editando && <Boton variante="primario" onClick={() => { setMensaje(''); setEditando(true); window.scrollTo({ top: 0 }); }}><Pencil size={16} strokeWidth={1.75} aria-hidden="true" /> Editar mascota</Boton>}{volver}</>}
       />
+      {mensaje && !editando && <p role="status" className="mascotas-mensaje">{mensaje}</p>}
       {!valido ? (
         <EstadoVacio
           ilustracion="confundido"
@@ -76,6 +84,8 @@ export function FichaGestion({ id }: { id: number }) {
           reintentando={ficha.isFetching}
           accionExtra={volver}
         />
+      ) : editando ? (
+        <EditarFicha ficha={ficha.data} alTerminar={guardado => { setEditando(false); if (guardado) setMensaje('Los cambios se guardaron.'); window.scrollTo({ top: 0 }); }} />
       ) : (
         <div className="cuenta ficha">
           {/* Izquierda las fotos y la disponibilidad; derecha quien es. */}
@@ -238,10 +248,6 @@ function DisponibilidadFicha({ ficha }: { ficha: FichaMascotaPublica }) {
         )}
 
         {mensaje && <p className="cuenta__ok" role="status">{mensaje}</p>}
-        <p className="cuenta__aviso">
-          La edición de los datos y las fotos todavía no está disponible con el servidor. Por ahora solo puedes
-          cambiar su disponibilidad.
-        </p>
       </section>
 
       {destino !== undefined && (
@@ -293,6 +299,69 @@ function Dato({ icono: Icono, etiqueta, valor }: { icono: LucideIcon; etiqueta: 
         <dt>{etiqueta}</dt>
         <dd>{valor}</dd>
       </div>
+    </div>
+  );
+}
+
+/**
+ * Edición real. ActualizarMascotaDTO no recibe especie ni procedencia, y
+ * si se envían fotos el backend reemplaza todas (lista vacía = conserva).
+ */
+function EditarFicha({ ficha, alTerminar }: { ficha: FichaMascotaPublica; alTerminar: (guardado: boolean) => void }) {
+  const cache = useQueryClient();
+  const especies = usarEspecies();
+  const especieId = ficha.especieId ?? especies.data?.find(e => e.nombre === ficha.especie)?.id ?? 0;
+  const razas = usarRazas(especieId || undefined);
+  const [fotos, setFotos] = useState<string[]>([...ficha.fotos]);
+  const [subiendo, setSubiendo] = useState(false);
+  const [errorFotos, setErrorFotos] = useState('');
+
+  const guardar = useMutation({
+    mutationFn: (datos: CrearMascotaDto) => api.mascotas.actualizar(ficha.id, { ...datos, fotosUrls: fotos }),
+    onSuccess: async () => {
+      await Promise.all([
+        cache.invalidateQueries({ queryKey: ['ficha-real', ficha.id] }),
+        cache.invalidateQueries({ queryKey: clavesMascotas.todo }),
+      ]);
+      alTerminar(true);
+    },
+  });
+
+  // Sin los ids en el detalle (backend viejo) se buscan por nombre; tamaño y color quedan por elegir.
+  const faltanIds = ficha.tamanoId === undefined || ficha.colorId === undefined;
+  const listo = ficha.especieId !== undefined || especies.isSuccess;
+  const razasListas = ficha.razaId !== undefined || !ficha.raza || razas.isSuccess || !especieId;
+  if (!listo || !razasListas) return <EstadoCargando mensaje="Preparando el formulario…" />;
+  const razaId = ficha.razaId ?? razas.data?.find(r => r.nombre === ficha.raza)?.id;
+
+  const iniciales: CrearMascotaDto = {
+    nombre: ficha.nombre, especieId, razaId: razaId ?? undefined,
+    tamanoId: ficha.tamanoId ?? 0, colorId: ficha.colorId ?? 0, sexo: ficha.sexo,
+    edadAproximada: ficha.edadAproximada ?? undefined, descripcion: ficha.descripcion ?? '',
+    esterilizada: ficha.esterilizada, procedencia: Procedencia.Rescate,
+    fechaIngreso: new Date().toLocaleDateString('sv-SE'), temperamentoIds: [],
+  };
+
+  function enviar(datos: CrearMascotaDto) {
+    if (subiendo) { setErrorFotos('Espera a que terminen de subir las fotos.'); return; }
+    if (ficha.fotos.length > 0 && fotos.length === 0) { setErrorFotos('Deja al menos una foto. El servidor no permite quitarlas todas.'); return; }
+    setErrorFotos('');
+    guardar.mutate(datos);
+  }
+
+  return (
+    <div className="mascota-gestion">
+      <section className="publicacion-revision" aria-labelledby="editar-fotos">
+        <h2 id="editar-fotos">Fotos</h2>
+        <p className="multimedia__ayuda">Agrega, quita o cambia la foto principal. Se guardan junto con los datos al pulsar "Guardar cambios".</p>
+        <SubirFotos fotos={fotos} alActividad={setSubiendo} alCambiar={f => { setFotos(f); setErrorFotos(''); }} />
+        <FotosPorUrl deshabilitado={subiendo || guardar.isPending} fotos={fotos} alCambiar={f => { setFotos(f); setErrorFotos(''); }} />
+        {errorFotos && <p role="alert" className="campo__error">{errorFotos}</p>}
+      </section>
+      {faltanIds && <p className="publicacion-aviso">El servidor no indicó el tamaño y el color actuales: elígelos de nuevo antes de guardar.</p>}
+      <FormularioMascota modoReal asistente={false} datosIniciales={iniciales} especieFija={ficha.especie}
+        guardandoExterno={guardar.isPending} alGuardarLocal={enviar} alCancelar={() => alTerminar(false)} />
+      {guardar.isError && <p role="alert" className="campo__error">{errorTexto(guardar.error)}</p>}
     </div>
   );
 }
