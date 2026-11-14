@@ -16,6 +16,7 @@ import { api, MODO_DEMO } from '@/lib/api';
 import { Boton } from '@/componentes/ui/Boton';
 import { Modal } from '@/componentes/ui/Modal/Modal';
 import { EstadoCargando } from '@/componentes/ui/EstadoCargando';
+import { SelectorFechaHora } from '@/componentes/ui/SelectorFechaHora/SelectorFechaHora';
 import './bandeja.css';
 
 const detalle = (e: Error) => (e instanceof ErrorHttp ? e.detalle ?? e.message : e.message);
@@ -180,10 +181,7 @@ export function AccionesSolicitud({
           )}
           {accion === 'visita' && (
             <>
-              <label className="campo">
-                Fecha y hora local
-                <input className="campo__control" type="datetime-local" value={fecha} onChange={(e) => setFecha(e.target.value)} />
-              </label>
+              <SelectorFechaHora etiqueta="Fecha y hora de la visita" valor={fecha} alCambiar={setFecha} />
               <label className="campo">
                 Modalidad
                 <select className="campo__control" value={modalidad} onChange={(e) => setModalidad(Number(e.target.value))}>
@@ -229,7 +227,7 @@ export function AccionesSolicitud({
                 <Boton
                   variante="primario"
                   cargando={cambio.isPending}
-                  disabled={accion === 'visita' && (!fecha || Date.parse(fecha) <= Date.now())}
+                  disabled={accion === 'visita' && !(Date.parse(fecha) > Date.now())}
                   onClick={() => cambio.mutate()}
                 >
                   Confirmar
