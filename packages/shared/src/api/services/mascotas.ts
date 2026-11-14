@@ -1,6 +1,7 @@
 import { ErrorHttp, type ClienteApi } from '../client';
 import { paginadoApi, estadoMascotaApi, sexoApi, type PaginadoApi, type ResumenMascotaApi, type DetalleMascotaApi, type FichaMascotaPublica } from '../contratosBackend';
 import { RUTAS } from '../rutas';
+import { validarUrlFoto } from '../../utils/multimedia';
 import type { Paginado } from '../../types/comun';
 import type { Bitacora } from '../../types/trazabilidad';
 import type {
@@ -48,16 +49,26 @@ export class ServicioMascotas {
     }
     const dto = await this.api.get<DetalleMascotaApi>(RUTAS.mascotas.porId(id));
     return { id: dto.id, nombre: dto.nombre, especie: dto.especie, raza: dto.raza, sexo: sexoApi(dto.sexo), edadAproximada: dto.edadAproximada,
-      descripcion: dto.descripcion, esterilizada: dto.esterilizada, estado: estadoMascotaApi(dto.estado), refugioNombre: dto.refugio, refugioTelefono: dto.refugioTelefono, fotos: dto.fotos };
+      descripcion: dto.descripcion, esterilizada: dto.esterilizada, estado: estadoMascotaApi(dto.estado), refugioNombre: dto.refugio, refugioId: dto.refugioId, refugioTelefono: dto.refugioTelefono, fotos: dto.fotos,
+      especieId: dto.especieId, razaId: dto.razaId, tamanoId: dto.tamanoId, colorId: dto.colorId };
   }
 
   /** Conservado para las operaciones de dominio demo. En real, registrar devuelve solamente el identificador. */
   crear(datos: CrearMascotaDto): Promise<Mascota> { this.soloDemo(); return this.api.post(RUTAS.mascotas.base, datos); }
 
-  registrar(datos: CrearMascotaDto): Promise<{ id: number; mensaje: string }> {
+  /** Valida edad y fotos igual que el backend antes de enviar; devuelve las URLs limpias. */
+  private validarEnvio(datos: CrearMascotaDto): string[] {
     if (!Number.isInteger(datos.edadAproximada ?? 0) || (datos.edadAproximada ?? 0) < 0 || (datos.edadAproximada ?? 0) > 255) throw new ErrorHttp({ titulo: 'La edad debe ser un número entero entre 0 y 255 años.', estadoHttp: 400 });
+    const fotosUrls = (datos.fotosUrls ?? []).map(url => url.trim());
+    const errorFoto = fotosUrls.map((url, i) => validarUrlFoto(url, fotosUrls.slice(0, i))).find(Boolean);
+    if (errorFoto) throw new ErrorHttp({ titulo: errorFoto, estadoHttp: 400 });
+    return fotosUrls;
+  }
+
+  registrar(datos: CrearMascotaDto): Promise<{ id: number; mensaje: string }> {
+    const fotosUrls = this.validarEnvio(datos);
     const { nombre, especieId, razaId, tamanoId, colorId, sexo, edadAproximada, descripcion, esterilizada, procedencia } = datos;
-    return this.api.post(RUTAS.mascotas.base, { nombre, especieId, razaId, tamanoId, colorId, sexo, edadAproximada, descripcion, esterilizada, procedencia, fotosUrls: [] });
+    return this.api.post(RUTAS.mascotas.base, { nombre, especieId, razaId, tamanoId, colorId, sexo, edadAproximada, descripcion, esterilizada, procedencia, fotosUrls });
   }
 
   crearBorrador(datos: CrearMascotaDto): Promise<Mascota> {
@@ -68,6 +79,16 @@ export class ServicioMascotas {
   publicar(id: number): Promise<Mascota> {
     this.soloDemo();
     return this.api.post<Mascota>(`${RUTAS.mascotas.porId(id)}/publicar`);
+  }
+
+  /**
+   * PUT real (ActualizarMascotaDTO). La especie y la procedencia no se cambian.
+   * Si llegan fotos, el backend reemplaza todas; una lista vacía conserva las actuales.
+   */
+  async actualizar(id: number, datos: CrearMascotaDto): Promise<void> {
+    const fotosUrls = this.validarEnvio(datos);
+    const { nombre, razaId, tamanoId, colorId, sexo, edadAproximada, descripcion, esterilizada } = datos;
+    await this.api.put(RUTAS.mascotas.porId(id), { nombre: nombre.trim(), razaId: razaId ?? null, tamanoId, colorId, sexo, edadAproximada: edadAproximada ?? null, descripcion: descripcion?.trim() || null, esterilizada, fotosUrls });
   }
 
   editar(id: number, datos: EditarMascotaDto): Promise<Mascota> {

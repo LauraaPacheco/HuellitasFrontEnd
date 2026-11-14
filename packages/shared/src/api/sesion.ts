@@ -34,6 +34,7 @@ export interface RespuestaRegistroApi {
 
 /** La sesion completa que guardamos, con lo que hace falta para renovarla. */
 export interface SesionGuardada extends SesionDto {
+  readonly idSesion?: string;
   readonly refreshToken: string;
 }
 

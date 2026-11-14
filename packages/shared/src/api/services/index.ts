@@ -7,3 +7,5 @@ export * from './adopcion';
 export * from './trazabilidad';
 export * from './reportes';
 export * from './administracion';
+
+export * from './archivos';

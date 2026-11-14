@@ -7,3 +7,7 @@ export * from './refugios';
 export * from './mascotas';
 
 export * from './multimedia';
+
+export * from './errores';
+
+export * from './visitas';

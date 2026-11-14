@@ -4,6 +4,7 @@ import { ESTADO_SOLICITUD, formatearFechaHora } from '@huellitas/shared';
 import { api } from '@/lib/api';
 import { Encabezado } from '@/componentes/layout/Encabezado';
 import { Insignia } from '@/componentes/ui/Insignia';
+import { EstadoCargando } from '@/componentes/ui/EstadoCargando';
 
 export function PaginaDetalleSolicitud() {
   const { id } = useParams<{ id: string }>();
@@ -21,7 +22,7 @@ export function PaginaDetalleSolicitud() {
     enabled: Number.isFinite(solicitudId),
   });
 
-  if (isLoading) return <p style={{ color: 'var(--ink-muted)' }}>Cargando…</p>;
+  if (isLoading) return <EstadoCargando mensaje="Cargando solicitud…" />;
   if (!solicitud) return <p>No encontramos esa solicitud.</p>;
 
   return (

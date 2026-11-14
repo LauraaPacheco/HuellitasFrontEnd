@@ -7,6 +7,7 @@ import { clavesMascotas } from '@/casos/mascotas';
 import { api } from '@/lib/api';
 import { Boton } from '@/componentes/ui/Boton';
 import './publicacion.css';
+import { EstadoCargando } from '@/componentes/ui/EstadoCargando';
 
 const pasos = ['Información', 'Fotos y videos', 'Revisión'];
 export function PasosPublicacion({ paso, alCambiar, bloqueado }: { paso: number; alCambiar: (paso: number) => void; bloqueado: boolean }) {
@@ -36,7 +37,7 @@ export function RevisionPublicacion({ mascota, alVolver, alCambiarActividad }: {
   }
   return <section className="publicacion-revision" aria-labelledby="titulo-revision">
     <header className="publicacion-revision__cabecera"><div><h2 id="titulo-revision">Revisa su publicación</h2><p>Verifica que la información de {mascota.nombre} esté correcta antes de compartirla.</p></div><span className="insignia insignia--neutro">Borrador</span></header>
-    {cargando ? <p role="status">Cargando los datos para la revisión…</p> : errorCatalogos ? <p role="alert">No pudimos cargar los catálogos. <Boton onClick={() => catalogos.forEach(c => void c.refetch())}>Reintentar</Boton></p> : <>
+    {cargando ? <EstadoCargando variante="bloque" mensaje="Cargando los datos para la revisión…" /> : errorCatalogos ? <p role="alert">No pudimos cargar los catálogos. <Boton onClick={() => catalogos.forEach(c => void c.refetch())}>Reintentar</Boton></p> : <>
       <div className="publicacion-revision__contenido">{foto && <img className="publicacion-revision__foto" src={foto.archivo} alt={`Foto principal de ${mascota.nombre}`} />}
         <dl className="publicacion-datos">
           <div><dt>Nombre</dt><dd>{mascota.nombre}</dd></div><div><dt>Especie y raza</dt><dd>{especies.data?.find(e => e.id === mascota.especieId)?.nombre ?? 'Sin dato'} · {razas.data?.find(r => r.id === mascota.razaId)?.nombre ?? 'No especificada'}</dd></div>

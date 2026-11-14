@@ -1,12 +1,15 @@
 import { ErrorHttp } from './client';
-import { EstadoMascota, Sexo } from '../types/enums';
+import { EstadoMascota, EstadoSolicitud, Sexo } from '../types/enums';
 import type { MascotaResumen } from '../types/mascotas';
+import type { SolicitudResumen } from '../types/adopcion';
 import type { Paginado } from '../types/comun';
-export interface PerfilUsuarioApi { id: number; nombre: string; correo: string; telefono: string | null; fotoUrl: string | null; estado: string; fechaRegistro: string; politicaAceptada?: string | null; fechaAceptacionPolitica?: string | null }
+export interface PerfilUsuarioApi { id: number; refugioId?: number | null; nombre: string; correo: string; telefono: string | null; fotoUrl: string | null; estado: string; fechaRegistro: string; politicaAceptada?: string | null; fechaAceptacionPolitica?: string | null }
 export interface PerfilAdoptanteApi { tipoVivienda: string | null; espacioDisponible: string | null; presenciaDeNinos: boolean | null; otrasMascotas: boolean | null; tiempoDisponible: string | null; experienciaPrevia: boolean | null; porcentajeCompletitud: number }
 export interface ResumenMascotaApi { id: number; nombre: string; especie: string; raza: string | null; sexo: string; edadAproximada: number; fotoPrincipal: string | null; estado: string; fechaCreacion: string }
-export interface DetalleMascotaApi extends Omit<ResumenMascotaApi, 'fotoPrincipal' | 'fechaCreacion'> { descripcion: string | null; esterilizada: boolean; refugio: string; refugioTelefono: string | null; fotos: string[] }
-export interface FichaMascotaPublica { id: number; nombre: string; especie: string; raza: string | null; sexo: Sexo; edadAproximada: number | null; descripcion: string | null; esterilizada: boolean; estado: EstadoMascota; refugioNombre: string; refugioTelefono: string | null; refugioId?: number; fotos: readonly string[] }
+export interface DetalleMascotaApi extends Omit<ResumenMascotaApi, 'fotoPrincipal' | 'fechaCreacion'> { descripcion: string | null; esterilizada: boolean; refugio: string; refugioId?: number; refugioTelefono: string | null; fotos: string[]; especieId?: number; razaId?: number | null; tamanoId?: number; colorId?: number }
+export interface FichaMascotaPublica { id: number; nombre: string; especie: string; raza: string | null; sexo: Sexo; edadAproximada: number | null; descripcion: string | null; esterilizada: boolean; estado: EstadoMascota; refugioNombre: string; refugioTelefono: string | null; refugioId?: number; fotos: readonly string[];
+  /** Ids de catálogo para editar. Opcionales: un backend sin el cambio de MascotaDetalleDTO no los manda. */
+  especieId?: number; razaId?: number | null; tamanoId?: number; colorId?: number }
 export interface PaginadoApi<T> { items: T[]; pagina: number; tamanoPagina: number; totalRegistros: number; totalPaginas: number }
 const clave = (valor: string) => valor.trim().toLowerCase().replace(/\s/g, '');
 export function estadoMascotaApi(valor: string): EstadoMascota {
@@ -27,4 +30,33 @@ export function resumenMascotaApi(datos: ResumenMascotaApi): MascotaResumen {
 }
 export function paginadoApi(datos: PaginadoApi<ResumenMascotaApi>): Paginado<MascotaResumen> {
   return { items: datos.items.map(resumenMascotaApi), pagina: datos.pagina, tamanoPagina: datos.tamanoPagina, total: datos.totalRegistros, totalPaginas: datos.totalPaginas };
+}
+
+/** SolicitudResumenDTO del backend (db3a4fb): el estado llega como texto y sin ids de usuario ni mascota. */
+export interface SolicitudResumenApi { solicitudId: number; codigo: string; mascotaNombre: string; mascotaFoto: string | null; adoptanteNombre: string; fechaEnvio: string; estado: string }
+export function estadoSolicitudApi(valor: string): EstadoSolicitud {
+  const estados: Record<string, EstadoSolicitud> = { enviada: EstadoSolicitud.Enviada, enrevision: EstadoSolicitud.EnRevision, entrevista: EstadoSolicitud.EntrevistaVisita,
+    aprobada: EstadoSolicitud.Aprobada, rechazada: EstadoSolicitud.Rechazada, finalizada: EstadoSolicitud.Finalizada, cerrada: EstadoSolicitud.Cerrada, cancelada: EstadoSolicitud.Cancelada };
+  const estado = estados[clave(valor).normalize('NFD').replace(/[\u0300-\u036f]/g, '')];
+  if (estado === undefined) {
+    // Una solicitud rara no debe tumbar toda la lista: se muestra como desconocida y sin acciones.
+    console.warn(`[solicitudes] estado no reconocido del servidor: ${JSON.stringify(valor)}`);
+    return EstadoSolicitud.Desconocido;
+  }
+  return estado;
+}
+const DIA_MS = 24 * 60 * 60 * 1000;
+/** Solo las solicitudes que esperan decisión del refugio acumulan días sin respuesta. */
+function diasEsperando(fechaEnvio: string, estado: EstadoSolicitud, ahora: number): number {
+  if (estado !== EstadoSolicitud.Enviada && estado !== EstadoSolicitud.EnRevision) return 0;
+  const envio = Date.parse(fechaEnvio);
+  return Number.isFinite(envio) ? Math.max(0, Math.floor((ahora - envio) / DIA_MS)) : 0;
+}
+export function solicitudResumenApi(dto: SolicitudResumenApi, ahora = Date.now()): SolicitudResumen {
+  const estado = estadoSolicitudApi(dto.estado);
+  return { id: dto.solicitudId, codigo: dto.codigo, nombreAdoptante: dto.adoptanteNombre, nombreMascota: dto.mascotaNombre, fotoMascota: dto.mascotaFoto,
+    fechaEnvio: dto.fechaEnvio, estado, diasSinRespuesta: diasEsperando(dto.fechaEnvio, estado, ahora) };
+}
+export function paginadoSolicitudesApi(datos: PaginadoApi<SolicitudResumenApi>, ahora = Date.now()): Paginado<SolicitudResumen> {
+  return { items: datos.items.map(s => solicitudResumenApi(s, ahora)), pagina: datos.pagina, tamanoPagina: datos.tamanoPagina, total: datos.totalRegistros, totalPaginas: datos.totalPaginas };
 }

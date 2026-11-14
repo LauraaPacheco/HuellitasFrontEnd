@@ -1,9 +1,11 @@
-import type { ClienteApi } from '../client';
+import { ErrorHttp, type ClienteApi } from '../client';
+import { paginadoSolicitudesApi, type PaginadoApi, type SolicitudResumenApi } from '../contratosBackend';
 import { RUTAS } from '../rutas';
 import type { Paginado, ResultadoValidacion } from '../../types/comun';
 import type { EtapaLineaTiempo } from '../../types/trazabilidad';
 import type {
   Adopcion,
+  VisitaResumen,
   CrearSolicitudDto,
   CrearVisitaDto,
   DecisionSolicitudDto,
@@ -11,24 +13,46 @@ import type {
   RechazoSolicitudDto,
   SolicitudAdopcion,
   SolicitudResumen,
-  VisitaEntrevista,
 } from '../../types/adopcion';
 
 export class ServicioAdopcion {
-  constructor(private readonly api: ClienteApi) {}
+  constructor(private readonly api: ClienteApi, private readonly modoDemo = false) {}
 
-  /** Bandeja del refugio. */
-  listar(filtro: FiltroSolicitud = {}): Promise<Paginado<SolicitudResumen>> {
-    return this.api.get<Paginado<SolicitudResumen>>(RUTAS.solicitudes.base, {
-      ...filtro,
+  private soloDemo() { if (!this.modoDemo) throw new ErrorHttp({ titulo: 'Esta función todavía no está disponible en el servidor.', estadoHttp: 501 }); }
+
+  /** HU-ADO-01: respuesta reducida del endpoint real, sin inventar el detalle. */
+  async postular(datos: CrearSolicitudDto): Promise<ConfirmacionPostulacion> {
+    if (this.modoDemo) {
+      const mascota = await this.api.get<{ nombre: string }>(RUTAS.mascotas.porId(datos.mascotaId));
+      return { mensaje: 'Simulación demo: esta solicitud no se guarda ni se envía al refugio.', solicitud: {
+        solicitudId: 0, codigo: 'DEMO-SIN-REGISTRO', mascotaNombre: mascota.nombre,
+        fechaEnvio: new Date().toISOString(), estado: 'Simulada',
+      } };
+    }
+    return this.api.post<ConfirmacionPostulacion>(RUTAS.adopciones.postular, {
+      mascotaId: datos.mascotaId,
+      respuestasFormulario: { ...datos.respuestasFormulario, aceptaCompromisos: datos.aceptaCompromisos },
     });
   }
 
-  misSolicitudes(): Promise<readonly SolicitudResumen[]> {
-    return this.api.get<readonly SolicitudResumen[]>(RUTAS.solicitudes.mias);
+  /** Bandeja del refugio. El backend real solo pagina: no filtra por estado. */
+  async listar(filtro: FiltroSolicitud = {}): Promise<Paginado<SolicitudResumen>> {
+    if (this.modoDemo) return this.api.get<Paginado<SolicitudResumen>>(RUTAS.solicitudes.base, { ...filtro });
+    if (filtro.estado !== undefined) throw new ErrorHttp({ titulo: 'El servidor todavía no filtra la bandeja por estado.', estadoHttp: 400 });
+    return paginadoSolicitudesApi(await this.api.get<PaginadoApi<SolicitudResumenApi>>(RUTAS.adopciones.bandeja, { pagina: filtro.pagina, tamano: filtro.tamanoPagina }));
+  }
+
+  /** Solicitudes del adoptante autenticado. */
+  async misSolicitudes(pagina = 1, tamano = 20): Promise<Paginado<SolicitudResumen>> {
+    if (this.modoDemo) {
+      const items = await this.api.get<readonly SolicitudResumen[]>(RUTAS.solicitudes.mias);
+      return { items, pagina: 1, tamanoPagina: items.length, total: items.length, totalPaginas: 1 };
+    }
+    return paginadoSolicitudesApi(await this.api.get<PaginadoApi<SolicitudResumenApi>>(RUTAS.adopciones.misSolicitudes, { pagina, tamano }));
   }
 
   obtener(id: number): Promise<SolicitudAdopcion> {
+    this.soloDemo();
     return this.api.get<SolicitudAdopcion>(RUTAS.solicitudes.porId(id));
   }
 
@@ -43,41 +67,102 @@ export class ServicioAdopcion {
     return this.api.post<SolicitudAdopcion>(RUTAS.solicitudes.base, datos);
   }
 
-  aprobar(id: number, datos: DecisionSolicitudDto = {}): Promise<void> {
-    return this.api.post<void>(RUTAS.solicitudes.aprobar(id), datos);
+  /** HU-ADO-02: el refugio inicia la revisión de una solicitud enviada. */
+  async marcarEnRevision(id: number): Promise<void> {
+    this.exigirServidor();
+    await this.api.patch(`/api/v1/Adopciones/${id}/revisar`);
   }
 
-  rechazar(id: number, datos: RechazoSolicitudDto): Promise<void> {
-    return this.api.post<void>(RUTAS.solicitudes.rechazar(id), datos);
+  /** HU-ADO-03: solo para solicitudes Enviadas o En revisión; el backend responde 409 si no. */
+  async aprobar(id: number, datos: DecisionSolicitudDto = {}): Promise<void> {
+    if (this.modoDemo) return this.api.post<void>(RUTAS.solicitudes.aprobar(id), datos);
+    await this.api.patch(RUTAS.adopciones.aprobar(id), { observaciones: datos.observacion?.trim() || undefined });
+  }
+
+  async rechazar(id: number, datos: RechazoSolicitudDto): Promise<void> {
+    const motivo = datos.motivo.trim();
+    if (!motivo) throw new ErrorHttp({ titulo: 'Escribe el motivo del rechazo.', estadoHttp: 400 });
+    if (motivo.length > MAX_MOTIVO_RECHAZO) throw new ErrorHttp({ titulo: `El motivo puede tener hasta ${MAX_MOTIVO_RECHAZO} caracteres.`, estadoHttp: 400 });
+    if (this.modoDemo) return this.api.post<void>(RUTAS.solicitudes.rechazar(id), { motivo });
+    await this.api.patch(RUTAS.adopciones.rechazar(id), { motivoRechazo: motivo });
   }
 
   cancelar(id: number, motivo?: string): Promise<void> {
+    this.soloDemo();
     return this.api.post<void>(RUTAS.solicitudes.cancelar(id), { motivo });
   }
 
   /** Dispara el cierre en cascada: mascota adoptada y demas solicitudes cerradas. */
-  finalizar(id: number): Promise<Adopcion> {
-    return this.api.post<Adopcion>(RUTAS.solicitudes.finalizar(id));
+  async finalizar(id: number): Promise<void> {
+    if (this.modoDemo) { await this.api.post(RUTAS.solicitudes.finalizar(id)); return; }
+    await this.api.patch(RUTAS.adopciones.finalizar(id));
   }
 
+  documentos(id: number): Promise<readonly SoporteSolicitud[]> {
+    this.exigirServidor();
+    return this.api.get(RUTAS.adopciones.soportes(id));
+  }
+
+  async asociarSoporte(id: number, tipo: string, archivoUrl: string): Promise<void> {
+    this.exigirServidor();
+    if (!tipo.trim() || !/^https:\/\//i.test(archivoUrl)) throw new ErrorHttp({ titulo: 'Indica el tipo y un enlace HTTPS válido del documento.', estadoHttp: 400 });
+    await this.api.post(RUTAS.adopciones.soportes(id), { tipo: tipo.trim(), archivoUrl });
+  }
+
+  misVisitas(): Promise<readonly VisitaResumen[]> {
+    this.exigirServidor(); return this.api.get('/api/v1/Adopciones/mis-visitas');
+  }
+
+  visitasRefugio(): Promise<readonly VisitaResumen[]> {
+    this.exigirServidor(); return this.api.get('/api/v1/Adopciones/refugio/visitas');
+  }
+
+  async confirmarVisita(id: number, aceptar: boolean): Promise<void> {
+    this.exigirServidor(); await this.api.patch(RUTAS.adopciones.confirmarVisita(id), { aceptar });
+  }
+
+  descargarConstancia(id: number): Promise<Blob> {
+    this.exigirServidor();
+    return this.api.peticion(RUTAS.adopciones.constanciaPdf(id), { formato: 'blob' });
+  }
+
+  private exigirServidor() { if (this.modoDemo) throw new ErrorHttp({ titulo: 'Esta operación requiere conexión al backend real.', estadoHttp: 501 }); }
+
   lineaTiempo(id: number): Promise<readonly EtapaLineaTiempo[]> {
+    this.soloDemo();
     return this.api.get<readonly EtapaLineaTiempo[]>(
       RUTAS.solicitudes.lineaTiempo(id),
     );
   }
 
+  /** Contrato demo antiguo; en real usar archivos.subir y asociarSoporte. */
   subirSoporte(id: number, archivo: FormData): Promise<void> {
+    this.soloDemo();
     return this.api.peticion<void>(RUTAS.solicitudes.soportes(id), {
       metodo: 'POST',
       cuerpo: archivo,
     });
   }
 
-  agendarVisita(datos: CrearVisitaDto): Promise<VisitaEntrevista> {
-    return this.api.post<VisitaEntrevista>(RUTAS.solicitudes.visitas, datos);
+  async agendarVisita(datos: CrearVisitaDto): Promise<void> {
+    if (!Number.isFinite(Date.parse(datos.fecha)) || Date.parse(datos.fecha) <= Date.now() || ![0, 1].includes(datos.modalidad)) throw new ErrorHttp({ titulo: 'Selecciona una fecha futura y una modalidad válida.', estadoHttp: 400 });
+    if (this.modoDemo) { await this.api.post(RUTAS.solicitudes.visitas, datos); return; }
+    await this.api.post(RUTAS.adopciones.agendarVisita(datos.solicitudId), { fecha: datos.fecha, modalidad: datos.modalidad });
   }
 
+  /** Contrato demo antiguo; en real descargarConstancia recibe el ID de solicitud. */
   constancia(adopcionId: number): Promise<{ url: string }> {
+    this.soloDemo();
     return this.api.get<{ url: string }>(RUTAS.adopciones.constancia(adopcionId));
   }
 }
+
+/** Límite del RechazarSolicitudValidator del backend. */
+export const MAX_MOTIVO_RECHAZO = 500;
+
+export interface ConfirmacionPostulacion {
+  mensaje: string;
+  solicitud: { solicitudId: number; codigo: string; mascotaNombre: string; fechaEnvio: string; estado: string };
+}
+
+export interface SoporteSolicitud { documentoId: number; tipo: string; archivoUrl: string; fechaCarga: string }

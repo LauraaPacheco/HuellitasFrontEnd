@@ -110,6 +110,8 @@ export enum EstadoSolicitud {
   Cancelada = 6,
   /** La cerro el sistema porque otra solicitud de la misma mascota se finalizo. */
   Cerrada = 7,
+  /** Solo del front: el backend mandó un estado que no conocemos. Se muestra sin acciones en vez de tumbar la lista. */
+  Desconocido = -1,
 }
 
 export enum Modalidad {

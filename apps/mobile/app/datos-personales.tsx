@@ -56,7 +56,7 @@ function FormularioDatos({ usuario }: { usuario: Usuario }) {
       {error && <Text accessibilityRole="alert" style={{ color: paleta.danger }}>{error}</Text>}
       {guardado && <Text accessibilityRole="alert" style={{ color: paleta.brandStrong }}>Tus datos personales se guardaron.</Text>}
       <Boton titulo="Guardar cambios" cargando={guardando} alPresionar={() => void guardar()} />
-      <Boton titulo="Volver al perfil" variante="secundario" deshabilitado={guardando} alPresionar={() => router.replace('/(tabs)/perfil')} />
+      <Boton titulo="Volver al perfil" variante="secundario" deshabilitado={guardando} alPresionar={() => router.replace('/principal/perfil')} />
     </ScrollView>
   );
 }

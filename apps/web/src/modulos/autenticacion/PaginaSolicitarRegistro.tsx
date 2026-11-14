@@ -5,7 +5,8 @@ import {
   normalizarRefugio,
   type SolicitudRefugioDto,
 } from '@huellitas/shared';
-import { api } from '@/lib/api';
+import { api, MODO_DEMO } from '@/lib/api';
+import { Link } from 'react-router-dom';
 import { Boton } from '@/componentes/ui/Boton';
 import { Campo } from '@/componentes/ui/Campo';
 import { MarcoAuth } from './MarcoAuth';
@@ -57,6 +58,11 @@ export function PaginaSolicitarRegistro() {
       setEnviando(false);
     }
   }
+
+  if (!MODO_DEMO) return <MarcoAuth titulo="Registro de refugios">
+    <p>El registro de nuevos refugios aún no está disponible. Contacta al administrador para solicitar tu cuenta.</p>
+    <Link to="/login">Volver al inicio de sesión</Link>
+  </MarcoAuth>;
 
   if (enviado) {
     return (

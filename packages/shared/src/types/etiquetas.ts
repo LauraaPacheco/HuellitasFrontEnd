@@ -80,6 +80,7 @@ export const ESTADO_SOLICITUD: Record<EstadoSolicitud, DescriptorEstado> = {
   [EstadoSolicitud.Finalizada]: { etiqueta: 'Finalizada', tono: 'marca' },
   [EstadoSolicitud.Cancelada]: { etiqueta: 'Cancelada', tono: 'neutro' },
   [EstadoSolicitud.Cerrada]: { etiqueta: 'Cerrada', tono: 'neutro' },
+  [EstadoSolicitud.Desconocido]: { etiqueta: 'Estado desconocido', tono: 'advertencia' },
 };
 
 export const ESTADO_REPORTE: Record<EstadoReporte, DescriptorEstado> = {

@@ -34,3 +34,32 @@
   font-weight: 600;
   color: var(--danger);
 }
+
+.campo__entrada {
+  display: contents;
+}
+
+.campo__contrasena {
+  position: relative;
+}
+
+.campo__contrasena .campo__control {
+  width: 100%;
+  padding-inline-end: 52px;
+}
+
+.campo__ojo {
+  position: absolute;
+  inset-inline-end: 4px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 44px;
+  height: 44px;
+  display: grid;
+  place-items: center;
+  border: 0;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--ink-muted);
+  cursor: pointer;
+}

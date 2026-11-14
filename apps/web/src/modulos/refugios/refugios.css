@@ -36,3 +36,171 @@
   .refugio-acciones > .boton, .refugio-acciones > a { flex: 1 1 100%; }
   .refugio-perfil__barra { flex-wrap: wrap; }
 }
+
+/* ---------------------------------------------------------------------
+ * Mi refugio: usa la composicion de Mi cuenta (modulos/cuenta/cuenta.css).
+ * Aqui solo lo propio: la columna izquierda con dos tarjetas, el enlace al
+ * perfil publico y la lista de requisitos.
+ * ------------------------------------------------------------------ */
+/* .cuenta__columna vive en cuenta.css; aqui solo el orden al apilar. */
+/* Al apilar, el formulario va antes que los requisitos: perfil, datos, requisitos. */
+@media (max-width: 900px) {
+  .cuenta__columna { display: contents; }
+  .cuenta__columna > :last-child { order: 1; }
+}
+
+/* Datos del perfil de dos en dos: la tarjeta queda a la altura del formulario. */
+.refugio-datos {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+@media (max-width: 420px) {
+  .refugio-datos { grid-template-columns: minmax(0, 1fr); }
+}
+
+.refugio-publico {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  align-self: flex-start;
+  text-decoration: none;
+}
+
+.refugio-descripcion {
+  min-height: 96px;
+  height: auto;
+  padding: var(--space-3);
+  resize: vertical;
+  font: inherit;
+}
+
+.requisitos {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 320px), 1fr));
+  gap: var(--space-2);
+  align-items: start;
+}
+
+/* Agregar un requisito en una sola fila: campo, casilla y boton. */
+.requisitos__nuevo fieldset {
+  grid-template-columns: minmax(0, 1fr) auto auto;
+  align-items: end;
+}
+
+.requisitos__nuevo .requisitos__check {
+  height: 52px;
+}
+
+.requisitos__nuevo [role='alert'],
+.requisitos__nuevo [role='status'] {
+  grid-column: 1 / -1;
+}
+
+@media (max-width: 640px) {
+  .requisitos__nuevo fieldset { grid-template-columns: minmax(0, 1fr); }
+  .requisitos__nuevo .requisitos__check { height: auto; }
+}
+
+.requisitos__item {
+  padding: var(--space-3);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  background: var(--surface-200);
+}
+
+.requisitos__item--editando {
+  border-color: var(--brand);
+}
+
+.requisitos__fila {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-width: 0;
+}
+
+.requisitos__texto {
+  flex: 1;
+  min-width: 0;
+  font-size: 0.875rem;
+  overflow-wrap: anywhere;
+}
+
+.requisitos__tipo {
+  flex-shrink: 0;
+  padding: 2px 8px;
+  border-radius: var(--radius-pill);
+  background: var(--surface-100);
+  border: 1px solid var(--border);
+  color: var(--ink-muted);
+  font-size: 0.6875rem;
+  font-weight: 600;
+}
+
+.requisitos__tipo--obligatorio {
+  background: var(--brand-tint);
+  border-color: transparent;
+  color: var(--brand-strong);
+}
+
+.requisitos__acciones {
+  display: flex;
+  flex-shrink: 0;
+  gap: 2px;
+}
+
+.requisitos__icono {
+  width: 36px;
+  height: 36px;
+  display: grid;
+  place-items: center;
+  border: 0;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--ink-muted);
+  cursor: pointer;
+}
+
+.requisitos__icono:hover {
+  background: var(--surface-300);
+  color: var(--ink);
+}
+
+.requisitos__icono--peligro:hover {
+  color: var(--danger);
+}
+
+.requisitos__icono:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 2px;
+}
+
+.requisitos__confirmar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+  margin-top: var(--space-3);
+  padding-top: var(--space-3);
+  border-top: 1px solid var(--border);
+  font-size: 0.875rem;
+}
+
+.requisitos__confirmar > span {
+  flex: 1 1 100%;
+}
+
+.requisitos__check {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-size: 0.875rem;
+}
+
+.cuenta__acciones {
+  gap: var(--space-2);
+}

@@ -68,7 +68,7 @@ export default function PantallaReportar() {
 
   if (!usuario) {
     return (
-      <AvisoSesion mensaje="Para reportar un animal necesitamos saber quién lo vio, por si el refugio debe contactarte." />
+      <AvisoSesion titulo="Reporta un animal" mensaje="Para reportar necesitamos saber quién lo vio, por si el refugio debe contactarte." />
     );
   }
 

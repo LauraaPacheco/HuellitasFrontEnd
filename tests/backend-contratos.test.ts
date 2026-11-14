@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { crearApi, AlmacenMemoria, EstadoMascota, NivelRol, TipoVivienda, Sexo, Procedencia } from '../packages/shared/src';
+import { crearApi, AlmacenMemoria, EstadoMascota, EstadoSolicitud, NivelRol, TipoVivienda, Sexo, Procedencia, solicitudResumenApi } from '../packages/shared/src';
 const claims = { sub:'7', email:'prueba@example.com', 'http://schemas.microsoft.com/ws/2008/06/identity/claims/role':'Adoptante' };
 const token=`cabecera.${btoa(JSON.stringify(claims))}.firma`;
 const perfil={id:7,nombre:'Persona',correo:'prueba@example.com',telefono:'3001234567',fotoUrl:'https://example.com/perfil.jpg',estado:'Activo',fechaRegistro:'2026-01-01T10:00:00',politicaAceptada:'1.0',fechaAceptacionPolitica:'2026-01-01T10:00:00'};
@@ -52,6 +52,29 @@ describe('Contratos backend 29bbef0',()=>{
     const {api,fetch}=await preparar([{mensaje:'Mascota registrada.',id:9}]);expect(await api.mascotas.registrar(datos)).toEqual({mensaje:'Mascota registrada.',id:9});const cuerpo=JSON.parse(fetch.mock.calls[0][1].body);
     expect(cuerpo).toMatchObject({nombre:'Luna',edadAproximada:0,fotosUrls:[]});expect(cuerpo).not.toHaveProperty('fechaIngreso');expect(cuerpo).not.toHaveProperty('temperamentoIds');
   });
+  it('envía las URLs de fotos en orden, con la principal primero',async()=>{
+    const {api,fetch}=await preparar([{mensaje:'Mascota registrada.',id:9}]);
+    await api.mascotas.registrar({...datos,fotosUrls:[' https://example.com/principal.jpg ','https://example.com/2.png']});
+    expect(JSON.parse(fetch.mock.calls[0][1].body).fotosUrls).toEqual(['https://example.com/principal.jpg','https://example.com/2.png']);
+  });
+  it('rechaza URLs de fotos inválidas o repetidas sin llamar a red',async()=>{
+    const {api,fetch}=await preparar([]);
+    expect(()=>api.mascotas.registrar({...datos,fotosUrls:['ftp://example.com/a.jpg']})).toThrow();
+    expect(()=>api.mascotas.registrar({...datos,fotosUrls:['https://example.com/a.jpg','https://example.com/a.jpg']})).toThrow();
+    expect(()=>api.mascotas.registrar({...datos,fotosUrls:[`https://example.com/${'a'.repeat(400)}.jpg`]})).toThrow();
+    expect(fetch).not.toHaveBeenCalled();
+  });
+  it('edita con PUT solo los campos de ActualizarMascotaDTO y manda todas las fotos',async()=>{
+    const {api,fetch}=await preparar([{mensaje:'Mascota actualizada.'}]);
+    await api.mascotas.actualizar(4,{...datos,nombre:' Luna ',edadAproximada:3,fotosUrls:['https://example.com/a.jpg','https://example.com/b.jpg']});
+    expect(fetch.mock.calls[0][0]).toBe('http://api.test/api/v1/Mascotas/4');expect(fetch.mock.calls[0][1].method).toBe('PUT');
+    const cuerpo=JSON.parse(fetch.mock.calls[0][1].body);
+    expect(cuerpo).toMatchObject({nombre:'Luna',edadAproximada:3,fotosUrls:['https://example.com/a.jpg','https://example.com/b.jpg']});
+    expect(cuerpo).not.toHaveProperty('especieId');expect(cuerpo).not.toHaveProperty('procedencia');
+  });
+  it('no edita con edad negativa',async()=>{
+    const {api,fetch}=await preparar([]);await expect(api.mascotas.actualizar(4,{...datos,edadAproximada:-2})).rejects.toThrow();expect(fetch).not.toHaveBeenCalled();
+  });
   it('rechaza edades fraccionarias antes de enviar una petición',async()=>{
     const {api,fetch}=await preparar([]);expect(()=>api.mascotas.registrar({...datos,edadAproximada:0.5})).toThrow();expect(fetch).not.toHaveBeenCalled();
   });
@@ -63,5 +86,51 @@ describe('Contratos backend 29bbef0',()=>{
   });
   it('usa las operaciones de seguridad reales y sus nombres de campos',async()=>{
     const {api,fetch}=await preparar([{mensaje:'Guardado'},{mensaje:'Correo actualizado'},{mensaje:'Desactivado'}]);await api.usuarios.cambiarPassword('actual-prueba','nueva-prueba');await api.usuarios.cambiarCorreo('nuevo@example.com','actual-prueba');await api.usuarios.desactivarCuenta('actual-prueba');expect(fetch.mock.calls.map(c=>[c[0],c[1].method])).toEqual([['http://api.test/api/v1/Usuarios/cambiar-password','PUT'],['http://api.test/api/v1/Usuarios/cambiar-correo','PUT'],['http://api.test/api/v1/Usuarios/desactivar','PATCH']]);expect(JSON.parse(fetch.mock.calls[1][1].body)).toEqual({nuevoCorreo:'nuevo@example.com',passwordActual:'actual-prueba'});
+  });
+});
+
+const solicitudApi = { solicitudId: 31, codigo: 'SOL-AB12CD', mascotaNombre: 'Luna', mascotaFoto: 'https://example.com/luna.jpg', adoptanteNombre: 'Persona', fechaEnvio: '2026-10-20T10:00:00', estado: 'En Revisión' };
+const paginaSolicitudes = { items: [solicitudApi, { ...solicitudApi, solicitudId: 32, estado: 'Aprobada', mascotaFoto: null }], pagina: 1, tamanoPagina: 20, totalRegistros: 2, totalPaginas: 1 };
+describe('Contratos backend db3a4fb (solicitudes)', () => {
+  it('consulta mis solicitudes paginadas y traduce el estado con tilde', async () => {
+    const { api, fetch } = await preparar([paginaSolicitudes]);
+    const resultado = await api.adopcion.misSolicitudes(2, 5);
+    expect(fetch.mock.calls[0][0]).toBe('http://api.test/api/v1/Adopciones/mis-solicitudes?pagina=2&tamano=5');
+    expect(resultado.total).toBe(2);
+    expect(resultado.items[0]).toMatchObject({ id: 31, codigo: 'SOL-AB12CD', nombreMascota: 'Luna', fotoMascota: 'https://example.com/luna.jpg', nombreAdoptante: 'Persona', estado: EstadoSolicitud.EnRevision });
+    expect(resultado.items[0]).not.toHaveProperty('mascotaId');
+    expect(resultado.items[1]).toMatchObject({ estado: EstadoSolicitud.Aprobada, diasSinRespuesta: 0 });
+  });
+  it('lee la bandeja del refugio y no inventa un filtro por estado', async () => {
+    const { api, fetch } = await preparar([paginaSolicitudes]);
+    await api.adopcion.listar({ pagina: 1, tamanoPagina: 20 });
+    expect(fetch.mock.calls[0][0]).toBe('http://api.test/api/v1/Adopciones/refugio/bandeja?pagina=1&tamano=20');
+    await expect(api.adopcion.listar({ estado: EstadoSolicitud.Enviada })).rejects.toThrow();
+    expect(fetch).toHaveBeenCalledTimes(1);
+  });
+  it('cuenta los días sin respuesta solo en solicitudes abiertas', () => {
+    const ahora = Date.parse('2026-10-26T10:00:00');
+    expect(solicitudResumenApi(solicitudApi, ahora).diasSinRespuesta).toBe(6);
+    expect(solicitudResumenApi({ ...solicitudApi, estado: 'Rechazada' }, ahora).diasSinRespuesta).toBe(0);
+    const rara = solicitudResumenApi({ ...solicitudApi, estado: 'Otro' }, ahora);
+    expect(rara.estado).toBe(EstadoSolicitud.Desconocido);
+    expect(rara.diasSinRespuesta).toBe(0);
+  });
+  it('aprueba y rechaza con PATCH y los nombres de campo del backend', async () => {
+    const { api, fetch } = await preparar([{ mensaje: 'Solicitud aprobada correctamente.' }, { mensaje: 'Solicitud rechazada correctamente.' }]);
+    await api.adopcion.aprobar(31, { observacion: '  Visita el sábado  ' });
+    await api.adopcion.rechazar(32, { motivo: ' No cumple requisitos ' });
+    expect(fetch.mock.calls.map(c => [c[0], c[1].method])).toEqual([['http://api.test/api/v1/Adopciones/31/aprobar', 'PATCH'], ['http://api.test/api/v1/Adopciones/32/rechazar', 'PATCH']]);
+    expect(JSON.parse(fetch.mock.calls[0][1].body)).toEqual({ observaciones: 'Visita el sábado' });
+    expect(JSON.parse(fetch.mock.calls[1][1].body)).toEqual({ motivoRechazo: 'No cumple requisitos' });
+  });
+  it('no envía un rechazo sin motivo ni operaciones que el backend aún no tiene', async () => {
+    const { api, fetch } = await preparar([]);
+    await expect(api.adopcion.rechazar(32, { motivo: '   ' })).rejects.toThrow();
+    await expect(api.adopcion.rechazar(32, { motivo: 'x'.repeat(501) })).rejects.toThrow();
+    expect(() => api.adopcion.obtener(32)).toThrow();
+    expect(() => api.adopcion.lineaTiempo(32)).toThrow();
+    expect(() => api.adopcion.cancelar(32)).toThrow();
+    expect(fetch).not.toHaveBeenCalled();
   });
 });

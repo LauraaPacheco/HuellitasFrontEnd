@@ -76,17 +76,22 @@ export function PaginaLogin() {
           <Ilustracion variante="trio" />
         </div>
 
-        <ul className="login__notas">
-          <li>Solo los refugios verificados pueden publicar mascotas</li>
-          <li>Tus datos se tratan según la Ley 1581 de 2012</li>
-        </ul>
+        <NotasLegales className="login__notas" />
       </aside>
 
       <main className="login__formulario">
         {/* Fuera del <form>: no es un campo y no debe entrar en el tabulado
             entre correo y contrasena. */}
-        <div className="login__tema">
-          <BotonTema conEtiqueta />
+        <div className="login__barra">
+          {/* Solo en movil y tableta, donde el panel de marca se oculta.
+              Va con el isotipo normal: aqui no hay fondo verde debajo. */}
+          <div className="login__marca-movil">
+            <Isotipo tamano={36} />
+            <span className="login__nombre-movil">Huellitas</span>
+          </div>
+          <div className="login__tema">
+            <BotonTema conEtiqueta />
+          </div>
         </div>
 
         <form onSubmit={alEnviar} noValidate>
@@ -128,7 +133,7 @@ export function PaginaLogin() {
           </div>
 
           <Boton tipo="submit" variante="primario" ancho cargando={enviando}>
-            Entrar al panel
+            Iniciar sesión
           </Boton>
 
           <section className="login__registro">
@@ -140,7 +145,19 @@ export function PaginaLogin() {
             <Link to="/solicitar-registro">Solicitar registro de refugio</Link>
           </section>
         </form>
+
+        {/* Las mismas notas del panel, para cuando el panel no se ve. */}
+        <NotasLegales className="login__notas-movil" />
       </main>
     </div>
+  );
+}
+
+function NotasLegales({ className }: { readonly className: string }) {
+  return (
+    <ul className={className}>
+      <li>Solo los refugios verificados pueden publicar mascotas</li>
+      <li>Tus datos se tratan según la Ley 1581 de 2012</li>
+    </ul>
   );
 }

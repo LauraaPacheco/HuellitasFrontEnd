@@ -1,16 +1,35 @@
 {
   "extends": "../../tsconfig.base.json",
   "compilerOptions": {
-    "lib": ["ES2022", "DOM", "DOM.Iterable"],
+    "lib": [
+      "ES2022",
+      "DOM",
+      "DOM.Iterable"
+    ],
     "jsx": "react-jsx",
     "noEmit": true,
     "allowImportingTsExtensions": false,
     "baseUrl": ".",
     "paths": {
-      "@/*": ["./src/*"],
-      "@huellitas/shared": ["../../packages/shared/src/index.ts"],
-      "@huellitas/shared/tokens": ["../../packages/shared/src/tokens/index.ts"]
+      "@/*": [
+        "./src/*"
+      ],
+      "@huellitas/shared": [
+        "../../packages/shared/src/index.ts"
+      ],
+      "@huellitas/shared/tokens": [
+        "../../packages/shared/src/tokens/index.ts"
+      ],
+      "react": [
+        "./node_modules/@types/react"
+      ],
+      "react/*": [
+        "./node_modules/@types/react/*"
+      ]
     }
   },
-  "include": ["src", "vite.config.ts"]
+  "include": [
+    "src",
+    "vite.config.ts"
+  ]
 }
