@@ -11,7 +11,7 @@ import type { Usuario, PerfilAdoptanteDto, EditarPerfilDto } from '../types/usua
 import { validarRefugio, normalizarRefugio, limpiarRedesSociales } from '../utils/refugios';
 import type { Refugio, SolicitudRefugioDto, EditarRefugioDto } from '../types/refugios';
 import { validarDatosPersonales, validarPerfilAdoptante } from '../utils/perfil';
-import { EstadoMascota, EstadoVerificacion, NivelRol, TipoMultimedia } from '../types/enums';
+import { EstadoMascota, EstadoVerificacion, NivelRol, TipoMultimedia, type TipoRegistroClinico } from '../types/enums';
 import { validarArchivoMascota, coincideFirmaArchivo, esFoto, MAX_ARCHIVOS_MASCOTA } from '../utils/multimedia';
 import { validarMascota, estadosManualesMascota } from '../utils/mascotas';
 import type { Mascota, MascotaResumen, CrearMascotaDto, EditarMascotaDto, CambioEstadoMascotaDto } from '../types/mascotas';
@@ -72,6 +72,23 @@ export class ClienteDemo extends ClienteApi {
   private usuarioActual(): Usuario {
     if (this.nivelActual === null) throw new ErrorHttp({ titulo: 'Sesión no iniciada', estadoHttp: 401 });
     return this.usuariosEditados.get(this.nivelActual) ?? usuarioDemo(this.nivelActual);
+  }
+
+  /** Favoritos del adoptante demo; arranca con uno para que la lista no esté vacía. */
+  private readonly favoritos = new Set<number>([2]);
+
+  private resumenDemo(m: Mascota): MascotaResumen {
+    const refugio = this.refugios.find(r => r.id === m.refugioId)!;
+    return { id: m.id, nombre: m.nombre, especie: ESPECIES.find(e => e.id === m.especieId)!.nombre,
+      raza: RAZAS.find(r => r.id === m.razaId)?.nombre ?? null, tamano: TAMANOS.find(t => t.id === m.tamanoId)!.nombre,
+      sexo: m.sexo, edadAproximada: m.edadAproximada, estado: m.estado,
+      fotoPrincipal: m.multimedia.find(a => a.activo && a.esPrincipal)?.archivo ?? mascotasResumen().find(a => a.id === m.id)?.fotoPrincipal ?? null,
+      refugioId: refugio.id, refugioNombre: refugio.nombre, refugioVerificado: refugio.estadoVerificacion === EstadoVerificacion.Verificado,
+      fechaUltimaActualizacion: m.fechaUltimaActualizacion, puntajeCompatibilidad: null };
+  }
+
+  private exigirAdoptante() {
+    if (this.usuarioActual().rol.nivel !== NivelRol.Adoptante) throw new ErrorHttp({ titulo: 'Solo los adoptantes pueden usar esta función.', estadoHttp: 403 });
   }
 
   private exigirPropietario(mascota?: Mascota) {
@@ -305,8 +322,70 @@ export class ClienteDemo extends ClienteApi {
 
     /* ---------- Mascotas ---------- */
 
-    if (ruta.endsWith('/match/recomendadas')) {
-      return mascotasResumen().slice(0, 3);
+    // Mismas formas que el backend real (HU-MAS-04, 06, 07 y 08), ya traducidas al dominio.
+    const tamanoDemo = Number(parametros?.tamano ?? parametros?.tamanoPagina ?? 10);
+    const visibles = () => this.mascotas.filter(m => m.activo && (m.estado === EstadoMascota.Disponible || m.estado === EstadoMascota.EnProceso));
+
+    if (ruta.endsWith('/v1/Mascotas/recomendaciones') && metodo === 'GET') {
+      this.exigirAdoptante();
+      return visibles().slice(0, 10).map((m, i) => {
+        const tamano = TAMANOS.find(t => t.id === m.tamanoId)?.nombre.toLowerCase() ?? '';
+        const factores = [tamano.includes('peque') ? 'Ideal para apartamento por su tamaño.' : 'Tiene espacio suficiente para su tamaño.',
+          ...(m.temperamentos.length ? [`Su temperamento: ${m.temperamentos.map(t => t.nombre.toLowerCase()).join(', ')}.`] : [])];
+        return { ...this.resumenDemo(m), puntajeCompatibilidad: Math.max(40, 95 - i * 7), factores };
+      });
+    }
+
+    const favorito = /^\/api\/v1\/Favoritos(?:\/(\d+))?$/.exec(ruta);
+    if (favorito) {
+      this.exigirAdoptante();
+      const id = Number(favorito[1]);
+      if (metodo === 'GET' && !favorito[1]) {
+        const lista = this.mascotas.filter(m => m.activo && this.favoritos.has(m.id)).map(m => this.resumenDemo(m));
+        return paginar(lista, pagina, tamanoDemo);
+      }
+      if (metodo === 'POST') {
+        if (!this.mascotas.some(m => m.id === id && m.activo)) throw new ErrorHttp({ titulo: 'Mascota no encontrada.', estadoHttp: 404 });
+        if (this.favoritos.has(id)) throw new ErrorHttp({ titulo: 'Esta mascota ya está en tus favoritos.', estadoHttp: 409 });
+        this.favoritos.add(id);
+        return { mensaje: 'Mascota agregada a favoritos.' };
+      }
+      if (metodo === 'DELETE') {
+        if (!this.favoritos.delete(id)) throw new ErrorHttp({ titulo: 'Esta mascota no está en tus favoritos.', estadoHttp: 404 });
+        return { mensaje: 'Mascota eliminada de favoritos.' };
+      }
+    }
+
+    const historial = /^\/api\/v1\/Mascotas\/(\d+)\/historial$/.exec(ruta);
+    if (historial) {
+      this.usuarioActual();
+      const indice = this.mascotas.findIndex(m => m.id === Number(historial[1]) && m.activo);
+      const mascota = this.mascotas[indice];
+      if (!mascota) throw new ErrorHttp({ titulo: 'Mascota no encontrada.', estadoHttp: 404 });
+      if (metodo === 'GET') {
+        const registros = [...mascota.historialClinico].filter(r => r.activo).sort((a, b) => b.fecha.localeCompare(a.fecha));
+        return paginar(registros, pagina, tamanoDemo);
+      }
+      if (metodo === 'POST') {
+        this.exigirPropietario(mascota);
+        const datos = cuerpo as { tipo: TipoRegistroClinico; fecha: string; descripcion: string; soporteVeterinario: string | null };
+        const ahora = new Date().toISOString();
+        const nuevo = { id: Math.max(0, ...this.mascotas.flatMap(m => m.historialClinico.map(r => r.id))) + 1, mascotaId: mascota.id,
+          tipo: datos.tipo, fecha: datos.fecha, descripcion: datos.descripcion, soporteVeterinario: datos.soporteVeterinario,
+          activo: true, fechaCreacion: ahora, fechaModificacion: null };
+        this.mascotas[indice] = { ...mascota, historialClinico: [...mascota.historialClinico, nuevo], fechaUltimaActualizacion: ahora };
+        return { mensaje: 'Registro clínico agregado correctamente.' };
+      }
+    }
+
+    const compartir = /^\/api\/v1\/Mascotas\/(\d+)\/compartir$/.exec(ruta);
+    if (compartir) {
+      const mascota = visibles().find(m => m.id === Number(compartir[1]));
+      if (!mascota) throw new ErrorHttp({ titulo: 'La mascota no existe o no está disponible.', estadoHttp: 404 });
+      const r = this.resumenDemo(mascota);
+      return { titulo: `¡Conoce a ${r.nombre} en Huellitas!`,
+        descripcion: `Es un(a) ${r.especie}${r.raza ? ` de raza ${r.raza}` : ''} que busca un hogar. ¡Ayúdanos a encontrar a su familia!`,
+        imagenUrl: r.fotoPrincipal ?? '', urlFicha: `https://huellitas.demo/mascotas/${r.id}` };
     }
 
     const exigirRefugio = (mascota?: Mascota) => this.exigirPropietario(mascota);
@@ -410,20 +489,10 @@ export class ClienteDemo extends ClienteApi {
         if (parametros?.[campo] !== undefined) mascotas = mascotas.filter(m => m[campo] === Number(parametros[campo]));
       }
       const texto = String(parametros?.texto ?? '').toLowerCase();
-      let lista: MascotaResumen[] = mascotas.map(m => {
-        const refugio = this.refugios.find(r => r.id === m.refugioId)!;
-        return { id: m.id, nombre: m.nombre, especie: ESPECIES.find(e => e.id === m.especieId)!.nombre,
-          raza: RAZAS.find(r => r.id === m.razaId)?.nombre ?? null, tamano: TAMANOS.find(t => t.id === m.tamanoId)!.nombre,
-          sexo: m.sexo, edadAproximada: m.edadAproximada, estado: m.estado,
-          fotoPrincipal: m.multimedia.find(a => a.activo && a.esPrincipal)?.archivo ?? mascotasResumen().find(a => a.id === m.id)?.fotoPrincipal ?? null,
-          refugioId: refugio.id, refugioNombre: refugio.nombre, refugioVerificado: refugio.estadoVerificacion === EstadoVerificacion.Verificado,
-          fechaUltimaActualizacion: m.fechaUltimaActualizacion, puntajeCompatibilidad: null };
-      });
+      let lista: MascotaResumen[] = mascotas.map(m => this.resumenDemo(m));
       if (texto) lista = lista.filter(m => [m.nombre, m.raza, m.especie].some(v => v?.toLowerCase().includes(texto)));
       return paginar(lista, pagina, tamano);
     }
-
-    if (ruta.endsWith('/api/favoritos')) return [];
 
     /* ---------- Solicitudes ---------- */
 

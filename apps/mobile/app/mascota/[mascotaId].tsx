@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Image, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Image, Pressable, ScrollView, Share, StyleSheet, Text, View } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useQuery } from '@tanstack/react-query';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -11,6 +11,7 @@ import {
   ImageIcon,
   Phone,
   Pill,
+  Share2,
   ShieldCheck,
   Stethoscope,
   Syringe,
@@ -23,8 +24,10 @@ import {
   TipoRegistroClinico,
   formatearFecha,
 } from '@huellitas/shared';
-import { api, MODO_DEMO } from '@/lib/api';
+import { api } from '@/lib/api';
 import { useSesion } from '@/lib/sesion';
+import { useFavoritos } from '@/lib/favoritos';
+import { BotonFavorito } from '@/componentes/BotonFavorito';
 import { Boton } from '@/componentes/Boton';
 import { Insignia } from '@/componentes/Insignia';
 import { DatosMascota, datosMascota } from '@/componentes/DatosMascota';
@@ -67,13 +70,30 @@ export default function PantallaMascota() {
     enabled: valido,
     retry: false,
   });
+  // El historial pide sesión iniciada (cualquier rol); sin ella se invita a entrar.
   const clinica = useQuery({
-    queryKey: ['mascota-demo', mascotaId],
-    queryFn: () => api.mascotas.obtener(mascotaId),
-    enabled: MODO_DEMO && valido,
+    queryKey: ['historial-clinico', mascotaId],
+    queryFn: () => api.mascotas.historialClinico(mascotaId, { tamanoPagina: 20 }),
+    enabled: valido && !!usuario,
     retry: false,
   });
+  const favoritos = useFavoritos();
+  const [compartiendo, setCompartiendo] = useState(false);
+  const [errorCompartir, setErrorCompartir] = useState('');
   const mascota = consulta.data;
+
+  async function compartir() {
+    if (compartiendo) return;
+    setCompartiendo(true); setErrorCompartir('');
+    try {
+      const datos = await api.mascotas.compartir(mascotaId);
+      await Share.share({ title: datos.titulo, message: `${datos.titulo}\n${datos.descripcion}\n${datos.urlFicha}`, url: datos.urlFicha });
+    } catch {
+      setErrorCompartir('No pudimos preparar el enlace para compartir. Intenta de nuevo.');
+    } finally {
+      setCompartiendo(false);
+    }
+  }
   const disponible = mascota?.estado === EstadoMascota.Disponible || mascota?.estado === EstadoMascota.EnProceso;
   const volver = () => (router.canGoBack() ? router.back() : router.replace('/principal/catalogo'));
 
@@ -123,6 +143,25 @@ export default function PantallaMascota() {
           >
             <ArrowLeft size={22} strokeWidth={1.75} color={paleta.ink} />
           </Pressable>
+          {mascota && (
+            <View style={[estilos.accionesFoto, { top: margenes.top + espaciado.s3 }]}>
+              {favoritos.disponible && (
+                <BotonFavorito marcado={favoritos.esFavorito(mascota.id)} nombre={mascota.nombre} alPresionar={() => favoritos.alternar({ id: mascota.id })} />
+              )}
+              {disponible && (
+                <Pressable
+                  accessibilityRole="button"
+                  accessibilityLabel={`Compartir la ficha de ${mascota.nombre}`}
+                  accessibilityState={{ busy: compartiendo }}
+                  disabled={compartiendo}
+                  onPress={() => void compartir()}
+                  style={({ pressed }) => [estilos.botonRedondo, { backgroundColor: paleta.surface100, borderColor: paleta.border, opacity: pressed || compartiendo ? 0.7 : 1 }]}
+                >
+                  <Share2 size={20} strokeWidth={1.75} color={paleta.ink} />
+                </Pressable>
+              )}
+            </View>
+          )}
         </View>
 
         <View style={estilos.contenido}>
@@ -146,6 +185,8 @@ export default function PantallaMascota() {
                 <Insignia estado={ESTADO_MASCOTA[mascota.estado]} />
               </View>
 
+              {errorCompartir !== '' && <Text accessibilityRole="alert" style={{ color: paleta.danger, fontSize: 14 }}>{errorCompartir}</Text>}
+
               <DatosMascota datos={datosMascota(mascota)} fondo={paleta.surface200} />
 
               <Seccion titulo={`Conoce a ${mascota.nombre}`}>
@@ -154,35 +195,45 @@ export default function PantallaMascota() {
                 </Text>
               </Seccion>
 
-              {MODO_DEMO && (
-                <Seccion titulo="Salud y cuidados">
-                  {clinica.isPending ? (
-                    <EstadoCargando compacto mensaje="Cargando el historial…" />
-                  ) : clinica.isError ? (
-                    <>
-                      <Text style={{ color: paleta.inkMuted }}>No pudimos cargar el historial.</Text>
-                      <Boton titulo="Reintentar" variante="secundario" alPresionar={() => void clinica.refetch()} />
-                    </>
-                  ) : !clinica.data?.historialClinico.length ? (
-                    <Text style={[estilos.parrafo, { color: paleta.inkMuted }]}>El refugio todavía no ha cargado atenciones.</Text>
-                  ) : (
-                    <View style={[estilos.caja, { backgroundColor: paleta.surface200 }]}>
-                      {clinica.data.historialClinico.map((registro) => {
-                        const Icono = ICONOS_CLINICOS[registro.tipo] ?? Stethoscope;
-                        return (
-                          <View key={registro.id} style={estilos.fila}>
-                            <IconoCirculo icono={Icono} />
-                            <View style={{ flex: 1 }}>
-                              <Text style={[estilos.filaTitulo, { color: paleta.ink }]}>{ETIQUETA_TIPO_REGISTRO_CLINICO[registro.tipo]}</Text>
-                              <Text style={[estilos.filaTexto, { color: paleta.inkMuted }]}>{formatearFecha(registro.fecha)}</Text>
-                            </View>
+              <Seccion titulo="Salud y cuidados">
+                {!usuario ? (
+                  <Text style={[estilos.parrafo, { color: paleta.inkMuted }]}>
+                    <Text accessibilityRole="link" onPress={() => router.push('/login')} style={{ color: paleta.brandStrong, fontWeight: '600', textDecorationLine: 'underline' }}>
+                      Inicia sesión
+                    </Text>{' '}para ver sus vacunas y atenciones.
+                  </Text>
+                ) : clinica.isPending ? (
+                  <EstadoCargando compacto mensaje="Cargando el historial…" />
+                ) : clinica.isError ? (
+                  <>
+                    <Text style={{ color: paleta.inkMuted }}>No pudimos cargar el historial.</Text>
+                    <Boton titulo="Reintentar" variante="secundario" alPresionar={() => void clinica.refetch()} />
+                  </>
+                ) : !clinica.data.items.length ? (
+                  <Text style={[estilos.parrafo, { color: paleta.inkMuted }]}>El refugio todavía no ha cargado atenciones.</Text>
+                ) : (
+                  <View style={[estilos.caja, { backgroundColor: paleta.surface200 }]}>
+                    {clinica.data.items.map((registro) => {
+                      const Icono = ICONOS_CLINICOS[registro.tipo] ?? Stethoscope;
+                      return (
+                        <View key={registro.id} style={[estilos.fila, { alignItems: 'flex-start' }]}>
+                          <IconoCirculo icono={Icono} />
+                          <View style={{ flex: 1 }}>
+                            <Text style={[estilos.filaTitulo, { color: paleta.ink }]}>{ETIQUETA_TIPO_REGISTRO_CLINICO[registro.tipo]}</Text>
+                            <Text style={[estilos.filaTexto, { color: paleta.inkMuted }]}>{formatearFecha(registro.fecha)}</Text>
+                            {registro.descripcion && <Text style={[estilos.filaTexto, { color: paleta.ink }]}>{registro.descripcion}</Text>}
                           </View>
-                        );
-                      })}
-                    </View>
-                  )}
-                </Seccion>
-              )}
+                        </View>
+                      );
+                    })}
+                    {clinica.data.total > clinica.data.items.length && (
+                      <Text style={[estilos.filaTexto, { color: paleta.inkMuted }]}>
+                        Mostramos las {clinica.data.items.length} atenciones más recientes de {clinica.data.total}.
+                      </Text>
+                    )}
+                  </View>
+                )}
+              </Seccion>
 
               <Seccion titulo="Su refugio">
                 {mascota.refugioId !== undefined ? (
@@ -313,6 +364,8 @@ const estilos = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
+  accionesFoto: { position: 'absolute', right: espaciado.s4, flexDirection: 'row', gap: espaciado.s2 },
+  botonRedondo: { width: 44, height: 44, borderRadius: radios.pill, borderWidth: 1, alignItems: 'center', justifyContent: 'center' },
   puntos: { position: 'absolute', bottom: espaciado.s3, alignSelf: 'center', flexDirection: 'row', gap: 6 },
   punto: { height: 6, borderRadius: 3 },
   contenido: { padding: espaciado.s4, gap: espaciado.s5 },

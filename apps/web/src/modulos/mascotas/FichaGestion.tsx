@@ -21,6 +21,7 @@ import { usarEspecies, usarRazas } from '@/casos/catalogos';
 import { FormularioMascota } from './FormularioMascota';
 import { SubirFotos } from './SubirFotos';
 import { FotosPorUrl } from './FotosPorUrl';
+import { HistorialClinico } from './HistorialClinico';
 import { api } from '@/lib/api';
 import { clavesMascotas } from '@/casos/mascotas';
 import { Encabezado } from '@/componentes/layout/Encabezado';
@@ -93,7 +94,10 @@ export function FichaGestion({ id }: { id: number }) {
             <GaleriaFicha nombre={ficha.data.nombre} fotos={ficha.data.fotos} />
             <DisponibilidadFicha ficha={ficha.data} />
           </div>
-          <DatosFicha ficha={ficha.data} />
+          <div className="cuenta__columna">
+            <DatosFicha ficha={ficha.data} />
+            <HistorialClinico mascotaId={id} nombre={ficha.data.nombre} />
+          </div>
         </div>
       )}
     </>

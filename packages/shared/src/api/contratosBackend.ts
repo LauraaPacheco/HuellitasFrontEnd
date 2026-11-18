@@ -1,6 +1,6 @@
 import { ErrorHttp } from './client';
-import { EstadoMascota, EstadoSolicitud, Sexo } from '../types/enums';
-import type { MascotaResumen } from '../types/mascotas';
+import { EstadoMascota, EstadoSolicitud, Sexo, TipoRegistroClinico } from '../types/enums';
+import type { MascotaResumen, RecomendacionMascota, RegistroClinico } from '../types/mascotas';
 import type { SolicitudResumen } from '../types/adopcion';
 import type { Paginado } from '../types/comun';
 export interface PerfilUsuarioApi { id: number; refugioId?: number | null; nombre: string; correo: string; telefono: string | null; fotoUrl: string | null; estado: string; fechaRegistro: string; politicaAceptada?: string | null; fechaAceptacionPolitica?: string | null }
@@ -29,7 +29,27 @@ export function resumenMascotaApi(datos: ResumenMascotaApi): MascotaResumen {
     fechaUltimaActualizacion: null, puntajeCompatibilidad: null };
 }
 export function paginadoApi(datos: PaginadoApi<ResumenMascotaApi>): Paginado<MascotaResumen> {
-  return { items: datos.items.map(resumenMascotaApi), pagina: datos.pagina, tamanoPagina: datos.tamanoPagina, total: datos.totalRegistros, totalPaginas: datos.totalPaginas };
+  return paginadoGenerico(datos, resumenMascotaApi);
+}
+export function paginadoGenerico<A, T>(datos: PaginadoApi<A>, mapear: (item: A) => T): Paginado<T> {
+  return { items: datos.items.map(mapear), pagina: datos.pagina, tamanoPagina: datos.tamanoPagina, total: datos.totalRegistros, totalPaginas: datos.totalPaginas };
+}
+
+/** RecomendacionMascotaDTO (d98646c): el resumen de siempre más el puntaje y los factores. */
+export interface RecomendacionApi extends ResumenMascotaApi { puntaje: number; factores: string[] }
+export function recomendacionApi(datos: RecomendacionApi): RecomendacionMascota {
+  return { ...resumenMascotaApi(datos), puntajeCompatibilidad: Math.max(0, Math.min(100, datos.puntaje)), factores: datos.factores ?? [] };
+}
+
+/** RegistroClinicoDTO (0dc2665): el tipo llega como el nombre del enum y la fecha como DateOnly. */
+export interface RegistroClinicoApi { registroClinicoId: number; tipo: string; fecha: string; descripcion: string; soporteVeterinario: string | null }
+const TIPOS_CLINICOS: Record<string, TipoRegistroClinico> = { vacuna: TipoRegistroClinico.Vacuna, desparasitacion: TipoRegistroClinico.Desparasitacion,
+  esterilizacion: TipoRegistroClinico.Esterilizacion, diagnostico: TipoRegistroClinico.Diagnostico, tratamiento: TipoRegistroClinico.Tratamiento };
+export function registroClinicoApi(datos: RegistroClinicoApi, mascotaId: number): RegistroClinico {
+  const tipo = TIPOS_CLINICOS[clave(datos.tipo).normalize('NFD').replace(/[\u0300-\u036f]/g, '')];
+  if (tipo === undefined) throw new ErrorHttp({ titulo: 'El servidor devolvió un tipo de registro clínico no reconocido.', estadoHttp: 502 });
+  return { id: datos.registroClinicoId, mascotaId, tipo, fecha: datos.fecha, descripcion: datos.descripcion?.trim() || null,
+    soporteVeterinario: datos.soporteVeterinario, activo: true, fechaCreacion: datos.fecha, fechaModificacion: null };
 }
 
 /** SolicitudResumenDTO del backend (db3a4fb): el estado llega como texto y sin ids de usuario ni mascota. */
