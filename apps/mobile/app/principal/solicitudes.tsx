@@ -1,3 +1,4 @@
+import { useEspacioBarraPestanas } from '@/componentes/BarraPestanas';
 import { VisitaSolicitud } from '@/componentes/VisitaSolicitud';
 import { visitaVigente } from '@huellitas/shared';
 import { MODO_DEMO } from '@/lib/api';
@@ -24,6 +25,7 @@ const POR_PAGINA = 20;
 
 export default function PantallaSolicitudes() {
   const paleta = usarPaleta();
+  const espacioBarra = useEspacioBarraPestanas();
   const activa = usePantallaActiva();
   const { usuario } = useSesion();
   const router = useRouter();
@@ -67,7 +69,7 @@ export default function PantallaSolicitudes() {
   return (
     <FlatList
       style={{ backgroundColor: paleta.surface100 }}
-      contentContainerStyle={estilos.lista}
+      contentContainerStyle={[estilos.lista, { paddingBottom: espacioBarra }]}
       data={data?.items ?? []}
       keyExtractor={(solicitud) => String(solicitud.id)}
       refreshing={isRefetching}

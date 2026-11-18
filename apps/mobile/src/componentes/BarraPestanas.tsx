@@ -15,6 +15,16 @@ const PROFUNDIDAD = 34;
 const BURBUJA = 52;
 
 /**
+ * Espacio que deben dejar al final las pantallas con pestanas: la barra
+ * flota sobre el contenido (como en la web) y sin este relleno lo ultimo
+ * quedaria tapado.
+ */
+export function useEspacioBarraPestanas() {
+  const { bottom } = useSafeAreaInsets();
+  return ALTO + Math.max(bottom, espaciado.s2) + espaciado.s4;
+}
+
+/**
  * Barra con esquinas de arriba redondeadas y una muesca curva bajo la
  * pestana activa. Las de abajo van rectas: la barra se apoya en el borde
  * inferior de la pantalla.
@@ -81,7 +91,10 @@ export function BarraPestanas({ state, descriptors, emitter, navigateToTab }: Pr
   const opcionesActivas = rutaActiva ? descriptors[rutaActiva.key]?.options : undefined;
 
   return (
-    <View style={[estilos.contenedor, { backgroundColor: paleta.surface100 }]}>
+    // Flota sobre la pantalla y sin fondo propio: por la muesca y alrededor
+    // de la burbuja se ve el contenido, no una franja del color de fondo.
+    // box-none deja pasar los toques del espacio vacio al contenido.
+    <View pointerEvents="box-none" style={estilos.contenedor}>
       <View
         style={estilos.barra}
         onLayout={(e: LayoutChangeEvent) => setAncho(e.nativeEvent.layout.width)}
@@ -141,7 +154,7 @@ export function BarraPestanas({ state, descriptors, emitter, navigateToTab }: Pr
 }
 
 const estilos = StyleSheet.create({
-  contenedor: { paddingTop: BURBUJA / 2 + 4 },
+  contenedor: { position: 'absolute', left: 0, right: 0, bottom: 0, paddingTop: BURBUJA / 2 + 4 },
   barra: { height: ALTO, width: '100%' },
   burbuja: {
     position: 'absolute', top: -BURBUJA / 2, left: 0,

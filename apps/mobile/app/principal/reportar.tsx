@@ -1,3 +1,4 @@
+import { useEspacioBarraPestanas } from '@/componentes/BarraPestanas';
 import { useState } from 'react';
 import { Alert, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import * as Location from 'expo-location';
@@ -17,6 +18,7 @@ const TIPOS: readonly TipoReporte[] = [
 
 export default function PantallaReportar() {
   const paleta = usarPaleta();
+  const espacioBarra = useEspacioBarraPestanas();
   const { usuario } = useSesion();
   const [tipo, setTipo] = useState<TipoReporte>(TipoReporte.Herido);
   const [descripcion, setDescripcion] = useState('');
@@ -75,7 +77,7 @@ export default function PantallaReportar() {
   return (
     <ScrollView
       style={{ backgroundColor: paleta.surface100 }}
-      contentContainerStyle={estilos.contenido}
+      contentContainerStyle={[estilos.contenido, { paddingBottom: espacioBarra }]}
     >
       <View style={estilos.grupo}>
         <Text style={[estilos.etiqueta, { color: paleta.ink }]}>Tipo de reporte</Text>
