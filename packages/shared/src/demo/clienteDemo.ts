@@ -12,9 +12,9 @@ import type { Usuario, PerfilAdoptanteDto, EditarPerfilDto } from '../types/usua
 import { validarRefugio, normalizarRefugio, limpiarRedesSociales } from '../utils/refugios';
 import type { Refugio, SolicitudRefugioDto, EditarRefugioDto } from '../types/refugios';
 import { validarDatosPersonales, validarPerfilAdoptante } from '../utils/perfil';
-import { EstadoApadrinamiento, EstadoMascota, EstadoNecesidad, EstadoVerificacion, NivelRol, TipoEvento, TipoMultimedia, TipoNecesidad, type TipoRegistroClinico } from '../types/enums';
+import { EstadoApadrinamiento, EstadoMascota, EstadoNecesidad, EstadoSeguimiento, ResultadoSeguimiento, EstadoVerificacion, NivelRol, TipoEvento, TipoMultimedia, TipoNecesidad, type TipoRegistroClinico } from '../types/enums';
 import type { ApadrinamientoResumen, NecesidadRefugio } from '../types/refugios';
-import type { NotificacionUsuario } from '../types/trazabilidad';
+import type { NotificacionUsuario, SeguimientoAdopcion } from '../types/trazabilidad';
 import { validarArchivoMascota, coincideFirmaArchivo, esFoto, MAX_ARCHIVOS_MASCOTA } from '../utils/multimedia';
 import { validarMascota, estadosManualesMascota } from '../utils/mascotas';
 import type { Mascota, MascotaResumen, CrearMascotaDto, EditarMascotaDto, CambioEstadoMascotaDto } from '../types/mascotas';
@@ -113,12 +113,32 @@ export class ClienteDemo extends ClienteApi {
     { id: 1, refugioId: 1, mascotaId: 1, mascotaNombre: 'Canela', refugioNombre: 'Refugio Patitas Felices', padrinoNombre: 'Adoptante de Prueba', fechaInicio: hace(3), estado: EstadoApadrinamiento.Solicitado, observacion: 'Puedo aportar el alimento de cada mes.' },
   ];
 
+  // Con los mismos textos que manda el backend, para que se clasifiquen igual.
   private readonly notificaciones: (NotificacionUsuario & { nivel: NivelRol })[] = [
-    { id: 1, nivel: NivelRol.Adoptante, mensaje: 'El refugio agendó una visita para tu solicitud.', leida: false, fecha: hace(0) },
+    { id: 1, nivel: NivelRol.Adoptante, mensaje: `El refugio agendó una visita para tu solicitud el ${hace(-3).slice(0, 10)}.`, leida: false, fecha: new Date(Date.now() - 25 * 60_000).toISOString() },
+    { id: 5, nivel: NivelRol.Adoptante, mensaje: 'El refugio evaluó el seguimiento #1 de tu adopción.', leida: false, fecha: hace(1) },
     { id: 2, nivel: NivelRol.Adoptante, mensaje: 'El refugio está revisando tu solicitud de adopción.', leida: true, fecha: hace(2) },
+    { id: 6, nivel: NivelRol.Adoptante, mensaje: '¡Felicidades! Tu adopción de Bruno fue finalizada.', leida: true, fecha: hace(9) },
+    { id: 7, nivel: NivelRol.Adoptante, mensaje: 'Tu solicitud ha sido enviada. El refugio revisará tu perfil.', leida: true, fecha: hace(12) },
     { id: 3, nivel: NivelRol.Refugio, mensaje: 'Recibiste una nueva solicitud de adopción para Canela.', leida: false, fecha: hace(1) },
     { id: 4, nivel: NivelRol.Administrador, mensaje: 'Hay un refugio nuevo esperando verificación.', leida: false, fecha: hace(1) },
   ];
+
+  private readonly calificadas: { id: number; refugioId: number; adopcionId: number; puntaje: number; comentario: string | null; autor: string; fecha: string }[] = [];
+
+  /** Plan de seguimiento de cada adopción demo: 1, 3 y 6 meses, el primero ya enviado. */
+  private readonly planes = new Map<number, SeguimientoAdopcion[]>();
+  private seguimientosDe(adopcionId: number): SeguimientoAdopcion[] {
+    if (!this.planes.has(adopcionId)) {
+      const programada = (dias: number) => hace(-dias).slice(0, 10);
+      this.planes.set(adopcionId, [
+        { id: adopcionId + 1, numero: 1, fechaProgramada: hace(10).slice(0, 10), fechaEnvio: hace(9), estado: EstadoSeguimiento.Enviado, resultado: null, fotos: [] },
+        { id: adopcionId + 2, numero: 2, fechaProgramada: programada(5), fechaEnvio: null, estado: EstadoSeguimiento.Pendiente, resultado: null, fotos: [] },
+        { id: adopcionId + 3, numero: 3, fechaProgramada: programada(95), fechaEnvio: null, estado: EstadoSeguimiento.Pendiente, resultado: null, fotos: [] },
+      ]);
+    }
+    return this.planes.get(adopcionId)!;
+  }
 
   /** Favoritos del adoptante demo; arranca con uno para que la lista no esté vacía. */
   private readonly favoritos = new Set<number>([2]);
@@ -546,8 +566,8 @@ export class ClienteDemo extends ClienteApi {
     if (coincideLinea) return lineaTiempo(Number(coincideLinea[1]));
 
     if (ruta.endsWith('/solicitudes/mias')) {
-      // El adoptante demo tiene una sola solicitud en curso.
-      return solicitudesResumen().filter((s) => s.id === 1);
+      // El adoptante demo tiene una solicitud en curso y una adopción finalizada.
+      return solicitudesResumen().filter((s) => s.id === 1 || s.id === 4);
     }
 
     if (ruta.endsWith('/solicitudes/validar')) {
@@ -734,9 +754,19 @@ export class ClienteDemo extends ClienteApi {
     }
 
     const calificaciones = /^\/api\/v1\/Refugios\/(\d+)\/calificaciones$/.exec(ruta);
+    if (calificaciones && metodo === 'POST') {
+      this.exigirAdoptante();
+      const datos = cuerpo as { adopcionId: number; puntaje: number; comentario: string | null };
+      if (!solicitudesResumen().some(s => s.adopcionId === datos.adopcionId)) throw new ErrorHttp({ titulo: 'Adopción no encontrada.', estadoHttp: 404 });
+      if (this.calificadas.some(c => c.adopcionId === datos.adopcionId)) throw new ErrorHttp({ titulo: 'Ya has calificado esta adopción.', estadoHttp: 409 });
+      this.calificadas.push({ ...datos, refugioId: Number(calificaciones[1]), id: 900 + this.calificadas.length, autor: this.usuarioActual().nombre, fecha: new Date().toISOString() });
+      return { mensaje: 'Calificación registrada.' };
+    }
     if (calificaciones && metodo === 'GET') {
       const id = Number(calificaciones[1]);
+      const propias = this.calificadas.filter(c => c.refugioId === id).map(c => ({ id: c.id, autor: c.autor, puntaje: c.puntaje, comentario: c.comentario, fecha: c.fecha }));
       const opiniones = [
+        ...propias,
         { id: id * 10 + 1, autor: 'Valentina R.', puntaje: 5, comentario: 'Nos acompañaron en todo el proceso y resolvieron todas nuestras dudas.', fecha: hace(12) },
         { id: id * 10 + 2, autor: 'Andrés M.', puntaje: 4, comentario: 'Muy organizados. La visita fue puntual.', fecha: hace(40) },
         { id: id * 10 + 3, autor: 'Laura P.', puntaje: 5, comentario: null, fecha: hace(75) },
@@ -784,8 +814,34 @@ export class ClienteDemo extends ClienteApi {
       ];
       return paginar(entradas, pagina, tamanoDemo);
     }
-    if (/^\/api\/v1\/Seguimientos\//.test(ruta)) {
-      throw new ErrorHttp({ titulo: 'Plan de seguimiento no encontrado.', estadoHttp: 404 });
+    const plan = /^\/api\/v1\/Seguimientos\/adopcion\/(\d+)\/plan$/.exec(ruta);
+    if (plan) {
+      this.usuarioActual();
+      const adopcionId = Number(plan[1]);
+      if (!solicitudesResumen().some(s => s.adopcionId === adopcionId)) throw new ErrorHttp({ titulo: 'Adopción no encontrada.', estadoHttp: 404 });
+      return { id: adopcionId, adopcionId, seguimientos: this.seguimientosDe(adopcionId) };
+    }
+    const reporte = /^\/api\/v1\/Seguimientos\/(\d+)\/(reporte|evaluar)$/.exec(ruta);
+    if (reporte) {
+      const id = Number(reporte[1]);
+      const adopcionId = Math.floor(id / 10) * 10;
+      const lista = this.seguimientosDe(adopcionId);
+      const indice = lista.findIndex(x => x.id === id);
+      const actual = lista[indice];
+      if (!actual) throw new ErrorHttp({ titulo: 'Seguimiento no encontrado.', estadoHttp: 404 });
+      if (reporte[2] === 'reporte' && metodo === 'POST') {
+        this.exigirAdoptante();
+        if (actual.estado === EstadoSeguimiento.Enviado) throw new ErrorHttp({ titulo: 'Este seguimiento ya fue enviado.', estadoHttp: 409 });
+        const { fotosUrls = [] } = cuerpo as { fotosUrls?: string[] };
+        lista[indice] = { ...actual, estado: EstadoSeguimiento.Enviado, fechaEnvio: new Date().toISOString(), fotos: fotosUrls };
+        return { mensaje: 'Reporte enviado correctamente.' };
+      }
+      if (reporte[2] === 'evaluar' && metodo === 'PATCH') {
+        this.exigirPropietario();
+        if (actual.estado !== EstadoSeguimiento.Enviado) throw new ErrorHttp({ titulo: 'Solo se pueden evaluar seguimientos enviados por el adoptante.', estadoHttp: 409 });
+        lista[indice] = { ...actual, resultado: Number(parametros?.resultado) === 1 ? ResultadoSeguimiento.RequiereAtencion : ResultadoSeguimiento.Conforme };
+        return { mensaje: 'Seguimiento evaluado.' };
+      }
     }
 
     /* ---------- Escrituras sin efecto ---------- */

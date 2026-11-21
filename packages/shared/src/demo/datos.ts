@@ -356,6 +356,9 @@ export function solicitudesResumen(): readonly SolicitudResumen[] {
       fechaEnvio: hace(s.diasDesdeEnvio),
       estado: s.estado,
       diasSinRespuesta: s.diasSinRespuesta,
+      // Lo que el backend todavía no manda: la adopción (si finalizó) y el refugio.
+      adopcionId: s.estado === EstadoSolicitud.Finalizada ? s.id * 10 : null,
+      refugioId: mascota?.refugioId ?? null,
     };
   });
 }

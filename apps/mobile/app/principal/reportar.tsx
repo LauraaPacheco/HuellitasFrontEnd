@@ -4,10 +4,12 @@ import { Alert, ScrollView, StyleSheet, Text, TextInput, View } from 'react-nati
 import * as Location from 'expo-location';
 import { useMutation } from '@tanstack/react-query';
 import { ETIQUETA_TIPO_REPORTE, TipoReporte, ErrorHttp } from '@huellitas/shared';
-import { api } from '@/lib/api';
+import { api, MODO_DEMO } from '@/lib/api';
 import { useSesion } from '@/lib/sesion';
 import { AvisoSesion } from '@/componentes/AvisoSesion';
 import { Boton } from '@/componentes/Boton';
+import { EstadoVacio } from '@/componentes/EstadoVacio';
+import { useRouter } from 'expo-router';
 import { espaciado, radios, usarPaleta } from '@/temas';
 
 const TIPOS: readonly TipoReporte[] = [
@@ -18,6 +20,7 @@ const TIPOS: readonly TipoReporte[] = [
 
 export default function PantallaReportar() {
   const paleta = usarPaleta();
+  const router = useRouter();
   const espacioBarra = useEspacioBarraPestanas();
   const { usuario } = useSesion();
   const [tipo, setTipo] = useState<TipoReporte>(TipoReporte.Herido);
@@ -71,6 +74,19 @@ export default function PantallaReportar() {
   if (!usuario) {
     return (
       <AvisoSesion titulo="Reporta un animal" mensaje="Para reportar necesitamos saber quién lo vio, por si el refugio debe contactarte." />
+    );
+  }
+
+  // El backend todavía no tiene el endpoint de reportes ciudadanos (HU-REP-01):
+  // mejor avisarlo antes de que la persona llene el formulario y pida ubicación.
+  if (!MODO_DEMO) {
+    return (
+      <EstadoVacio
+        ilustracion="trio"
+        titulo="Muy pronto podrás reportar"
+        descripcion="Estamos terminando esta función. Mientras tanto, si ves un animal en peligro, contacta directamente a un refugio desde su perfil."
+        accion={<Boton titulo="Ver mascotas y refugios" variante="secundario" alPresionar={() => router.navigate('/principal/catalogo')} />}
+      />
     );
   }
 

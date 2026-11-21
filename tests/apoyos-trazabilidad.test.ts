@@ -1,7 +1,7 @@
 import { afterEach, expect, it, vi } from 'vitest';
 import {
   crearApi, AlmacenMemoria, EstadoApadrinamiento, EstadoNecesidad, EstadoSeguimiento, ResultadoSeguimiento, TipoEvento, TipoNecesidad,
-  etiquetaEstadoSolicitud,
+  etiquetaEstadoSolicitud, describirNotificacion, agruparPorDia,
 } from '../packages/shared/src';
 
 /** Contratos de HU-REF-03/04 y HU-TRA-01 a 05 contra el backend real (95d5da4, 49b28ea, a00d0cc). */
@@ -124,4 +124,45 @@ it('demo: el refugio publica y cubre necesidades y responde al padrino; el adopt
   await api.trazabilidad.marcarLeida(sinLeer.id);
   expect((await api.trazabilidad.notificaciones()).items.find(n => n.id === sinLeer.id)!.leida).toBe(true);
   await expect(api.trazabilidad.auditoria()).rejects.toMatchObject({ estadoHttp: 403 });
+});
+
+it('lee adopcionId y refugioId de la solicitud cuando el backend los manda', async () => {
+  const base = { solicitudId: 4, codigo: 'SOL-4', mascotaNombre: 'Bruno', mascotaFoto: null, adoptanteNombre: 'Ana', fechaEnvio: '2026-10-01', estado: 'Finalizada' };
+  const { api } = await preparar(Response.json(paginado([{ ...base, adopcionId: 40, refugioId: 1 }, { ...base, solicitudId: 5 }])));
+  const [con, sin] = (await api.adopcion.misSolicitudes()).items;
+  expect(con).toMatchObject({ adopcionId: 40, refugioId: 1 });
+  expect(sin!.adopcionId).toBeUndefined();
+});
+
+it('demo: el adoptante envía un seguimiento, el refugio lo evalúa y la calificación es una por adopción', async () => {
+  const api = crearApi({ urlBase: '', almacen: new AlmacenMemoria(), modoDemo: true });
+  await api.autenticacion.login({ correo: 'adoptante@huellitas.co', contrasena: 'Demo1234' });
+  const adopcion = (await api.adopcion.misSolicitudes()).items.find(s => s.adopcionId)!;
+  const plan = await api.trazabilidad.planSeguimiento(adopcion.adopcionId!);
+  const pendiente = plan.seguimientos.find(g => g.estado === EstadoSeguimiento.Pendiente)!;
+  await expect(api.trazabilidad.enviarReporte(pendiente.id, { estadoSalud: '', adaptacion: 'x', comentarios: '', fotosUrls: [] })).rejects.toMatchObject({ estadoHttp: 400 });
+  await api.trazabilidad.enviarReporte(pendiente.id, { estadoSalud: 'Bien', adaptacion: 'Juega', comentarios: '', fotosUrls: ['https://x/f.jpg'] });
+  await expect(api.trazabilidad.enviarReporte(pendiente.id, { estadoSalud: 'Bien', adaptacion: 'Juega', comentarios: '', fotosUrls: [] })).rejects.toMatchObject({ estadoHttp: 409 });
+  await api.refugios.calificar(adopcion.refugioId!, { adopcionId: adopcion.adopcionId!, puntaje: 5, comentario: 'Gracias' });
+  await expect(api.refugios.calificar(adopcion.refugioId!, { adopcionId: adopcion.adopcionId!, puntaje: 4 })).rejects.toMatchObject({ estadoHttp: 409 });
+  expect((await api.refugios.opiniones(adopcion.refugioId!)).items[0]).toMatchObject({ puntaje: 5, comentario: 'Gracias' });
+
+  await api.autenticacion.login({ correo: 'refugio@huellitas.co', contrasena: 'Demo1234' });
+  await api.trazabilidad.evaluarSeguimiento(pendiente.id, ResultadoSeguimiento.RequiereAtencion);
+  const evaluado = (await api.trazabilidad.planSeguimiento(adopcion.adopcionId!)).seguimientos.find(g => g.id === pendiente.id)!;
+  expect(evaluado).toMatchObject({ estado: EstadoSeguimiento.Enviado, resultado: ResultadoSeguimiento.RequiereAtencion, fotos: ['https://x/f.jpg'] });
+});
+
+it('describe cada notificación del backend con un título, un tono y a dónde lleva', () => {
+  expect(describirNotificacion({ mensaje: 'El refugio agendó una visita para tu solicitud el 2026-11-24.' })).toMatchObject({ tipo: 'visita', titulo: 'Visita agendada', destino: 'solicitudes' });
+  expect(describirNotificacion({ mensaje: 'Tu solicitud de adopción fue rechazada. Motivo: Espacio pequeño' })).toMatchObject({ tipo: 'rechazada', tono: 'peligro', nota: 'Motivo: Espacio pequeño' });
+  expect(describirNotificacion({ mensaje: '¡Tu solicitud de adopción fue aprobada! El refugio coordinará los siguientes pasos.' }).tipo).toBe('aprobada');
+  expect(describirNotificacion({ mensaje: 'El seguimiento #2 de tu adopción está vencido.' }).tipo).toBe('seguimientoVencido');
+  expect(describirNotificacion({ mensaje: 'Algo nuevo' })).toMatchObject({ tipo: 'general', detalle: 'Algo nuevo', destino: null, accion: null });
+  const nueva = describirNotificacion({ mensaje: 'Recibiste una nueva solicitud de adopción para Canela.' });
+  expect(nueva.frase.filter(x => x.resaltado).map(x => x.texto)).toEqual(['nueva solicitud', 'Canela']);
+  expect(describirNotificacion({ mensaje: '¡Felicidades! Tu adopción de Bruno fue finalizada.' }).frase.some(x => x.resaltado && x.texto === 'Bruno')).toBe(true);
+  const ahora = new Date('2026-11-21T12:00:00');
+  const grupos = agruparPorDia([{ fecha: '2026-11-21T08:00:00' }, { fecha: '2026-11-20T20:00:00' }, { fecha: '2026-11-17T08:00:00' }, { fecha: '2026-10-01T08:00:00' }], ahora);
+  expect(grupos.map(g => g.grupo)).toEqual(['Hoy', 'Ayer', 'Esta semana', 'Antes']);
 });

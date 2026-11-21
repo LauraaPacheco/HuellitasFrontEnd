@@ -22,6 +22,7 @@ import { PaginaPendiente } from '@/modulos/PaginaPendiente';
 import { PaginaNecesidades } from '@/modulos/apoyos/PaginaNecesidades';
 import { PaginaPadrinos } from '@/modulos/apoyos/PaginaPadrinos';
 import { PaginaAuditoria } from '@/modulos/trazabilidad/PaginaAuditoria';
+import { PaginaSeguimientos } from '@/modulos/trazabilidad/PaginaSeguimientos';
 import { EstadoCargando } from '@/componentes/ui/EstadoCargando';
 
 const REFUGIO_Y_ADMIN = [NivelRol.Refugio, NivelRol.Administrador] as const;
@@ -122,7 +123,7 @@ export const rutas = createBrowserRouter([
         path: 'seguimientos',
         element: (
           <RutaProtegida niveles={[NivelRol.Refugio]}>
-            <PaginaPendiente titulo="Seguimientos" historias="HU-TRA-03" />
+            <PaginaSeguimientos />
           </RutaProtegida>
         ),
       },

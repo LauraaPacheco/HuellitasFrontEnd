@@ -55,7 +55,9 @@ export function registroClinicoApi(datos: RegistroClinicoApi, mascotaId: number)
 }
 
 /** SolicitudResumenDTO del backend (db3a4fb): el estado llega como texto y sin ids de usuario ni mascota. */
-export interface SolicitudResumenApi { solicitudId: number; codigo: string; mascotaNombre: string; mascotaFoto: string | null; adoptanteNombre: string; fechaEnvio: string; estado: string }
+export interface SolicitudResumenApi { solicitudId: number; codigo: string; mascotaNombre: string; mascotaFoto: string | null; adoptanteNombre: string; fechaEnvio: string; estado: string;
+  /** Aún no existen en el backend; se leen si llegan (ver SolicitudResumen). */
+  adopcionId?: number | null; refugioId?: number | null; mascotaId?: number | null }
 export function estadoSolicitudApi(valor: string): EstadoSolicitud {
   const estados: Record<string, EstadoSolicitud> = { enviada: EstadoSolicitud.Enviada, enrevision: EstadoSolicitud.EnRevision, entrevista: EstadoSolicitud.EntrevistaVisita,
     aprobada: EstadoSolicitud.Aprobada, rechazada: EstadoSolicitud.Rechazada, finalizada: EstadoSolicitud.Finalizada, cerrada: EstadoSolicitud.Cerrada, cancelada: EstadoSolicitud.Cancelada };
@@ -77,7 +79,8 @@ function diasEsperando(fechaEnvio: string, estado: EstadoSolicitud, ahora: numbe
 export function solicitudResumenApi(dto: SolicitudResumenApi, ahora = Date.now()): SolicitudResumen {
   const estado = estadoSolicitudApi(dto.estado);
   return { id: dto.solicitudId, codigo: dto.codigo, nombreAdoptante: dto.adoptanteNombre, nombreMascota: dto.mascotaNombre, fotoMascota: dto.mascotaFoto,
-    fechaEnvio: dto.fechaEnvio, estado, diasSinRespuesta: diasEsperando(dto.fechaEnvio, estado, ahora) };
+    fechaEnvio: dto.fechaEnvio, estado, diasSinRespuesta: diasEsperando(dto.fechaEnvio, estado, ahora),
+    ...(dto.adopcionId ? { adopcionId: dto.adopcionId } : {}), ...(dto.refugioId ? { refugioId: dto.refugioId } : {}), ...(dto.mascotaId ? { mascotaId: dto.mascotaId } : {}) };
 }
 export function paginadoSolicitudesApi(datos: PaginadoApi<SolicitudResumenApi>, ahora = Date.now()): Paginado<SolicitudResumen> {
   return { items: datos.items.map(s => solicitudResumenApi(s, ahora)), pagina: datos.pagina, tamanoPagina: datos.tamanoPagina, total: datos.totalRegistros, totalPaginas: datos.totalPaginas };

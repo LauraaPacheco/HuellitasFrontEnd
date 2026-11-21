@@ -83,6 +83,8 @@ function Navegacion() {
         <Stack.Screen name="notificaciones" options={{ title: 'Notificaciones' }} />
         <Stack.Screen name="apadrinamientos" options={{ title: 'Mis apadrinamientos' }} />
         <Stack.Screen name="apadrinar/[mascotaId]" options={{ title: 'Apadrinar' }} />
+        <Stack.Screen name="seguimiento/[seguimientoId]" options={{ title: 'Seguimiento' }} />
+        <Stack.Screen name="calificar/[adopcionId]" options={{ title: 'Calificar al refugio' }} />
       </Stack>
     </ThemeProvider>
   );

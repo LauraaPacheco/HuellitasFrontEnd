@@ -14,3 +14,49 @@
 .linea__titulo { margin: 0; font-weight: 600; }
 .linea__meta { margin: 2px 0 0; font-size: 0.8125rem; color: var(--ink-muted); }
 .linea__nota { margin: var(--space-1) 0 0; font-size: 0.875rem; overflow-wrap: anywhere; }
+
+/* Seguimientos post-adopción (vista del refugio). */
+.seguimientos { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 380px), 1fr)); gap: var(--space-4); align-items: start; }
+.seguimientos__tarjeta { gap: var(--space-5); }
+.seguimientos__cabecera { display: flex; align-items: center; gap: var(--space-3); }
+.seguimientos__identidad { flex: 1; min-width: 0; }
+.seguimientos__avatar { flex-shrink: 0; width: 52px; height: 52px; display: grid; place-items: center; border-radius: 50%; object-fit: cover; background: var(--brand-tint); color: var(--brand-strong); }
+.seguimientos__aviso { flex-shrink: 0; padding: 4px 10px; border-radius: var(--radius-pill); background: var(--accent-tint); color: var(--accent); font-size: 0.8125rem; font-weight: 700; }
+
+/* Riel: una píldora con tres paradas unidas por una barra que se llena. */
+.riel { display: grid; gap: var(--space-2); }
+.riel__pista {
+  position: relative; display: flex; justify-content: space-between; align-items: center;
+  padding: 10px; border-radius: var(--radius-pill); background: var(--surface-300);
+}
+.riel__relleno {
+  position: absolute; left: 34px; top: 50%; height: 16px; transform: translateY(-50%);
+  border-radius: var(--radius-pill); background: var(--brand); transition: width .4s ease;
+}
+.riel__parada {
+  position: relative; z-index: 1; width: 48px; height: 48px; display: grid; place-items: center; border-radius: 50%;
+  background: var(--surface-100); color: var(--ink-muted); border: 2px solid var(--border);
+}
+.riel__parada--hecha { background: var(--brand); border-color: var(--brand); color: var(--on-brand); }
+.riel__parada--siguiente { border-color: var(--brand); color: var(--brand-strong); }
+.riel__parada--vencida { border-color: var(--warn); color: var(--warn); }
+.riel__etiquetas { display: flex; justify-content: space-between; padding: 0 10px; font-size: 0.8125rem; color: var(--ink-muted); }
+.riel__etiquetas span { width: 48px; text-align: center; white-space: nowrap; display: flex; justify-content: center; }
+@media (prefers-reduced-motion: reduce) { .riel__relleno { transition: none; } }
+
+/* "Próximo reporte" en grande, como una hora estimada de entrega. */
+.proximo { display: grid; gap: 2px; }
+.proximo__etiqueta { margin: 0; font-size: 0.9375rem; color: var(--ink-muted); }
+.proximo__valor { margin: 0; font-family: ui-monospace, 'SF Mono', Menlo, Consolas, monospace; font-size: 2.5rem; font-weight: 600; line-height: 1.1; letter-spacing: -0.02em; color: var(--ink); }
+.proximo__unidad { font-family: var(--fuente-cuerpo); font-size: 1.125rem; font-weight: 500; letter-spacing: 0; color: var(--ink-muted); }
+.proximo__fecha { margin: 0; font-size: 0.8125rem; color: var(--ink-muted); }
+.proximo--vencido .proximo__valor { color: var(--warn); }
+
+.seguimientos__lista { list-style: none; margin: 0; padding: 0; display: grid; gap: var(--space-2); }
+.seguimientos__item { display: grid; gap: var(--space-2); align-content: start; padding: var(--space-3); border: 1px solid var(--border); border-radius: var(--radius-md); background: var(--surface-200); }
+.seguimientos__fila { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: var(--space-2); }
+.seguimientos__meta { margin: 0; font-size: 0.875rem; color: var(--ink-muted); }
+.seguimientos__fotos { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: 6px; }
+.seguimientos__fotos img { width: 56px; height: 56px; object-fit: cover; border-radius: var(--radius-sm); display: block; }
+.seguimientos__resultado { display: inline-flex; align-items: center; gap: 6px; margin: 0; font-weight: 600; color: var(--brand-strong); }
+.seguimientos__resultado--alerta { color: var(--warn); }
