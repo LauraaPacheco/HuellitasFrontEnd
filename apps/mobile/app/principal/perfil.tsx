@@ -3,7 +3,7 @@ import { EstadoCargando } from '@/componentes/EstadoCargando';
 import { useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useRouter } from 'expo-router';
-import { ChevronRight, CircleCheck, Heart, LogOut, Moon, ShieldCheck, Sun, UserRound, type LucideIcon } from 'lucide-react-native';
+import { ChevronRight, CircleCheck, Heart, HeartHandshake, LogOut, Moon, ShieldCheck, Sun, UserRound, type LucideIcon } from 'lucide-react-native';
 import { ESTADO_USUARIO, NivelRol, tokens } from '@huellitas/shared';
 import { useSesion } from '@/lib/sesion';
 import { AvisoSesion } from '@/componentes/AvisoSesion';
@@ -44,7 +44,8 @@ export default function PantallaPerfil() {
       <Boton titulo={completitud === 100 ? 'Ver mi perfil de adoptante' : 'Completar mi perfil'} alPresionar={() => router.push('/perfil-adoptante')} />
     </View>}
     {usuario.rol.nivel === NivelRol.Adoptante && <View style={[estilos.grupo, { backgroundColor: paleta.surface200 }]}>
-      <Fila icono={Heart} titulo="Mis favoritos" detalle="Las mascotas que guardaste" alPresionar={() => router.push('/favoritos')} />
+      <Fila icono={Heart} titulo="Mis favoritos" detalle="Las mascotas que guardaste" alPresionar={() => router.push('/favoritos')} borde />
+      <Fila icono={HeartHandshake} titulo="Mis apadrinamientos" detalle="Mascotas que apoyas sin adoptar" alPresionar={() => router.push('/apadrinamientos')} />
     </View>}
     <View><Text style={[estilos.seccion, { color: paleta.inkMuted }]}>CUENTA</Text><View style={[estilos.grupo, { backgroundColor: paleta.surface200 }]}>
       <Fila icono={UserRound} titulo="Datos personales" detalle="Nombre y teléfono" alPresionar={() => router.push('/datos-personales')} borde />

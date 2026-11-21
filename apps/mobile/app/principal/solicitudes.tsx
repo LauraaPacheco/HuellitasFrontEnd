@@ -1,3 +1,4 @@
+import { HistorialSolicitud } from '@/componentes/HistorialSolicitud';
 import { useEspacioBarraPestanas } from '@/componentes/BarraPestanas';
 import { VisitaSolicitud } from '@/componentes/VisitaSolicitud';
 import { visitaVigente } from '@huellitas/shared';
@@ -112,6 +113,7 @@ export default function PantallaSolicitudes() {
           {!MODO_DEMO && item.estado === EstadoSolicitud.EntrevistaVisita && visitas.isPending && <Text style={{ color: paleta.inkMuted }}>Cargando datos de la visita…</Text>}
           {item.estado === EstadoSolicitud.EntrevistaVisita && visitas.isError && <><Text accessibilityRole="alert" style={{ color: paleta.danger }}>No pudimos cargar los datos de la visita.</Text><Boton titulo="Reintentar visita" variante="secundario" alPresionar={() => void visitas.refetch()} /></>}
           <AccionesAdopcion solicitud={item} />
+          <HistorialSolicitud solicitudId={item.id} />
         </View>
       )}
       ListFooterComponent={

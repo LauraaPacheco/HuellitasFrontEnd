@@ -80,6 +80,9 @@ function Navegacion() {
         <Stack.Screen name="postular/[mascotaId]" options={{ title: 'Solicitud de adopción' }} />
         <Stack.Screen name="mascota/[mascotaId]" options={{ headerShown: false }} />
         <Stack.Screen name="favoritos" options={{ title: 'Mis favoritos' }} />
+        <Stack.Screen name="notificaciones" options={{ title: 'Notificaciones' }} />
+        <Stack.Screen name="apadrinamientos" options={{ title: 'Mis apadrinamientos' }} />
+        <Stack.Screen name="apadrinar/[mascotaId]" options={{ title: 'Apadrinar' }} />
       </Stack>
     </ThemeProvider>
   );

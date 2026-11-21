@@ -21,6 +21,7 @@ import {
   ESTADO_MASCOTA,
   ETIQUETA_TIPO_REGISTRO_CLINICO,
   EstadoMascota,
+  Sexo,
   TipoRegistroClinico,
   formatearFecha,
 } from '@huellitas/shared';
@@ -28,6 +29,7 @@ import { api } from '@/lib/api';
 import { useSesion } from '@/lib/sesion';
 import { useFavoritos } from '@/lib/favoritos';
 import { BotonFavorito } from '@/componentes/BotonFavorito';
+import { HistoriaMascota } from '@/componentes/HistoriaMascota';
 import { Boton } from '@/componentes/Boton';
 import { Insignia } from '@/componentes/Insignia';
 import { DatosMascota, datosMascota } from '@/componentes/DatosMascota';
@@ -234,6 +236,24 @@ export default function PantallaMascota() {
                   </View>
                 )}
               </Seccion>
+
+              <HistoriaMascota mascotaId={mascotaId} />
+
+              {disponible && favoritos.disponible && (
+                <Pressable
+                  accessibilityRole="button"
+                  accessibilityLabel={`Apadrinar a ${mascota.nombre}`}
+                  onPress={() => router.push(`/apadrinar/${mascotaId}`)}
+                  style={({ pressed }) => [estilos.caja, estilos.fila, { backgroundColor: pressed ? paleta.surface300 : paleta.surface200 }]}
+                >
+                  <IconoCirculo icono={HeartHandshake} />
+                  <View style={{ flex: 1 }}>
+                    <Text style={[estilos.filaTitulo, { color: paleta.ink }]}>¿No puedes adoptar? Apadrínal{mascota.sexo === Sexo.Macho ? 'o' : 'a'}</Text>
+                    <Text style={[estilos.filaTexto, { color: paleta.inkMuted }]}>Apoya su cuidado mientras encuentra familia</Text>
+                  </View>
+                  <ChevronRight size={18} color={paleta.inkMuted} />
+                </Pressable>
+              )}
 
               <Seccion titulo="Su refugio">
                 {mascota.refugioId !== undefined ? (
