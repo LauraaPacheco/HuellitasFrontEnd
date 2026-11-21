@@ -8,6 +8,7 @@ import { Insignia } from '@/componentes/ui/Insignia';
 import { EstadoVacio } from '@/componentes/ui/EstadoVacio';
 import { Isotipo } from '@/componentes/ui/Isotipo';
 import './refugios.css';
+import { NecesidadesPublicas, OpinionesRefugio } from './ApoyosRefugio';
 import { EstadoCargando } from '@/componentes/ui/EstadoCargando';
 
 export function PaginaPerfilRefugio() {
@@ -49,6 +50,8 @@ export function PaginaPerfilRefugio() {
         {refugio.requisitos.filter(r => r.activo).length ? <ol className="refugio-lista">{[...refugio.requisitos].filter(r => r.activo).sort((a,b) => a.orden-b.orden).map(r => <li key={r.id}>{r.descripcion} <strong>({r.esObligatorio ? 'Obligatorio' : 'Opcional'})</strong></li>)}</ol>
           : <p>El refugio todavía no publicó sus requisitos. Consulta sus condiciones antes de postularte.</p>}
       </section>
+      <NecesidadesPublicas refugioId={id} />
+      <OpinionesRefugio refugioId={id} />
     </>}
   </main>;
 }

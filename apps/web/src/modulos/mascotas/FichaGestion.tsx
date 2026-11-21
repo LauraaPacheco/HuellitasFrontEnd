@@ -22,6 +22,7 @@ import { FormularioMascota } from './FormularioMascota';
 import { SubirFotos } from './SubirFotos';
 import { FotosPorUrl } from './FotosPorUrl';
 import { HistorialClinico } from './HistorialClinico';
+import { HistoriaMascota } from '@/modulos/trazabilidad/HistoriaMascota';
 import { api } from '@/lib/api';
 import { clavesMascotas } from '@/casos/mascotas';
 import { Encabezado } from '@/componentes/layout/Encabezado';
@@ -97,6 +98,7 @@ export function FichaGestion({ id }: { id: number }) {
           <div className="cuenta__columna">
             <DatosFicha ficha={ficha.data} />
             <HistorialClinico mascotaId={id} nombre={ficha.data.nombre} />
+            <HistoriaMascota mascotaId={id} />
           </div>
         </div>
       )}

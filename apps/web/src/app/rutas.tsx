@@ -19,6 +19,9 @@ import { PaginaMascotas } from '@/modulos/mascotas/PaginaMascotas';
 import { PaginaBandeja } from '@/modulos/solicitudes/PaginaBandeja';
 import { PaginaDetalleSolicitud } from '@/modulos/solicitudes/PaginaDetalleSolicitud';
 import { PaginaPendiente } from '@/modulos/PaginaPendiente';
+import { PaginaNecesidades } from '@/modulos/apoyos/PaginaNecesidades';
+import { PaginaPadrinos } from '@/modulos/apoyos/PaginaPadrinos';
+import { PaginaAuditoria } from '@/modulos/trazabilidad/PaginaAuditoria';
 import { EstadoCargando } from '@/componentes/ui/EstadoCargando';
 
 const REFUGIO_Y_ADMIN = [NivelRol.Refugio, NivelRol.Administrador] as const;
@@ -131,6 +134,9 @@ export const rutas = createBrowserRouter([
           </RutaProtegida>
         ),
       },
+      { path: 'necesidades', element: <RutaProtegida niveles={[NivelRol.Refugio]}><PaginaNecesidades /></RutaProtegida> },
+      { path: 'padrinos', element: <RutaProtegida niveles={[NivelRol.Refugio]}><PaginaPadrinos /></RutaProtegida> },
+      { path: 'auditoria', element: <RutaProtegida niveles={[NivelRol.Administrador]}><PaginaAuditoria /></RutaProtegida> },
       { path: 'mi-refugio', element: <RutaProtegida niveles={[NivelRol.Refugio]}><PaginaEditarRefugio /></RutaProtegida> },
       {
         path: 'refugios',

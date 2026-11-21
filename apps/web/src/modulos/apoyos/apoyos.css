@@ -1,0 +1,35 @@
+/* Necesidades, padrinos y demás pantallas de apoyo al refugio. */
+.apoyos-mensaje { margin: 0 0 var(--space-4); padding: var(--space-3) var(--space-4); border-radius: var(--radius-md); background: var(--brand-tint); color: var(--brand-strong); font-weight: 600; }
+.apoyos-secciones { display: grid; gap: var(--space-6); }
+.apoyos-titulo { margin: 0 0 var(--space-3); font-size: 1.0625rem; }
+.apoyos-rejilla { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 300px), 1fr)); gap: var(--space-3); align-items: start; }
+
+.apoyos-tarjeta { display: grid; gap: var(--space-2); padding: var(--space-4); border: 1px solid var(--border); border-radius: var(--radius-md); background: var(--surface-200); min-width: 0; }
+.apoyos-tarjeta--atenuada { background: var(--surface-100); }
+.apoyos-tarjeta--atenuada .apoyos-tarjeta__texto { color: var(--ink-muted); }
+.apoyos-tarjeta__cabecera { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: var(--space-2); }
+.apoyos-tarjeta__titulo { margin: 0; font-size: 1rem; font-weight: 700; }
+.apoyos-tarjeta__texto { margin: 0; overflow-wrap: anywhere; }
+.apoyos-tarjeta__dato { margin: 0; font-size: 0.875rem; overflow-wrap: anywhere; }
+.apoyos-tarjeta__fecha { margin: 0; font-size: 0.8125rem; color: var(--ink-muted); }
+.apoyos-tarjeta__acciones { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-2); margin-top: var(--space-1); }
+.apoyos-tarjeta__acciones > .boton:first-child { margin-right: auto; }
+
+.apoyos-chip { display: inline-flex; align-items: center; gap: 6px; padding: 3px 10px; border-radius: var(--radius-pill); background: var(--brand-tint); color: var(--brand-strong); font-size: 0.8125rem; font-weight: 600; }
+
+.apoyos-icono { width: 40px; height: 40px; min-height: 40px; display: grid; place-items: center; border: 0; border-radius: var(--radius-sm); background: transparent; color: var(--ink-muted); cursor: pointer; }
+.apoyos-icono:hover:enabled { background: var(--surface-300); color: var(--ink); }
+.apoyos-icono--peligro:hover:enabled { color: var(--danger); }
+.apoyos-icono:disabled { opacity: .4; cursor: default; }
+.apoyos-icono:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
+
+.apoyos-area { min-height: 96px; padding: var(--space-3); resize: vertical; font: inherit; }
+.apoyos-pie { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: var(--space-3); margin-top: var(--space-2); }
+.apoyos-pie > :first-child { margin-right: auto; }
+@media (max-width: 540px) { .apoyos-pie > .boton { flex: 1 1 auto; } }
+
+/* Pestañas simples para filtrar listas. */
+.apoyos-pestanas { display: flex; flex-wrap: wrap; gap: var(--space-2); margin-bottom: var(--space-4); }
+.apoyos-pestana { min-height: 40px; padding: 0 var(--space-4); border: 1px solid var(--border); border-radius: var(--radius-pill); background: var(--surface-100); color: var(--ink); font: inherit; font-size: 0.875rem; cursor: pointer; }
+.apoyos-pestana[aria-pressed='true'] { background: var(--brand-strong); border-color: var(--brand-strong); color: var(--on-brand); font-weight: 600; }
+.apoyos-pestana:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }

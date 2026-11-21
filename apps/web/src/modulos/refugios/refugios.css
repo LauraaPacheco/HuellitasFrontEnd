@@ -213,3 +213,18 @@
 .cuenta__acciones {
   gap: var(--space-2);
 }
+
+/* Perfil público: necesidades y opiniones (HU-REF-03 y 04). */
+.refugio-necesidades, .refugio-opiniones { list-style: none; margin: 0; padding: 0; display: grid; gap: var(--space-3); }
+.refugio-necesidades li, .refugio-opiniones li { padding: var(--space-3) var(--space-4); border: 1px solid var(--border); border-radius: var(--radius-md); background: var(--surface-200); }
+.refugio-necesidades p, .refugio-opiniones p { margin: var(--space-1) 0 0; overflow-wrap: anywhere; }
+.refugio-necesidades__tipo { display: inline-block; padding: 2px 10px; border-radius: var(--radius-pill); background: var(--brand-tint); color: var(--brand-strong); font-size: 0.8125rem; font-weight: 600; }
+.refugio-necesidades__medio { font-size: 0.875rem; color: var(--ink-muted); }
+.refugio-opiniones__resumen { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-2); margin: 0 0 var(--space-3); }
+.refugio-opiniones__resumen strong { font-size: 1.5rem; font-family: var(--fuente-display); }
+.refugio-opiniones__resumen span:last-child { color: var(--ink-muted); font-size: 0.875rem; }
+.refugio-opiniones__cabecera { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: var(--space-2); }
+.refugio-opiniones__fecha { font-size: 0.8125rem; color: var(--ink-muted); }
+.estrellas { display: inline-flex; gap: 2px; vertical-align: middle; }
+.estrellas__llena { color: #f5a524; fill: #f5a524; }
+.estrellas__vacia { color: var(--border); }

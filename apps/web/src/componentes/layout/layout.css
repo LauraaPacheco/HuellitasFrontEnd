@@ -737,3 +737,10 @@
 .layout__contenido > .estado-cargando--pagina {
   flex: 1 0 auto;
 }
+
+/* Campana de notificaciones: en escritorio junto al tema, en celular en la barra superior. */
+.layout__campana-movil { display: none; }
+@media (max-width: 900px) {
+  .layout__campana-movil { display: grid; margin-left: auto; }
+  .layout__campana-escritorio { display: none; }
+}

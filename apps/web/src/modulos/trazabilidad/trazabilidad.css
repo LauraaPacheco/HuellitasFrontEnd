@@ -1,0 +1,16 @@
+/* Auditoría, línea de tiempo, historia de la mascota y notificaciones. */
+.auditoria__cambio { display: inline-flex; flex-wrap: wrap; align-items: center; gap: 6px; }
+.auditoria__cambio svg { color: var(--ink-muted); flex-shrink: 0; }
+.trazabilidad-paginas { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: var(--space-2); margin-top: var(--space-4); font-size: 0.875rem; color: var(--ink-muted); }
+
+/* Línea de tiempo vertical: un punto por evento unido por una línea. */
+.linea { list-style: none; margin: 0; padding: 0; display: grid; }
+.linea__evento { position: relative; display: grid; grid-template-columns: 20px minmax(0, 1fr); gap: var(--space-3); padding-bottom: var(--space-4); }
+.linea__evento:last-child { padding-bottom: 0; }
+.linea__evento::before { content: ''; position: absolute; left: 9px; top: 18px; bottom: 0; width: 2px; background: var(--border); }
+.linea__evento:last-child::before { display: none; }
+.linea__punto { width: 20px; height: 20px; margin-top: 1px; border-radius: 50%; border: 2px solid var(--brand); background: var(--surface-100); }
+.linea__evento:last-child .linea__punto { background: var(--brand-strong); border-color: var(--brand-strong); }
+.linea__titulo { margin: 0; font-weight: 600; }
+.linea__meta { margin: 2px 0 0; font-size: 0.8125rem; color: var(--ink-muted); }
+.linea__nota { margin: var(--space-1) 0 0; font-size: 0.875rem; overflow-wrap: anywhere; }
