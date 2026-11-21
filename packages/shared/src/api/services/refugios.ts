@@ -3,13 +3,18 @@ import { EstadoVerificacion } from '../../types/enums';
 import { leerRedesSociales, limpiarRedesSociales } from '../../utils/refugios';
 import { RUTAS } from '../rutas';
 import type { FiltroPaginado, Paginado } from '../../types/comun';
+import {
+  apadrinamientoApi, calificacionApi, necesidadApi, paginadoGenerico,
+  type ApadrinamientoApi, type CalificacionApi, type NecesidadApi, type PaginadoApi,
+} from '../contratosBackend';
 import type {
-  Apadrinamiento,
+  ApadrinamientoResumen,
+  CalificarRefugioDto,
   EditarRefugioDto,
-  Calificacion,
-  CalificarDto,
+  GuardarNecesidadDto,
   MotivoDto,
-  Necesidad,
+  NecesidadRefugio,
+  OpinionRefugio,
   Refugio,
   RequisitoAdopcion,
   SolicitudRefugioDto,
@@ -135,25 +140,78 @@ export class ServicioRefugios {
     });
   }
 
-  necesidades(refugioId?: number): Promise<readonly Necesidad[]> {
-    return this.api.get<readonly Necesidad[]>(RUTAS.refugios.necesidades, {
-      refugioId,
-    });
+  /* ----- Necesidades de donación (HU-REF-03) ----- */
+
+  /** Públicas: cualquiera ve lo que necesita un refugio. */
+  async necesidades(refugioId: number, filtro: FiltroPaginado = {}): Promise<Paginado<NecesidadRefugio>> {
+    const parametros = { pagina: filtro.pagina ?? 1, tamano: filtro.tamanoPagina ?? 20 };
+    if (this.modoDemo) return this.api.get(RUTAS.necesidades.porRefugio(refugioId), parametros);
+    return paginadoGenerico(await this.api.get<PaginadoApi<NecesidadApi>>(RUTAS.necesidades.porRefugio(refugioId), parametros), necesidadApi);
   }
 
-  apadrinar(mascotaId: number): Promise<Apadrinamiento> {
-    return this.api.post<Apadrinamiento>(RUTAS.refugios.apadrinamientos, {
-      mascotaId,
-    });
+  private datosNecesidad(datos: GuardarNecesidadDto) {
+    const descripcion = datos.descripcion.trim();
+    if (!descripcion) throw new ErrorHttp({ titulo: 'Describe qué necesita el refugio.', estadoHttp: 400 });
+    return { tipo: datos.tipo, descripcion, medioDonacion: datos.medioDonacion?.trim() || null };
   }
 
-  calificaciones(refugioId: number): Promise<readonly Calificacion[]> {
-    return this.api.get<readonly Calificacion[]>(
-      RUTAS.refugios.calificacionesPorRefugio(refugioId),
-    );
+  async publicarNecesidad(datos: GuardarNecesidadDto): Promise<void> {
+    await this.api.post(RUTAS.necesidades.base, this.datosNecesidad(datos));
   }
 
-  calificar(datos: CalificarDto): Promise<Calificacion> {
-    return this.api.post<Calificacion>(RUTAS.refugios.calificaciones, datos);
+  async editarNecesidad(id: number, datos: GuardarNecesidadDto): Promise<void> {
+    await this.api.put(RUTAS.necesidades.porId(id), this.datosNecesidad(datos));
+  }
+
+  async marcarNecesidadCubierta(id: number): Promise<void> {
+    await this.api.patch(RUTAS.necesidades.cubrir(id));
+  }
+
+  async eliminarNecesidad(id: number): Promise<void> {
+    await this.api.delete(RUTAS.necesidades.porId(id));
+  }
+
+  /* ----- Apadrinamientos (HU-REF-03) ----- */
+
+  /** El adoptante pide ser padrino; el refugio lo acepta o lo rechaza. */
+  async apadrinar(mascotaId: number, observacion?: string): Promise<void> {
+    await this.api.post(RUTAS.apadrinamientos.base, { mascotaId, observacion: observacion?.trim() || null });
+  }
+
+  async misApadrinamientos(filtro: FiltroPaginado = {}): Promise<Paginado<ApadrinamientoResumen>> {
+    const parametros = { pagina: filtro.pagina ?? 1, tamano: filtro.tamanoPagina ?? 20 };
+    if (this.modoDemo) return this.api.get(RUTAS.apadrinamientos.mios, parametros);
+    return paginadoGenerico(await this.api.get<PaginadoApi<ApadrinamientoApi>>(RUTAS.apadrinamientos.mios, parametros), apadrinamientoApi);
+  }
+
+  async apadrinamientosRefugio(filtro: FiltroPaginado = {}): Promise<Paginado<ApadrinamientoResumen>> {
+    const parametros = { pagina: filtro.pagina ?? 1, tamano: filtro.tamanoPagina ?? 20 };
+    if (this.modoDemo) return this.api.get(RUTAS.apadrinamientos.refugio, parametros);
+    return paginadoGenerico(await this.api.get<PaginadoApi<ApadrinamientoApi>>(RUTAS.apadrinamientos.refugio, parametros), apadrinamientoApi);
+  }
+
+  async gestionarApadrinamiento(id: number, aceptar: boolean, observacion?: string): Promise<void> {
+    await this.api.patch(RUTAS.apadrinamientos.gestionar(id), { aceptar, observacion: observacion?.trim() || null });
+  }
+
+  async cancelarApadrinamiento(id: number): Promise<void> {
+    await this.api.patch(RUTAS.apadrinamientos.cancelar(id));
+  }
+
+  /* ----- Calificaciones (HU-REF-04) ----- */
+
+  /** Públicas, más recientes primero. */
+  async opiniones(refugioId: number, filtro: FiltroPaginado = {}): Promise<Paginado<OpinionRefugio>> {
+    const parametros = { pagina: filtro.pagina ?? 1, tamano: filtro.tamanoPagina ?? 10 };
+    if (this.modoDemo) return this.api.get(RUTAS.refugios.calificaciones(refugioId), parametros);
+    return paginadoGenerico(await this.api.get<PaginadoApi<CalificacionApi>>(RUTAS.refugios.calificaciones(refugioId), parametros), calificacionApi);
+  }
+
+  /** Requiere el ID de la adopción finalizada, que el backend aún no expone en las solicitudes. */
+  async calificar(refugioId: number, datos: CalificarRefugioDto): Promise<void> {
+    if (!Number.isInteger(datos.puntaje) || datos.puntaje < 1 || datos.puntaje > 5) {
+      throw new ErrorHttp({ titulo: 'Elige de 1 a 5 estrellas.', estadoHttp: 400 });
+    }
+    await this.api.post(RUTAS.refugios.calificaciones(refugioId), { adopcionId: datos.adopcionId, puntaje: datos.puntaje, comentario: datos.comentario?.trim() || null });
   }
 }

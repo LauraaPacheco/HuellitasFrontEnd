@@ -54,7 +54,7 @@ export function crearApi(config: OpcionesApi): ApiHuellitas {
     mascotas: new ServicioMascotas(cliente, config.modoDemo ?? false),
     catalogos: new ServicioCatalogos(cliente),
     adopcion: new ServicioAdopcion(cliente, config.modoDemo ?? false),
-    trazabilidad: new ServicioTrazabilidad(cliente),
+    trazabilidad: new ServicioTrazabilidad(cliente, config.modoDemo ?? false),
     reportes: new ServicioReportes(cliente),
     administracion: new ServicioAdministracion(cliente),
   };

@@ -3,7 +3,6 @@ import { paginadoApi, paginadoGenerico, estadoMascotaApi, recomendacionApi, regi
 import { RUTAS } from '../rutas';
 import { validarUrlFoto } from '../../utils/multimedia';
 import type { FiltroPaginado, Paginado } from '../../types/comun';
-import type { Bitacora } from '../../types/trazabilidad';
 import type {
   CambioEstadoMascotaDto,
   CrearMascotaDto,
@@ -147,10 +146,6 @@ export class ServicioMascotas {
     await this.api.post(RUTAS.mascotas.historialClinico(datos.mascotaId), {
       tipo: datos.tipo, fecha, descripcion, soporteVeterinario: datos.soporteVeterinario?.trim() || null,
     });
-  }
-
-  bitacora(id: number): Promise<readonly Bitacora[]> {
-    return this.api.get<readonly Bitacora[]>(RUTAS.mascotas.bitacora(id));
   }
 
   /* ----- Favoritos (HU-MAS-07, solo adoptante) ----- */

@@ -1,5 +1,7 @@
 import { ErrorHttp } from './client';
-import { EstadoMascota, EstadoSolicitud, Sexo, TipoRegistroClinico } from '../types/enums';
+import { EstadoApadrinamiento, EstadoMascota, EstadoNecesidad, EstadoSeguimiento, EstadoSolicitud, ResultadoSeguimiento, Sexo, TipoEvento, TipoNecesidad, TipoRegistroClinico } from '../types/enums';
+import type { ApadrinamientoResumen, NecesidadRefugio, OpinionRefugio } from '../types/refugios';
+import type { EntradaAuditoria, EventoMascota, EventoSolicitud, NotificacionUsuario, PlanSeguimientoAdopcion } from '../types/trazabilidad';
 import type { MascotaResumen, RecomendacionMascota, RegistroClinico } from '../types/mascotas';
 import type { SolicitudResumen } from '../types/adopcion';
 import type { Paginado } from '../types/comun';
@@ -80,3 +82,86 @@ export function solicitudResumenApi(dto: SolicitudResumenApi, ahora = Date.now()
 export function paginadoSolicitudesApi(datos: PaginadoApi<SolicitudResumenApi>, ahora = Date.now()): Paginado<SolicitudResumen> {
   return { items: datos.items.map(s => solicitudResumenApi(s, ahora)), pagina: datos.pagina, tamanoPagina: datos.tamanoPagina, total: datos.totalRegistros, totalPaginas: datos.totalPaginas };
 }
+
+/* ---------- HU-REF-03/04 y HU-TRA-01 a 06 (95d5da4, 49b28ea, a00d0cc) ---------- */
+
+/** Nombre de enum de C# ("EnRevision", "Medicinas") a clave comparable, sin tildes ni espacios. */
+const claveEnum = (valor: string) => clave(valor).normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+function enumPorNombre<T>(valor: string, opciones: Record<string, T>, que: string): T {
+  const resultado = opciones[claveEnum(valor ?? '')];
+  if (resultado === undefined) throw new ErrorHttp({ titulo: `El servidor devolvió ${que} no reconocido.`, estadoHttp: 502 });
+  return resultado;
+}
+
+export interface NecesidadApi { necesidadId: number; tipo: string; descripcion: string; medioDonacion: string | null; estado: string; fechaPublicacion: string }
+export function necesidadApi(d: NecesidadApi): NecesidadRefugio {
+  return {
+    id: d.necesidadId,
+    tipo: enumPorNombre(d.tipo, { alimento: TipoNecesidad.Alimento, medicinas: TipoNecesidad.Medicinas, insumos: TipoNecesidad.Insumos, otro: TipoNecesidad.Otro }, 'un tipo de necesidad'),
+    descripcion: d.descripcion,
+    medioDonacion: d.medioDonacion?.trim() || null,
+    estado: enumPorNombre(d.estado, { publicada: EstadoNecesidad.Publicada, cubierta: EstadoNecesidad.Cubierta }, 'un estado de necesidad'),
+    fechaPublicacion: d.fechaPublicacion,
+  };
+}
+
+export interface ApadrinamientoApi { apadrinamientoId: number; mascotaId: number; mascotaNombre: string; refugioNombre: string | null; adoptanteNombre: string; fechaInicio: string; estado: string; observacion: string | null }
+export function apadrinamientoApi(d: ApadrinamientoApi): ApadrinamientoResumen {
+  return {
+    id: d.apadrinamientoId, mascotaId: d.mascotaId, mascotaNombre: d.mascotaNombre, refugioNombre: d.refugioNombre,
+    padrinoNombre: d.adoptanteNombre, fechaInicio: d.fechaInicio, observacion: d.observacion?.trim() || null,
+    estado: enumPorNombre(d.estado, { solicitado: EstadoApadrinamiento.Solicitado, activo: EstadoApadrinamiento.Activo, finalizado: EstadoApadrinamiento.Finalizado }, 'un estado de apadrinamiento'),
+  };
+}
+
+export interface CalificacionApi { calificacionId: number; adoptanteNombre: string; puntaje: number; comentario: string | null; fecha: string }
+export function calificacionApi(d: CalificacionApi): OpinionRefugio {
+  return { id: d.calificacionId, autor: d.adoptanteNombre, puntaje: Math.max(1, Math.min(5, d.puntaje)), comentario: d.comentario?.trim() || null, fecha: d.fecha };
+}
+
+export interface LineaTiempoApi { estadoAnterior: string; estadoNuevo: string; observacion: string | null; usuarioResponsable: string; fecha: string }
+export function lineaTiempoApi(d: LineaTiempoApi): EventoSolicitud {
+  return { estadoAnterior: d.estadoAnterior === 'Sin estado previo' ? null : d.estadoAnterior, estadoNuevo: d.estadoNuevo,
+    observacion: d.observacion?.trim() || null, responsable: d.usuarioResponsable, fecha: d.fecha };
+}
+
+export interface HistorialMascotaApi { tipoEvento: string; descripcion: string; fecha: string }
+export function historialMascotaApi(d: HistorialMascotaApi): EventoMascota {
+  return {
+    tipo: enumPorNombre(d.tipoEvento, { ingreso: TipoEvento.Ingreso, cambioestado: TipoEvento.CambioEstado, atencionclinica: TipoEvento.AtencionClinica, adopcion: TipoEvento.Adopcion, seguimiento: TipoEvento.Seguimiento }, 'un tipo de evento'),
+    descripcion: d.descripcion, fecha: d.fecha,
+  };
+}
+
+export interface NotificacionApi { notificacionId: number; mensaje: string; leida: boolean; fechaEnvio: string }
+export function notificacionApi(d: NotificacionApi): NotificacionUsuario {
+  return { id: d.notificacionId, mensaje: d.mensaje, leida: d.leida, fecha: d.fechaEnvio };
+}
+
+export interface AuditoriaApi { auditoriaId: number; accion: string; entidadAfectada: string; idEntidad: number | null; valorAnterior: string | null; valorNuevo: string | null; usuarioResponsable: string; fecha: string }
+export function auditoriaApi(d: AuditoriaApi): EntradaAuditoria {
+  return { id: d.auditoriaId, accion: d.accion, entidad: d.entidadAfectada, idEntidad: d.idEntidad, valorAnterior: d.valorAnterior,
+    valorNuevo: d.valorNuevo, responsable: d.usuarioResponsable, fecha: d.fecha };
+}
+
+export interface PlanSeguimientoApi { planId: number; adopcionId: number; seguimientos: { seguimientoId: number; numero: number; fechaProgramada: string; fechaEnvio: string | null; estado: string; resultado: string | null; fotosUrls: string[] }[] }
+export function planSeguimientoApi(d: PlanSeguimientoApi): PlanSeguimientoAdopcion {
+  return {
+    id: d.planId, adopcionId: d.adopcionId,
+    seguimientos: d.seguimientos.map((s) => ({
+      id: s.seguimientoId, numero: s.numero, fechaProgramada: s.fechaProgramada, fechaEnvio: s.fechaEnvio, fotos: s.fotosUrls ?? [],
+      estado: enumPorNombre(s.estado, { pendiente: EstadoSeguimiento.Pendiente, enviado: EstadoSeguimiento.Enviado, vencido: EstadoSeguimiento.Vencido }, 'un estado de seguimiento'),
+      // El backend manda el byte como texto ("0" o "1").
+      resultado: s.resultado === null || s.resultado === undefined ? null : Number(s.resultado) === 1 ? ResultadoSeguimiento.RequiereAtencion : ResultadoSeguimiento.Conforme,
+    })),
+  };
+}
+
+/** Etiqueta legible de un estado de solicitud que llega como nombre de enum. */
+export function etiquetaEstadoSolicitud(valor: string | null): string {
+  if (!valor) return 'Sin estado previo';
+  const estados: Record<string, string> = { enviada: 'Enviada', enrevision: 'En revisión', entrevista: 'Entrevista o visita', aprobada: 'Aprobada',
+    rechazada: 'Rechazada', finalizada: 'Finalizada', cerrada: 'Cerrada', cancelada: 'Cancelada' };
+  return estados[claveEnum(valor)] ?? valor;
+}
+

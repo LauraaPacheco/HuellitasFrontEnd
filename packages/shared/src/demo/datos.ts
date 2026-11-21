@@ -35,7 +35,7 @@ export const USUARIOS_DEMO = [
   { correo: 'admin@huellitas.co', rol: NivelRol.Administrador },
 ] as const;
 
-function hace(dias: number): string {
+export function hace(dias: number): string {
   return new Date(Date.now() - dias * 86_400_000).toISOString();
 }
 

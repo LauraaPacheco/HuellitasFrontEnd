@@ -51,6 +51,21 @@ export function tiempoRelativo(iso: string | null | undefined): string {
   return `Actualizada hace más de un año`;
 }
 
+/** Hace cuánto pasó algo, sin prefijo: "hace 5 min", "ayer", "hace 3 días". */
+export function haceCuanto(iso: string | null | undefined): string {
+  if (!iso) return '';
+  const minutos = Math.floor((Date.now() - new Date(iso).getTime()) / 60_000);
+  if (!Number.isFinite(minutos)) return '';
+  if (minutos < 1) return 'ahora';
+  if (minutos < 60) return `hace ${minutos} min`;
+  const horas = Math.floor(minutos / 60);
+  if (horas < 24) return horas === 1 ? 'hace 1 hora' : `hace ${horas} horas`;
+  const dias = Math.floor(horas / 24);
+  if (dias === 1) return 'ayer';
+  if (dias < 30) return `hace ${dias} días`;
+  return formatearFecha(iso);
+}
+
 export function diasDesde(iso: string | null | undefined): number {
   if (!iso) return 0;
   return Math.floor((Date.now() - new Date(iso).getTime()) / 86_400_000);

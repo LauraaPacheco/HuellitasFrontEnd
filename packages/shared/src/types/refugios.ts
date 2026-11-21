@@ -94,3 +94,50 @@ export interface CalificarDto {
   puntaje: number;
   comentario?: string;
 }
+
+/* ---------- HU-REF-03 y 04 contra el backend real (95d5da4, 49b28ea) ---------- */
+
+/** Necesidad de donación que publica el refugio. */
+export interface NecesidadRefugio {
+  readonly id: number;
+  readonly tipo: TipoNecesidad;
+  readonly descripcion: string;
+  /** Cómo donar, por ejemplo "Nequi 3001234567". */
+  readonly medioDonacion: string | null;
+  readonly estado: EstadoNecesidad;
+  readonly fechaPublicacion: string;
+}
+
+export interface GuardarNecesidadDto {
+  tipo: TipoNecesidad;
+  descripcion: string;
+  medioDonacion?: string;
+}
+
+/** Solicitud o padrinazgo vigente de una mascota. */
+export interface ApadrinamientoResumen {
+  readonly id: number;
+  readonly mascotaId: number;
+  readonly mascotaNombre: string;
+  readonly refugioNombre: string | null;
+  readonly padrinoNombre: string;
+  readonly fechaInicio: string;
+  readonly estado: EstadoApadrinamiento;
+  readonly observacion: string | null;
+}
+
+/** Opinión pública de un adoptante sobre el refugio (1 a 5). */
+export interface OpinionRefugio {
+  readonly id: number;
+  readonly autor: string;
+  readonly puntaje: number;
+  readonly comentario: string | null;
+  readonly fecha: string;
+}
+
+export interface CalificarRefugioDto {
+  adopcionId: number;
+  puntaje: number;
+  comentario?: string;
+}
+

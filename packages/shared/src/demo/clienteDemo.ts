@@ -7,11 +7,14 @@
  */
 
 import { ClienteApi, ErrorHttp, type ConfiguracionCliente } from '../api/client';
+import { claimsDelToken } from '../api/sesion';
 import type { Usuario, PerfilAdoptanteDto, EditarPerfilDto } from '../types/usuarios';
 import { validarRefugio, normalizarRefugio, limpiarRedesSociales } from '../utils/refugios';
 import type { Refugio, SolicitudRefugioDto, EditarRefugioDto } from '../types/refugios';
 import { validarDatosPersonales, validarPerfilAdoptante } from '../utils/perfil';
-import { EstadoMascota, EstadoVerificacion, NivelRol, TipoMultimedia, type TipoRegistroClinico } from '../types/enums';
+import { EstadoApadrinamiento, EstadoMascota, EstadoNecesidad, EstadoVerificacion, NivelRol, TipoEvento, TipoMultimedia, TipoNecesidad, type TipoRegistroClinico } from '../types/enums';
+import type { ApadrinamientoResumen, NecesidadRefugio } from '../types/refugios';
+import type { NotificacionUsuario } from '../types/trazabilidad';
 import { validarArchivoMascota, coincideFirmaArchivo, esFoto, MAX_ARCHIVOS_MASCOTA } from '../utils/multimedia';
 import { validarMascota, estadosManualesMascota } from '../utils/mascotas';
 import type { Mascota, MascotaResumen, CrearMascotaDto, EditarMascotaDto, CambioEstadoMascotaDto } from '../types/mascotas';
@@ -27,6 +30,7 @@ import {
   TEMPERAMENTOS,
   USUARIOS_DEMO,
   lineaTiempo,
+  hace,
   mascotaCompleta,
   mascotasResumen,
   solicitudCompleta,
@@ -39,6 +43,31 @@ const RETARDO_MS = 320;
 
 function esperar<T>(valor: T): Promise<T> {
   return new Promise((resolver) => setTimeout(() => resolver(valor), RETARDO_MS));
+}
+
+const ALFABETO = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_';
+/** base64url a mano: btoa no está en todos los motores de React Native. */
+function base64url(texto: string): string {
+  const bytes = Array.from(new TextEncoder().encode(texto));
+  let salida = '';
+  for (let i = 0; i < bytes.length; i += 3) {
+    const [a = 0, b = 0, c = 0] = bytes.slice(i, i + 3);
+    const n = (a << 16) | (b << 8) | c;
+    const quedan = bytes.length - i;
+    salida += ALFABETO[(n >> 18) & 63]! + ALFABETO[(n >> 12) & 63]! + (quedan > 1 ? ALFABETO[(n >> 6) & 63]! : '') + (quedan > 2 ? ALFABETO[n & 63]! : '');
+  }
+  return salida;
+}
+
+/**
+ * Token con forma de JWT (sin firma real) para que la sesión lea el id del
+ * usuario en `sub`, como con el backend. Con el texto plano de antes el id
+ * quedaba en 0 y al iniciar sesión el cliente lo tomaba como otra sesión.
+ */
+function tokenDemo(usuario: Usuario): string {
+  const cabecera = base64url(JSON.stringify({ alg: 'none', typ: 'JWT' }));
+  const datos = base64url(JSON.stringify({ sub: String(usuario.id), email: usuario.correo, exp: Math.floor(Date.now() / 1000) + 900, jti: `${Date.now()}` }));
+  return `${cabecera}.${datos}.demo`;
 }
 
 function paginar<T>(items: readonly T[], pagina = 1, tamano = 20): Paginado<T> {
@@ -73,6 +102,23 @@ export class ClienteDemo extends ClienteApi {
     if (this.nivelActual === null) throw new ErrorHttp({ titulo: 'Sesión no iniciada', estadoHttp: 401 });
     return this.usuariosEditados.get(this.nivelActual) ?? usuarioDemo(this.nivelActual);
   }
+
+  private readonly necesidades: (NecesidadRefugio & { refugioId: number })[] = [
+    { id: 1, refugioId: 1, tipo: TipoNecesidad.Alimento, descripcion: 'Concentrado para cachorros, 4 bultos de 8 kg.', medioDonacion: 'Nequi 3001234567', estado: EstadoNecesidad.Publicada, fechaPublicacion: hace(2) },
+    { id: 2, refugioId: 1, tipo: TipoNecesidad.Medicinas, descripcion: 'Desparasitante para gatos adultos.', medioDonacion: null, estado: EstadoNecesidad.Publicada, fechaPublicacion: hace(6) },
+    { id: 3, refugioId: 1, tipo: TipoNecesidad.Insumos, descripcion: 'Arena para gatos.', medioDonacion: 'Entrega en la sede', estado: EstadoNecesidad.Cubierta, fechaPublicacion: hace(20) },
+  ];
+
+  private readonly apadrinamientos: (ApadrinamientoResumen & { refugioId: number })[] = [
+    { id: 1, refugioId: 1, mascotaId: 1, mascotaNombre: 'Canela', refugioNombre: 'Refugio Patitas Felices', padrinoNombre: 'Adoptante de Prueba', fechaInicio: hace(3), estado: EstadoApadrinamiento.Solicitado, observacion: 'Puedo aportar el alimento de cada mes.' },
+  ];
+
+  private readonly notificaciones: (NotificacionUsuario & { nivel: NivelRol })[] = [
+    { id: 1, nivel: NivelRol.Adoptante, mensaje: 'El refugio agendó una visita para tu solicitud.', leida: false, fecha: hace(0) },
+    { id: 2, nivel: NivelRol.Adoptante, mensaje: 'El refugio está revisando tu solicitud de adopción.', leida: true, fecha: hace(2) },
+    { id: 3, nivel: NivelRol.Refugio, mensaje: 'Recibiste una nueva solicitud de adopción para Canela.', leida: false, fecha: hace(1) },
+    { id: 4, nivel: NivelRol.Administrador, mensaje: 'Hay un refugio nuevo esperando verificación.', leida: false, fecha: hace(1) },
+  ];
 
   /** Favoritos del adoptante demo; arranca con uno para que la lista no esté vacía. */
   private readonly favoritos = new Set<number>([2]);
@@ -137,7 +183,7 @@ export class ClienteDemo extends ClienteApi {
     // Al reabrir la app, recupera también el contexto del cliente demo.
     if (this.nivelActual === null && !ruta.includes('/Auth/')) {
       const token = await this.almacenDemo.obtener();
-      const id = /^demo\.access\.(\d+)\./.exec(token ?? '')?.[1];
+      const id = token ? claimsDelToken(token).sub : undefined;
       const cuenta = USUARIOS_DEMO.find(u => usuarioDemo(u.rol).id === Number(id));
       if (cuenta) this.nivelActual = cuenta.rol;
     }
@@ -177,7 +223,7 @@ export class ClienteDemo extends ClienteApi {
       this.nivelActual = encontrado.rol;
       const usuario = this.usuarioActual();
       return {
-        accessToken: `demo.access.${usuario.id}.${Date.now()}`,
+        accessToken: tokenDemo(usuario),
         refreshToken: `demo.refresh.${Date.now()}`,
         expiraEnSegundos: 900,
         nombre: usuario.nombre,
@@ -191,7 +237,7 @@ export class ClienteDemo extends ClienteApi {
       }
       const usuario = this.usuarioActual();
       return {
-        accessToken: `demo.access.${usuario.id}.${Date.now()}`,
+        accessToken: tokenDemo(usuario),
         refreshToken: `demo.refresh.${Date.now()}`,
         expiraEnSegundos: 900,
         nombre: usuario.nombre,
@@ -622,10 +668,125 @@ export class ClienteDemo extends ClienteApi {
       return paginar(visibles, pagina, tamano);
     }
 
-    /* ---------- Notificaciones y seguimientos ---------- */
+    /* ---------- Necesidades, apadrinamientos y calificaciones (HU-REF-03/04) ---------- */
 
-    if (ruta.includes('/notificaciones')) return [];
-    if (ruta.includes('/seguimientos')) return [];
+    const necesidadesRefugio = /^\/api\/v1\/Necesidades\/refugio\/(\d+)$/.exec(ruta);
+    if (necesidadesRefugio && metodo === 'GET') {
+      const lista = this.necesidades.filter(n => n.refugioId === Number(necesidadesRefugio[1])).sort((a, b) => a.estado - b.estado || b.fechaPublicacion.localeCompare(a.fechaPublicacion));
+      return paginar(lista.map(({ refugioId: _r, ...n }) => n), pagina, tamanoDemo);
+    }
+    if (ruta === '/api/v1/Necesidades' && metodo === 'POST') {
+      const refugio = this.exigirPropietario();
+      const datos = cuerpo as { tipo: TipoNecesidad; descripcion: string; medioDonacion: string | null };
+      this.necesidades.push({ id: Math.max(0, ...this.necesidades.map(n => n.id)) + 1, refugioId: refugio.id, tipo: datos.tipo, descripcion: datos.descripcion,
+        medioDonacion: datos.medioDonacion, estado: EstadoNecesidad.Publicada, fechaPublicacion: new Date().toISOString() });
+      return { mensaje: 'Necesidad publicada.' };
+    }
+    const necesidad = /^\/api\/v1\/Necesidades\/(\d+)(\/cubrir)?$/.exec(ruta);
+    if (necesidad) {
+      const refugio = this.exigirPropietario();
+      const indice = this.necesidades.findIndex(n => n.id === Number(necesidad[1]));
+      const actual = this.necesidades[indice];
+      if (!actual) throw new ErrorHttp({ titulo: 'Necesidad no encontrada.', estadoHttp: 404 });
+      if (actual.refugioId !== refugio.id) throw new ErrorHttp({ titulo: 'No tienes permiso para modificar esta necesidad.', estadoHttp: 403 });
+      if (necesidad[2] && metodo === 'PATCH') { this.necesidades[indice] = { ...actual, estado: EstadoNecesidad.Cubierta }; return { mensaje: 'Necesidad cubierta.' }; }
+      if (metodo === 'PUT') { const d = cuerpo as { tipo: TipoNecesidad; descripcion: string; medioDonacion: string | null }; this.necesidades[indice] = { ...actual, ...d }; return { mensaje: 'Necesidad actualizada.' }; }
+      if (metodo === 'DELETE') { this.necesidades.splice(indice, 1); return { mensaje: 'Necesidad eliminada.' }; }
+    }
+
+    if (ruta === '/api/v1/Apadrinamientos' && metodo === 'POST') {
+      this.exigirAdoptante();
+      const datos = cuerpo as { mascotaId: number; observacion: string | null };
+      const mascota = this.mascotas.find(m => m.id === datos.mascotaId && m.activo);
+      if (!mascota) throw new ErrorHttp({ titulo: 'Mascota no encontrada.', estadoHttp: 404 });
+      const refugio = this.refugios.find(r => r.id === mascota.refugioId)!;
+      this.apadrinamientos.push({ id: Math.max(0, ...this.apadrinamientos.map(a => a.id)) + 1, mascotaId: mascota.id, mascotaNombre: mascota.nombre,
+        refugioNombre: refugio.nombre, padrinoNombre: this.usuarioActual().nombre, fechaInicio: new Date().toISOString(),
+        estado: EstadoApadrinamiento.Solicitado, observacion: datos.observacion, refugioId: refugio.id });
+      return { mensaje: 'Solicitud de apadrinamiento enviada.' };
+    }
+    if (ruta === '/api/v1/Apadrinamientos/mis-apadrinamientos') {
+      this.exigirAdoptante();
+      const nombre = this.usuarioActual().nombre;
+      return paginar(this.apadrinamientos.filter(a => a.padrinoNombre === nombre).map(({ refugioId: _r, ...a }) => a), pagina, tamanoDemo);
+    }
+    if (ruta === '/api/v1/Apadrinamientos/refugio') {
+      const refugio = this.exigirPropietario();
+      return paginar(this.apadrinamientos.filter(a => a.refugioId === refugio.id).map(({ refugioId: _r, ...a }) => a), pagina, tamanoDemo);
+    }
+    const apadrinamiento = /^\/api\/v1\/Apadrinamientos\/(\d+)\/(gestionar|cancelar)$/.exec(ruta);
+    if (apadrinamiento && metodo === 'PATCH') {
+      const indice = this.apadrinamientos.findIndex(a => a.id === Number(apadrinamiento[1]));
+      const actual = this.apadrinamientos[indice];
+      if (!actual) throw new ErrorHttp({ titulo: 'Apadrinamiento no encontrado.', estadoHttp: 404 });
+      if (apadrinamiento[2] === 'gestionar') {
+        const refugio = this.exigirPropietario();
+        if (actual.refugioId !== refugio.id) throw new ErrorHttp({ titulo: 'No tienes permiso para gestionar este apadrinamiento.', estadoHttp: 403 });
+        if (actual.estado !== EstadoApadrinamiento.Solicitado) throw new ErrorHttp({ titulo: "Solo se pueden gestionar solicitudes en estado 'Solicitado'.", estadoHttp: 409 });
+        const { aceptar, observacion } = cuerpo as { aceptar: boolean; observacion: string | null };
+        this.apadrinamientos[indice] = { ...actual, estado: aceptar ? EstadoApadrinamiento.Activo : EstadoApadrinamiento.Finalizado, observacion: observacion ?? actual.observacion };
+      } else {
+        this.exigirAdoptante();
+        if (actual.estado === EstadoApadrinamiento.Finalizado) throw new ErrorHttp({ titulo: 'Apadrinamiento no encontrado o ya se encuentra inactivo.', estadoHttp: 404 });
+        this.apadrinamientos[indice] = { ...actual, estado: EstadoApadrinamiento.Finalizado };
+      }
+      return { mensaje: 'Apadrinamiento actualizado.' };
+    }
+
+    const calificaciones = /^\/api\/v1\/Refugios\/(\d+)\/calificaciones$/.exec(ruta);
+    if (calificaciones && metodo === 'GET') {
+      const id = Number(calificaciones[1]);
+      const opiniones = [
+        { id: id * 10 + 1, autor: 'Valentina R.', puntaje: 5, comentario: 'Nos acompañaron en todo el proceso y resolvieron todas nuestras dudas.', fecha: hace(12) },
+        { id: id * 10 + 2, autor: 'Andrés M.', puntaje: 4, comentario: 'Muy organizados. La visita fue puntual.', fecha: hace(40) },
+        { id: id * 10 + 3, autor: 'Laura P.', puntaje: 5, comentario: null, fecha: hace(75) },
+      ];
+      return paginar(opiniones, pagina, tamanoDemo);
+    }
+
+    /* ---------- Trazabilidad (HU-TRA-01 a 04) ---------- */
+
+    const lineaSolicitud = /^\/api\/v1\/Trazabilidad\/solicitudes\/(\d+)$/.exec(ruta);
+    if (lineaSolicitud) {
+      this.usuarioActual();
+      const etapas = lineaTiempo(Number(lineaSolicitud[1])).filter(e => e.fecha);
+      return etapas.map((e, i) => ({ estadoAnterior: i === 0 ? null : etapas[i - 1]!.etiqueta, estadoNuevo: e.etiqueta,
+        observacion: e.detalle, responsable: i === 0 ? 'Adoptante de Prueba' : 'Refugio Patitas', fecha: e.fecha! }));
+    }
+    const historialMascota = /^\/api\/v1\/Trazabilidad\/mascotas\/(\d+)$/.exec(ruta);
+    if (historialMascota) {
+      const mascota = this.mascotas.find(m => m.id === Number(historialMascota[1]));
+      if (!mascota) throw new ErrorHttp({ titulo: 'Mascota no encontrada.', estadoHttp: 404 });
+      return [
+        { tipo: TipoEvento.Ingreso, descripcion: 'Mascota registrada en el sistema.', fecha: mascota.fechaIngreso },
+        ...mascota.historialClinico.map(r => ({ tipo: TipoEvento.AtencionClinica, descripcion: `Registro clínico agregado: ${r.descripcion ?? ''}`.trim(), fecha: r.fecha })),
+      ].sort((a, b) => b.fecha.localeCompare(a.fecha));
+    }
+    if (ruta === '/api/v1/Notificaciones' && metodo === 'GET') {
+      const usuario = this.usuarioActual();
+      const propias = this.notificaciones.filter(n => n.nivel === usuario.rol.nivel).map(({ nivel: _n, ...n }) => n).sort((a, b) => b.fecha.localeCompare(a.fecha));
+      return paginar(propias, pagina, tamanoDemo);
+    }
+    const leer = /^\/api\/v1\/Notificaciones\/(\d+)\/leer$/.exec(ruta);
+    if (leer && metodo === 'PATCH') {
+      const nivel = this.usuarioActual().rol.nivel;
+      const indice = this.notificaciones.findIndex(n => n.id === Number(leer[1]) && n.nivel === nivel);
+      if (indice < 0) throw new ErrorHttp({ titulo: 'Notificación no encontrada.', estadoHttp: 404 });
+      this.notificaciones[indice] = { ...this.notificaciones[indice]!, leida: true };
+      return { mensaje: 'Notificación marcada como leída.' };
+    }
+    if (ruta === '/api/v1/Trazabilidad/auditoria') {
+      if (this.usuarioActual().rol.nivel !== NivelRol.Administrador) throw new ErrorHttp({ titulo: 'Solo el administrador puede ver la auditoría.', estadoHttp: 403 });
+      const entradas = [
+        { id: 3, accion: 'CambioEstado', entidad: 'SolicitudAdopcion', idEntidad: 2, valorAnterior: 'EnRevision', valorNuevo: 'Entrevista', responsable: 'Refugio Patitas', fecha: hace(1) },
+        { id: 2, accion: 'CambioEstado', entidad: 'SolicitudAdopcion', idEntidad: 2, valorAnterior: 'Enviada', valorNuevo: 'EnRevision', responsable: 'Refugio Patitas', fecha: hace(3) },
+        { id: 1, accion: 'Creacion', entidad: 'SolicitudAdopcion', idEntidad: 2, valorAnterior: null, valorNuevo: 'Enviada', responsable: 'Adoptante de Prueba', fecha: hace(5) },
+      ];
+      return paginar(entradas, pagina, tamanoDemo);
+    }
+    if (/^\/api\/v1\/Seguimientos\//.test(ruta)) {
+      throw new ErrorHttp({ titulo: 'Plan de seguimiento no encontrado.', estadoHttp: 404 });
+    }
 
     /* ---------- Escrituras sin efecto ---------- */
 
