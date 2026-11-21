@@ -386,3 +386,22 @@ a.mascota-enlace { text-decoration: none; }
 @media (max-width: 540px) {
   .historial__cabecera > .boton { width: 100%; }
 }
+
+/* Soporte veterinario: subir archivo o pegar enlace (una sola URL). */
+.soporte { display: grid; gap: var(--space-2); }
+.soporte__zona { padding: var(--space-4); }
+.soporte__titulo { font-weight: 600; color: var(--ink); }
+.soporte__fila-enlace { display: flex; align-items: center; gap: var(--space-2); }
+.soporte__caja-enlace { position: relative; flex: 1 1 200px; min-width: 0; display: flex; align-items: center; }
+.soporte__icono-enlace { position: absolute; left: var(--space-3); color: var(--ink-muted); display: grid; pointer-events: none; }
+.soporte__caja-enlace .soporte__entrada { width: 100%; padding-left: calc(var(--space-3) + 26px); }
+.soporte__elegido { display: flex; align-items: center; gap: var(--space-3); padding: var(--space-2); border: 1px solid var(--border); border-radius: var(--radius-md); background: var(--surface-200); }
+.soporte__miniatura { width: 56px; height: 56px; flex-shrink: 0; object-fit: cover; border-radius: var(--radius-sm); background: var(--surface-300); }
+.soporte__miniatura--pdf { display: grid; place-items: center; background: var(--brand-tint); color: var(--brand-strong); }
+.soporte__enlace { flex: 1; min-width: 0; font-weight: 600; overflow-wrap: anywhere; }
+.soporte__quitar { width: 44px; height: 44px; flex-shrink: 0; display: grid; place-items: center; border: 0; border-radius: var(--radius-pill); background: transparent; color: var(--ink-muted); }
+.soporte__quitar:hover { background: var(--surface-300); color: var(--danger); }
+@media (max-width: 480px) {
+  .soporte__fila-enlace { flex-wrap: wrap; }
+  .soporte__fila-enlace > .boton { flex: 1 1 100%; }
+}

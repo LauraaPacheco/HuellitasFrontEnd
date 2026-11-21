@@ -6,6 +6,10 @@ import { api } from '@/lib/api';
 import { Boton } from '@/componentes/ui/Boton';
 import { Modal } from '@/componentes/ui/Modal/Modal';
 import { EstadoCargando } from '@/componentes/ui/EstadoCargando';
+import { SoporteVeterinario } from './SoporteVeterinario';
+import '@/componentes/ui/Campo/campo.css';
+import './mascotas.css';
+import { CampoFecha } from '@/componentes/ui/CampoFecha/CampoFecha';
 
 const errorTexto = (e: Error) => (e instanceof ErrorHttp ? e.detalle ?? e.message : e.message);
 const TAMANO_PAGINA = 5;
@@ -30,6 +34,11 @@ const TIPOS = [
 function hoyLocal() {
   const d = new Date();
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+}
+
+function hace30Anios() {
+  const d = new Date();
+  return `${d.getFullYear() - 30}-01-01`;
 }
 
 /**
@@ -87,7 +96,7 @@ export function HistorialClinico({ mascotaId, nombre }: { mascotaId: number; nom
                     {r.descripcion && <p className="historial__descripcion">{r.descripcion}</p>}
                     {r.soporteVeterinario && /^https:\/\//i.test(r.soporteVeterinario) && (
                       <a className="historial__soporte" href={r.soporteVeterinario} target="_blank" rel="noopener noreferrer">
-                        <FileText size={14} strokeWidth={1.75} aria-hidden="true" /> Ver soporte veterinario
+                        <FileText size={14} strokeWidth={1.75} aria-hidden="true" /> {/\.pdf($|\?)/i.test(r.soporteVeterinario) ? 'Ver PDF del veterinario' : 'Ver soporte veterinario'}
                       </a>
                     )}
                   </div>
@@ -128,6 +137,7 @@ function FormularioAtencion({ mascotaId, nombre, alCerrar }: { mascotaId: number
   const [fecha, setFecha] = useState(hoyLocal());
   const [descripcion, setDescripcion] = useState('');
   const [soporte, setSoporte] = useState('');
+  const [subiendo, setSubiendo] = useState(false);
   const [errorLocal, setErrorLocal] = useState('');
   const guardar = useMutation({
     mutationFn: () => api.mascotas.agregarRegistroClinico({ mascotaId, tipo, fecha, descripcion, soporteVeterinario: soporte }),
@@ -136,47 +146,38 @@ function FormularioAtencion({ mascotaId, nombre, alCerrar }: { mascotaId: number
 
   function enviar(evento: FormEvent) {
     evento.preventDefault();
-    if (guardar.isPending) return;
+    if (guardar.isPending || subiendo) return;
     const error = !fecha ? 'Elige la fecha de la atención.'
       : fecha > hoyLocal() ? 'La fecha no puede estar en el futuro.'
       : !descripcion.trim() ? 'Describe la atención (por ejemplo, la vacuna aplicada).'
-      : soporte.trim() && !/^https:\/\/\S+$/i.test(soporte.trim()) ? 'El soporte debe ser un enlace que empiece por https://.'
       : '';
     setErrorLocal(error);
     if (!error) guardar.mutate();
   }
 
   return (
-    <Modal titulo="Registrar atención" compacto ocupado={guardar.isPending} alCerrar={() => alCerrar(false)}>
+    <Modal titulo="Registrar atención" compacto ocupado={guardar.isPending || subiendo} alCerrar={() => alCerrar(false)}>
       <p className="historial__contexto">{nombre}</p>
       <form className="cuenta__form" onSubmit={enviar} noValidate>
         <fieldset disabled={guardar.isPending}>
-          <div className="cuenta__fila">
-            <label className="campo">
-              <span className="campo__etiqueta">Tipo</span>
-              <select className="campo__control" value={tipo} onChange={(e) => setTipo(Number(e.target.value) as TipoRegistroClinico)}>
-                {TIPOS.map((t) => <option key={t} value={t}>{ETIQUETA_TIPO_REGISTRO_CLINICO[t]}</option>)}
-              </select>
-            </label>
-            <label className="campo">
-              <span className="campo__etiqueta">Fecha</span>
-              <input className="campo__control" type="date" max={hoyLocal()} value={fecha} onChange={(e) => setFecha(e.target.value)} />
-            </label>
-          </div>
+          <label className="campo">
+            <span className="campo__etiqueta">Tipo</span>
+            <select className="campo__control" value={tipo} onChange={(e) => setTipo(Number(e.target.value) as TipoRegistroClinico)}>
+              {TIPOS.map((t) => <option key={t} value={t}>{ETIQUETA_TIPO_REGISTRO_CLINICO[t]}</option>)}
+            </select>
+          </label>
+          {/* Atenciones ya hechas: hasta hoy y como mucho 30 años atrás. */}
+          <CampoFecha etiqueta="Fecha de la atención" valor={fecha} alCambiar={setFecha} desde={hace30Anios()} hasta={hoyLocal()} />
           <label className="campo">
             <span className="campo__etiqueta">Descripción</span>
             <textarea className="campo__control historial__area" value={descripcion} maxLength={500}
               placeholder="Vacuna antirrábica, lote 1234" onChange={(e) => setDescripcion(e.target.value)} />
           </label>
-          <label className="campo">
-            <span className="campo__etiqueta">Soporte veterinario (opcional)</span>
-            <input className="campo__control" type="url" inputMode="url" value={soporte}
-              placeholder="https://…" onChange={(e) => setSoporte(e.target.value)} />
-          </label>
+          <SoporteVeterinario valor={soporte} alCambiar={setSoporte} alActividad={setSubiendo} />
           {(errorLocal || guardar.isError) && <p role="alert" className="campo__error">{errorLocal || (guardar.error && errorTexto(guardar.error))}</p>}
           <div className="publicacion-navegacion">
-            <Boton disabled={guardar.isPending} onClick={() => alCerrar(false)}>Cancelar</Boton>
-            <Boton tipo="submit" variante="primario" cargando={guardar.isPending}>Guardar atención</Boton>
+            <Boton disabled={guardar.isPending || subiendo} onClick={() => alCerrar(false)}>Cancelar</Boton>
+            <Boton tipo="submit" variante="primario" cargando={guardar.isPending} disabled={subiendo}>Guardar atención</Boton>
           </div>
         </fieldset>
       </form>

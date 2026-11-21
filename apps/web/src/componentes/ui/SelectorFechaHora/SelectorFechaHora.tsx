@@ -1,12 +1,9 @@
-import { useMemo, useState } from 'react';
-import { ChevronLeft, ChevronRight } from 'lucide-react';
+import { useMemo } from 'react';
+import { CalendarioMes, isoDia } from '../CalendarioMes/CalendarioMes';
 import './selectorFechaHora.css';
 
-const MESES = ['enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio', 'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre'];
-const DIAS_SEMANA = ['L', 'M', 'M', 'J', 'V', 'S', 'D'];
 
 const dos = (n: number) => String(n).padStart(2, '0');
-const isoDia = (f: Date) => `${f.getFullYear()}-${dos(f.getMonth() + 1)}-${dos(f.getDate())}`;
 
 /** "14:30" → "2:30 p. m." */
 function horaLegible(hora: string) {
@@ -46,13 +43,6 @@ export function SelectorFechaHora({
   const ahora = new Date();
   const hoy = isoDia(ahora);
   const [diaElegido = '', horaElegida = ''] = valor ? valor.split('T') : [];
-  const [mes, setMes] = useState(() => {
-    const base = diaElegido ? new Date(`${diaElegido}T12:00:00`) : ahora;
-    return new Date(base.getFullYear(), base.getMonth(), 1);
-  });
-
-  const primerMes = new Date(ahora.getFullYear(), ahora.getMonth(), 1);
-  const ultimoMes = new Date(ahora.getFullYear(), ahora.getMonth() + mesesAdelante, 1);
   const limite = isoDia(new Date(ahora.getFullYear(), ahora.getMonth() + mesesAdelante + 1, 0));
 
   const horarios = useMemo(() => {
@@ -71,14 +61,6 @@ export function SelectorFechaHora({
     const conserva = horaElegida && !horaPasada(dia, horaElegida) ? horaElegida : '';
     alCambiar(conserva ? `${dia}T${conserva}` : `${dia}T`);
   }
-
-  function moverMes(delta: number) {
-    setMes(new Date(mes.getFullYear(), mes.getMonth() + delta, 1));
-  }
-
-  const offset = (mes.getDay() + 6) % 7;
-  const totalDias = new Date(mes.getFullYear(), mes.getMonth() + 1, 0).getDate();
-  const titulo = `${MESES[mes.getMonth()]} de ${mes.getFullYear()}`;
 
   const manana = horarios.filter((h) => h < '12:00');
   const tarde = horarios.filter((h) => h >= '12:00');
@@ -113,41 +95,7 @@ export function SelectorFechaHora({
       <legend className="sfh__etiqueta">{etiqueta}</legend>
 
       <div className="sfh__panel">
-        <div className="sfh__calendario">
-          <div className="sfh__navegacion">
-            <button type="button" className="sfh__flecha" aria-label="Mes anterior" disabled={mes <= primerMes} onClick={() => moverMes(-1)}>
-              <ChevronLeft size={18} strokeWidth={2} aria-hidden="true" />
-            </button>
-            <span className="sfh__mes" aria-live="polite">{titulo}</span>
-            <button type="button" className="sfh__flecha" aria-label="Mes siguiente" disabled={mes >= ultimoMes} onClick={() => moverMes(1)}>
-              <ChevronRight size={18} strokeWidth={2} aria-hidden="true" />
-            </button>
-          </div>
-          <div className="sfh__semana" aria-hidden="true">
-            {DIAS_SEMANA.map((d, i) => <span key={i}>{d}</span>)}
-          </div>
-          <div className="sfh__dias" role="group" aria-label={titulo}>
-            {Array.from({ length: offset }, (_, i) => <span key={`vacio-${i}`} />)}
-            {Array.from({ length: totalDias }, (_, i) => {
-              const fecha = new Date(mes.getFullYear(), mes.getMonth(), i + 1);
-              const codigo = isoDia(fecha);
-              return (
-                <button
-                  key={codigo}
-                  type="button"
-                  className="sfh__dia"
-                  disabled={!diaDisponible(codigo)}
-                  aria-label={fecha.toLocaleDateString('es-CO', { weekday: 'long', day: 'numeric', month: 'long' })}
-                  aria-pressed={diaElegido === codigo}
-                  aria-current={codigo === hoy ? 'date' : undefined}
-                  onClick={() => elegirDia(codigo)}
-                >
-                  {i + 1}
-                </button>
-              );
-            })}
-          </div>
-        </div>
+        <CalendarioMes valor={diaElegido} alElegir={elegirDia} desde={hoy} hasta={limite} habilitado={diaDisponible} />
 
         <div className="sfh__horario">
           {diaElegido ? (

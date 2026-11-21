@@ -11,28 +11,6 @@
   background: var(--surface-200);
 }
 
-.sfh__navegacion { display: flex; align-items: center; justify-content: space-between; gap: var(--space-2); margin-bottom: var(--space-3); }
-.sfh__mes { font-family: var(--fuente-display); font-weight: 600; text-transform: capitalize; }
-.sfh__flecha {
-  width: 36px; height: 36px; display: grid; place-items: center;
-  border: 1px solid var(--border); border-radius: var(--radius-pill);
-  background: var(--surface-100); color: var(--ink); cursor: pointer;
-}
-.sfh__flecha:hover:enabled { background: var(--surface-300); }
-.sfh__flecha:disabled { opacity: .35; cursor: default; }
-
-.sfh__semana, .sfh__dias { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 4px; text-align: center; }
-.sfh__semana { margin-bottom: var(--space-1); font-size: 12px; font-weight: 600; color: var(--ink-muted); }
-.sfh__dia {
-  aspect-ratio: 1; min-height: 36px; max-height: 44px;
-  border: 1px solid transparent; border-radius: var(--radius-sm);
-  background: transparent; color: var(--ink); font: inherit; font-size: 14px; cursor: pointer;
-}
-.sfh__dia:hover:enabled { background: var(--surface-300); }
-.sfh__dia[aria-current='date'] { border-color: var(--brand); font-weight: 600; }
-.sfh__dia[aria-pressed='true'] { background: var(--brand-strong); border-color: var(--brand-strong); color: var(--on-brand); font-weight: 700; }
-.sfh__dia:disabled { opacity: .3; cursor: default; }
-
 .sfh__horario { display: grid; gap: var(--space-3); align-content: start; }
 .sfh__grupo { display: grid; gap: var(--space-2); }
 .sfh__grupo-titulo { font-size: 12px; font-weight: 600; letter-spacing: .04em; text-transform: uppercase; color: var(--ink-muted); }
@@ -47,7 +25,7 @@
 .sfh__hora:disabled { opacity: .35; cursor: default; text-decoration: line-through; }
 .sfh__vacio { margin: 0; padding: var(--space-4); text-align: center; font-size: 14px; color: var(--ink-muted); border: 1px dashed var(--border); border-radius: var(--radius-sm); }
 
-.sfh__dia:focus-visible, .sfh__hora:focus-visible, .sfh__flecha:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
+.sfh__hora:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
 
 .sfh__resumen { margin: var(--space-3) 0 0; font-size: 14px; color: var(--ink-muted); }
 .sfh__resumen strong { color: var(--ink); }
