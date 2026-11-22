@@ -12,9 +12,10 @@ import type { Usuario, PerfilAdoptanteDto, EditarPerfilDto } from '../types/usua
 import { validarRefugio, normalizarRefugio, limpiarRedesSociales } from '../utils/refugios';
 import type { Refugio, SolicitudRefugioDto, EditarRefugioDto } from '../types/refugios';
 import { validarDatosPersonales, validarPerfilAdoptante } from '../utils/perfil';
-import { EstadoApadrinamiento, EstadoMascota, EstadoNecesidad, EstadoSeguimiento, ResultadoSeguimiento, EstadoVerificacion, NivelRol, TipoEvento, TipoMultimedia, TipoNecesidad, type TipoRegistroClinico } from '../types/enums';
+import { EstadoApadrinamiento, EstadoMascota, EstadoNecesidad, EstadoReporte, TipoReporte, EstadoSeguimiento, ResultadoSeguimiento, EstadoVerificacion, NivelRol, TipoEvento, TipoMultimedia, TipoNecesidad, type TipoRegistroClinico } from '../types/enums';
 import type { ApadrinamientoResumen, NecesidadRefugio } from '../types/refugios';
 import type { NotificacionUsuario, SeguimientoAdopcion } from '../types/trazabilidad';
+import type { ReporteResumen } from '../types/reportes';
 import { validarArchivoMascota, coincideFirmaArchivo, esFoto, MAX_ARCHIVOS_MASCOTA } from '../utils/multimedia';
 import { validarMascota, estadosManualesMascota } from '../utils/mascotas';
 import type { Mascota, MascotaResumen, CrearMascotaDto, EditarMascotaDto, CambioEstadoMascotaDto } from '../types/mascotas';
@@ -123,6 +124,8 @@ export class ClienteDemo extends ClienteApi {
     { id: 3, nivel: NivelRol.Refugio, mensaje: 'Recibiste una nueva solicitud de adopción para Canela.', leida: false, fecha: hace(1) },
     { id: 4, nivel: NivelRol.Administrador, mensaje: 'Hay un refugio nuevo esperando verificación.', leida: false, fecha: hace(1) },
   ];
+
+  private readonly reportes: ReporteResumen[] = [...REPORTES];
 
   private readonly calificadas: { id: number; refugioId: number; adopcionId: number; puntaje: number; comentario: string | null; autor: string; fecha: string }[] = [];
 
@@ -602,15 +605,35 @@ export class ClienteDemo extends ClienteApi {
       ];
     }
 
-    if (ruta.endsWith('/reportes/mios')) return REPORTES.slice(0, 2);
-    if (ruta.endsWith('/reportes/mapa')) return REPORTES;
+    if (ruta.endsWith('/reportes/mios')) return this.reportes.slice(0, 2);
+    if (ruta.endsWith('/reportes/mapa')) return [...this.reportes];
+    const accionReporte = /\/api\/reportes\/(\d+)\/(tomar|estado)$/.exec(ruta);
+    if (accionReporte) {
+      const refugio = this.exigirPropietario();
+      const indice = this.reportes.findIndex(r => r.id === Number(accionReporte[1]));
+      const actual = this.reportes[indice];
+      if (!actual) throw new ErrorHttp({ titulo: 'Reporte no encontrado.', estadoHttp: 404 });
+      if (accionReporte[2] === 'tomar') {
+        if (actual.refugioAsignado) throw new ErrorHttp({ titulo: 'Otro refugio ya tomó este reporte.', estadoHttp: 409 });
+        this.reportes[indice] = { ...actual, refugioAsignado: refugio.nombre, estado: EstadoReporte.EnAtencion };
+      } else {
+        const { nuevoEstado } = cuerpo as { nuevoEstado: EstadoReporte };
+        this.reportes[indice] = { ...actual, estado: nuevoEstado };
+      }
+      return undefined;
+    }
 
     if (ruta.endsWith('/api/reportes')) {
       if (metodo === 'POST') {
-        const numero = `REP-0${190 + Math.floor(Math.random() * 9)}`;
-        return { ...REPORTES[0], id: 99, numeroReporte: numero };
+        const datos = cuerpo as { tipo: TipoReporte; descripcion: string; latitud: number; longitud: number; direccion?: string };
+        const id = Math.max(0, ...this.reportes.map(r => r.id)) + 1;
+        const numero = `REP-0${190 + id}`;
+        this.reportes.unshift({ id, numeroReporte: numero, tipo: datos.tipo, estado: EstadoReporte.Recibido, fechaReporte: new Date().toISOString(),
+          zona: null, fotoPrincipal: null, refugioAsignado: null, esPrioritario: datos.tipo === TipoReporte.Herido || datos.tipo === TipoReporte.Maltrato,
+          latitud: datos.latitud, longitud: datos.longitud, direccion: datos.direccion ?? null, descripcion: datos.descripcion });
+        return { ...REPORTES[0], id, numeroReporte: numero };
       }
-      return paginar(REPORTES, pagina, tamano);
+      return paginar(this.reportes, pagina, tamano);
     }
 
     /* ---------- Refugios ---------- */
@@ -762,14 +785,25 @@ export class ClienteDemo extends ClienteApi {
       this.calificadas.push({ ...datos, refugioId: Number(calificaciones[1]), id: 900 + this.calificadas.length, autor: this.usuarioActual().nombre, fecha: new Date().toISOString() });
       return { mensaje: 'Calificación registrada.' };
     }
+    const calificacion = /^\/api\/v1\/Refugios\/(\d+)\/calificaciones\/(\d+)$/.exec(ruta);
+    if (calificacion) {
+      this.exigirAdoptante();
+      const indice = this.calificadas.findIndex(c => c.id === Number(calificacion[2]) && c.refugioId === Number(calificacion[1]));
+      const actual = this.calificadas[indice];
+      if (!actual) throw new ErrorHttp({ titulo: 'Calificación no encontrada.', estadoHttp: 404 });
+      if (actual.autor !== this.usuarioActual().nombre) throw new ErrorHttp({ titulo: 'No tienes permiso para editar esta calificación.', estadoHttp: 403 });
+      if (metodo === 'PUT') { const d = cuerpo as { puntaje: number; comentario: string | null }; this.calificadas[indice] = { ...actual, ...d }; return { mensaje: 'Calificación actualizada.' }; }
+      if (metodo === 'DELETE') { this.calificadas.splice(indice, 1); return { mensaje: 'Calificación eliminada.' }; }
+    }
     if (calificaciones && metodo === 'GET') {
       const id = Number(calificaciones[1]);
-      const propias = this.calificadas.filter(c => c.refugioId === id).map(c => ({ id: c.id, autor: c.autor, puntaje: c.puntaje, comentario: c.comentario, fecha: c.fecha }));
+      const yo = this.nivelActual === NivelRol.Adoptante ? this.usuarioActual().nombre : null;
+      const propias = this.calificadas.filter(c => c.refugioId === id).map(c => ({ id: c.id, autor: c.autor, puntaje: c.puntaje, comentario: c.comentario, fecha: c.fecha, esPropia: c.autor === yo }));
       const opiniones = [
         ...propias,
-        { id: id * 10 + 1, autor: 'Valentina R.', puntaje: 5, comentario: 'Nos acompañaron en todo el proceso y resolvieron todas nuestras dudas.', fecha: hace(12) },
-        { id: id * 10 + 2, autor: 'Andrés M.', puntaje: 4, comentario: 'Muy organizados. La visita fue puntual.', fecha: hace(40) },
-        { id: id * 10 + 3, autor: 'Laura P.', puntaje: 5, comentario: null, fecha: hace(75) },
+        { id: id * 10 + 1, autor: 'Valentina R.', puntaje: 5, comentario: 'Nos acompañaron en todo el proceso y resolvieron todas nuestras dudas.', fecha: hace(12), esPropia: false },
+        { id: id * 10 + 2, autor: 'Andrés M.', puntaje: 4, comentario: 'Muy organizados. La visita fue puntual.', fecha: hace(40), esPropia: false },
+        { id: id * 10 + 3, autor: 'Laura P.', puntaje: 5, comentario: null, fecha: hace(75), esPropia: false },
       ];
       return paginar(opiniones, pagina, tamanoDemo);
     }

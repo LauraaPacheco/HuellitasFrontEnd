@@ -10,6 +10,7 @@ import {
 import type {
   ApadrinamientoResumen,
   CalificarRefugioDto,
+  RegistroRefugioDto,
   EditarRefugioDto,
   GuardarNecesidadDto,
   MotivoDto,
@@ -77,6 +78,20 @@ export class ServicioRefugios {
         requisitos: requisitosApi(dto.requisitos, dto.refugioId) };
     }
     return this.api.get<Refugio>(RUTAS.refugios.porId(id));
+  }
+
+  /**
+   * Registro público (46c2e86): crea la cuenta del encargado y el refugio, que
+   * queda pendiente de verificación. El encargado debe confirmar su correo.
+   */
+  async registrarRefugio(datos: RegistroRefugioDto): Promise<void> {
+    if (this.modoDemo) { await this.solicitarRegistro(datos); return; }
+    const redes = limpiarRedesSociales(datos.redesSociales);
+    await this.api.post(RUTAS.autenticacion.registrarRefugio, {
+      nombreEncargado: datos.encargado, correo: datos.correo, contrasena: datos.contrasena, telefono: datos.telefono,
+      aceptaPolitica: datos.aceptaPolitica, nombreRefugio: datos.nombre, nit: datos.nit, direccion: datos.direccion,
+      descripcion: datos.descripcion?.trim() || null, redesSociales: redes ? JSON.stringify(redes) : null,
+    });
   }
 
   solicitarRegistro(datos: SolicitudRefugioDto): Promise<Refugio> {
@@ -207,11 +222,23 @@ export class ServicioRefugios {
     return paginadoGenerico(await this.api.get<PaginadoApi<CalificacionApi>>(RUTAS.refugios.calificaciones(refugioId), parametros), calificacionApi);
   }
 
-  /** Requiere el ID de la adopción finalizada, que el backend aún no expone en las solicitudes. */
+  /** Requiere el ID de la adopción finalizada (llega en la solicitud desde 46c2e86) y el del refugio. */
   async calificar(refugioId: number, datos: CalificarRefugioDto): Promise<void> {
     if (!Number.isInteger(datos.puntaje) || datos.puntaje < 1 || datos.puntaje > 5) {
       throw new ErrorHttp({ titulo: 'Elige de 1 a 5 estrellas.', estadoHttp: 400 });
     }
     await this.api.post(RUTAS.refugios.calificaciones(refugioId), { adopcionId: datos.adopcionId, puntaje: datos.puntaje, comentario: datos.comentario?.trim() || null });
+  }
+
+  /** Solo la propia (OpinionRefugio.esPropia). */
+  async editarCalificacion(refugioId: number, calificacionId: number, datos: { puntaje: number; comentario?: string }): Promise<void> {
+    if (!Number.isInteger(datos.puntaje) || datos.puntaje < 1 || datos.puntaje > 5) {
+      throw new ErrorHttp({ titulo: 'Elige de 1 a 5 estrellas.', estadoHttp: 400 });
+    }
+    await this.api.put(RUTAS.refugios.calificacion(refugioId, calificacionId), { puntaje: datos.puntaje, comentario: datos.comentario?.trim() || null });
+  }
+
+  async eliminarCalificacion(refugioId: number, calificacionId: number): Promise<void> {
+    await this.api.delete(RUTAS.refugios.calificacion(refugioId, calificacionId));
   }
 }

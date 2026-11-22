@@ -429,9 +429,16 @@ export function lineaTiempo(id: number): readonly EtapaLineaTiempo[] {
 
 /* ------------------------------------------------------------- Reportes */
 
+/** Reportes de ejemplo ubicados en barrios reales de Cali. */
 export const REPORTES: readonly ReporteResumen[] = [
-  { id: 1, numeroReporte: 'REP-0188', tipo: TipoReporte.Herido, estado: EstadoReporte.EnAtencion, fechaReporte: hace(0), zona: 'Comuna 18', fotoPrincipal: null, refugioAsignado: 'Refugio Patitas Felices', esPrioritario: true },
-  { id: 2, numeroReporte: 'REP-0187', tipo: TipoReporte.EnCalle, estado: EstadoReporte.Recibido, fechaReporte: hace(1), zona: 'Comuna 22', fotoPrincipal: null, refugioAsignado: null, esPrioritario: false },
-  { id: 3, numeroReporte: 'REP-0186', tipo: TipoReporte.Maltrato, estado: EstadoReporte.Recibido, fechaReporte: hace(2), zona: 'Comuna 3', fotoPrincipal: null, refugioAsignado: null, esPrioritario: true },
-  { id: 4, numeroReporte: 'REP-0180', tipo: TipoReporte.EnCalle, estado: EstadoReporte.Rescatado, fechaReporte: hace(14), zona: 'Comuna 17', fotoPrincipal: null, refugioAsignado: 'Refugio Patitas Felices', esPrioritario: false },
+  { id: 1, numeroReporte: 'REP-0188', tipo: TipoReporte.Herido, estado: EstadoReporte.EnAtencion, fechaReporte: hace(0), zona: 'Comuna 18', fotoPrincipal: null, refugioAsignado: 'Refugio Patitas Felices', esPrioritario: true,
+    latitud: 3.3811, longitud: -76.5536, direccion: 'Cra. 94 #1-50, Meléndez', descripcion: 'Perro mediano, cojea de la pata trasera. Está junto a la tienda de la esquina.' },
+  { id: 2, numeroReporte: 'REP-0187', tipo: TipoReporte.EnCalle, estado: EstadoReporte.Recibido, fechaReporte: hace(1), zona: 'Comuna 22', fotoPrincipal: null, refugioAsignado: null, esPrioritario: false,
+    latitud: 3.3622, longitud: -76.5297, direccion: 'Calle 18 #122-35, Ciudad Jardín', descripcion: 'Gata con tres gatitos debajo de un carro. Parecen sanos pero sin hogar.' },
+  { id: 3, numeroReporte: 'REP-0186', tipo: TipoReporte.Maltrato, estado: EstadoReporte.Recibido, fechaReporte: hace(2), zona: 'Comuna 3', fotoPrincipal: null, refugioAsignado: null, esPrioritario: true,
+    latitud: 3.4495, longitud: -76.5329, direccion: 'Cra. 8 #13-80, El Calvario', descripcion: 'Perro amarrado al sol todo el día, sin agua. Los vecinos dicen que lleva semanas así.' },
+  { id: 4, numeroReporte: 'REP-0180', tipo: TipoReporte.EnCalle, estado: EstadoReporte.Rescatado, fechaReporte: hace(14), zona: 'Comuna 17', fotoPrincipal: null, refugioAsignado: 'Refugio Patitas Felices', esPrioritario: false,
+    latitud: 3.3754, longitud: -76.5392, direccion: 'Calle 13 #100-20, Ciudad Universitaria', descripcion: 'Cachorro solo en el parque. Ya fue rescatado.' },
+  { id: 5, numeroReporte: 'REP-0185', tipo: TipoReporte.Herido, estado: EstadoReporte.Recibido, fechaReporte: hace(0), zona: 'Comuna 2', fotoPrincipal: null, refugioAsignado: null, esPrioritario: true,
+    latitud: 3.4705, longitud: -76.5277, direccion: 'Av. 6N #28-10, Granada', descripcion: 'Gato atropellado en la avenida, respira pero no se mueve.' },
 ];

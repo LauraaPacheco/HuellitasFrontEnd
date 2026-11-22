@@ -1,5 +1,5 @@
 import { useState, type FormEvent } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 import { ErrorHttp, validarRestablecimiento } from '@huellitas/shared';
 import { api, MODO_DEMO } from '@/lib/api';
 import { Boton } from '@/componentes/ui/Boton';
@@ -7,7 +7,10 @@ import { Campo } from '@/componentes/ui/Campo';
 import { MarcoAuth } from './MarcoAuth';
 
 export function PaginaRestablecerContrasena() {
-  const [token, setToken] = useState('');
+  // El correo trae el enlace /restablecer?token=…: el código ya viene puesto.
+  const [parametros] = useSearchParams();
+  const tokenDelEnlace = parametros.get('token')?.trim() ?? '';
+  const [token, setToken] = useState(tokenDelEnlace);
   const [clave, setClave] = useState('');
   const [confirmacion, setConfirmacion] = useState('');
   const [error, setError] = useState<string | null>(null);
@@ -29,12 +32,15 @@ export function PaginaRestablecerContrasena() {
   }
   return (
     <MarcoAuth titulo={listo ? 'Contraseña restablecida' : 'Crear una contraseña nueva'}>
-      {listo ? <p role="status">{MODO_DEMO ? 'Simulación completada. Las cuentas demo conservan su contraseña Demo1234.' : 'Tu contraseña se actualizó. Ya puedes iniciar sesión con la nueva.'}</p> : (
+      {listo ? <><p role="status">{MODO_DEMO ? 'Simulación completada. Las cuentas demo conservan su contraseña Demo1234.' : 'Tu contraseña se actualizó. Ya puedes iniciar sesión con la nueva.'}</p>
+        <Link to="/login">Ir a iniciar sesión</Link></> : (
         <form onSubmit={guardar} noValidate style={{ display: 'grid', gap: 'var(--space-4)' }}>
-          <p style={{ color: 'var(--ink-muted)', margin: 0 }}>Copia el código del correo. Es de un solo uso y vence a los 30 minutos.</p>
+          <p style={{ color: 'var(--ink-muted)', margin: 0 }}>
+            {tokenDelEnlace ? 'Escribe tu contraseña nueva. El enlace es de un solo uso y vence a los 30 minutos.' : 'Copia el código del correo. Es de un solo uso y vence a los 30 minutos.'}
+          </p>
           {MODO_DEMO && <p>En demo, solicita primero la recuperación y usa el código <strong>demo-recuperacion</strong>. No se envía correo.</p>}
           <fieldset disabled={guardando} style={{ border: 0, padding: 0, margin: 0, display: 'grid', gap: 'var(--space-4)' }}>
-            <Campo id="codigo-recuperacion" etiqueta="Código de recuperación" valor={token} alCambiar={setToken} autoComplete="one-time-code" />
+            {!tokenDelEnlace && <Campo id="codigo-recuperacion" etiqueta="Código de recuperación" valor={token} alCambiar={setToken} autoComplete="one-time-code" />}
             <Campo id="nueva-contrasena" etiqueta="Nueva contraseña" tipo="password" valor={clave} alCambiar={setClave} autoComplete="new-password" ayuda="Entre 8 y 100 caracteres" />
             <Campo id="confirmar-contrasena" etiqueta="Confirmar nueva contraseña" tipo="password" valor={confirmacion} alCambiar={setConfirmacion} autoComplete="new-password" />
           </fieldset>

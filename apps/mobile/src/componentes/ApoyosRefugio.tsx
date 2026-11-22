@@ -1,5 +1,6 @@
-import { StyleSheet, Text, View } from 'react-native';
-import { useQuery } from '@tanstack/react-query';
+import { Alert, Platform, StyleSheet, Text, View } from 'react-native';
+import { useRouter } from 'expo-router';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { HandHeart, Star } from 'lucide-react-native';
 import { ETIQUETA_TIPO_NECESIDAD, EstadoNecesidad, formatearFecha } from '@huellitas/shared';
 import { api } from '@/lib/api';
@@ -39,6 +40,18 @@ export function NecesidadesRefugio({ refugioId }: { readonly refugioId: number }
 /** Opiniones de quienes adoptaron (HU-REF-04), con el promedio. */
 export function OpinionesRefugio({ refugioId }: { readonly refugioId: number }) {
   const paleta = usarPaleta();
+  const router = useRouter();
+  const cliente = useQueryClient();
+  const eliminar = useMutation({
+    mutationFn: (calificacionId: number) => api.refugios.eliminarCalificacion(refugioId, calificacionId),
+    onSuccess: () => void cliente.invalidateQueries({ queryKey: ['opiniones', refugioId] }),
+  });
+  function confirmarEliminar(calificacionId: number) {
+    const texto = '¿Eliminar tu opinión sobre este refugio?';
+    // En la web de Expo, Alert no muestra botones: se usa confirm del navegador.
+    if (Platform.OS === 'web') { if (globalThis.confirm?.(texto)) eliminar.mutate(calificacionId); return; }
+    Alert.alert('Eliminar opinión', texto, [{ text: 'Cancelar', style: 'cancel' }, { text: 'Eliminar', style: 'destructive', onPress: () => eliminar.mutate(calificacionId) }]);
+  }
   const consulta = useQuery({ queryKey: ['opiniones', refugioId], queryFn: () => api.refugios.opiniones(refugioId, { tamanoPagina: 20 }), retry: false });
 
   if (consulta.isPending) return <EstadoCargando compacto mensaje="Cargando opiniones…" />;
@@ -57,11 +70,17 @@ export function OpinionesRefugio({ refugioId }: { readonly refugioId: number }) 
       {items.map((o) => (
         <View key={o.id} style={[estilos.tarjeta, { borderColor: paleta.border, backgroundColor: paleta.surface200 }]}>
           <View style={estilos.cabecera}>
-            <Text style={[estilos.autor, { color: paleta.ink }]} numberOfLines={1}>{o.autor}</Text>
+            <Text style={[estilos.autor, { color: paleta.ink }]} numberOfLines={1}>{o.esPropia ? 'Tu opinión' : o.autor}</Text>
             <View accessible accessibilityLabel={`${o.puntaje} de 5 estrellas`}><Estrellas puntaje={o.puntaje} /></View>
           </View>
           {o.comentario && <Text style={[estilos.texto, { color: paleta.ink }]}>{o.comentario}</Text>}
           <Text style={[estilos.meta, { color: paleta.inkMuted }]}>{formatearFecha(o.fecha)}</Text>
+          {o.esPropia && (
+            <View style={estilos.propia}>
+              <Boton titulo="Editar" variante="secundario" alPresionar={() => router.push({ pathname: '/calificar/[adopcionId]', params: { adopcionId: '0', refugioId: String(refugioId), calificacionId: String(o.id), puntaje: String(o.puntaje), comentario: o.comentario ?? '' } })} />
+              <Boton titulo="Eliminar" variante="peligro" cargando={eliminar.isPending} alPresionar={() => confirmarEliminar(o.id)} />
+            </View>
+          )}
         </View>
       ))}
     </View>
@@ -111,4 +130,5 @@ const estilos = StyleSheet.create({
   cabecera: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: espaciado.s2 },
   autor: { fontSize: 15, fontWeight: '600', flexShrink: 1 },
   estrellas: { flexDirection: 'row', gap: 2 },
+  propia: { gap: espaciado.s2, marginTop: espaciado.s1 },
 });

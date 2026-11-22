@@ -2,6 +2,7 @@ import { PaginaCuenta } from '@/modulos/cuenta/PaginaCuenta';
 import { PaginaGestionMascota } from '@/modulos/mascotas/PaginaGestionMascota';
 import { PaginaVerificacionRefugios } from '@/modulos/refugios/PaginaVerificacionRefugios';
 import { PaginaPerfilRefugio } from '@/modulos/refugios/PaginaPerfilRefugio';
+import { PaginaMascotaPublica } from '@/modulos/mascotas/PaginaMascotaPublica';
 import { PaginaEditarRefugio } from '@/modulos/refugios/PaginaEditarRefugio';
 import { PaginaRestablecerContrasena } from '@/modulos/autenticacion/PaginaRestablecerContrasena';
 import { lazy, Suspense } from 'react';
@@ -19,6 +20,7 @@ import { PaginaMascotas } from '@/modulos/mascotas/PaginaMascotas';
 import { PaginaBandeja } from '@/modulos/solicitudes/PaginaBandeja';
 import { PaginaDetalleSolicitud } from '@/modulos/solicitudes/PaginaDetalleSolicitud';
 import { PaginaPendiente } from '@/modulos/PaginaPendiente';
+import { PaginaReportes } from '@/modulos/reportes/PaginaReportes';
 import { PaginaNecesidades } from '@/modulos/apoyos/PaginaNecesidades';
 import { PaginaPadrinos } from '@/modulos/apoyos/PaginaPadrinos';
 import { PaginaAuditoria } from '@/modulos/trazabilidad/PaginaAuditoria';
@@ -71,6 +73,10 @@ export const rutas = createBrowserRouter([
   { path: '/login', element: <PaginaLogin /> },
   { path: '/confirmar', element: <PaginaConfirmarCorreo /> },
   { path: '/restablecer-contrasena', element: <PaginaRestablecerContrasena /> },
+  // Enlace del correo de recuperación (App:RecoveryFrontendPath del backend).
+  { path: '/restablecer', element: <PaginaRestablecerContrasena /> },
+  // Enlace de compartir una mascota (MascotasController.Compartir): público.
+  { path: '/public/mascotas/:id', element: <PaginaMascotaPublica /> },
   { path: '/olvide-contrasena', element: <PaginaOlvideContrasena /> },
   { path: '/solicitar-registro', element: <PaginaSolicitarRegistro /> },
   {
@@ -115,7 +121,7 @@ export const rutas = createBrowserRouter([
         path: 'reportes',
         element: (
           <RutaProtegida niveles={REFUGIO_Y_ADMIN}>
-            <PaginaPendiente titulo="Reportes ciudadanos" historias="HU-REP-02" />
+            <PaginaReportes />
           </RutaProtegida>
         ),
       },

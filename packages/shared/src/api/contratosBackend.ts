@@ -117,9 +117,9 @@ export function apadrinamientoApi(d: ApadrinamientoApi): ApadrinamientoResumen {
   };
 }
 
-export interface CalificacionApi { calificacionId: number; adoptanteNombre: string; puntaje: number; comentario: string | null; fecha: string }
+export interface CalificacionApi { calificacionId: number; adoptanteNombre: string; puntaje: number; comentario: string | null; fecha: string; esPropia?: boolean }
 export function calificacionApi(d: CalificacionApi): OpinionRefugio {
-  return { id: d.calificacionId, autor: d.adoptanteNombre, puntaje: Math.max(1, Math.min(5, d.puntaje)), comentario: d.comentario?.trim() || null, fecha: d.fecha };
+  return { id: d.calificacionId, autor: d.adoptanteNombre, puntaje: Math.max(1, Math.min(5, d.puntaje)), comentario: d.comentario?.trim() || null, fecha: d.fecha, esPropia: d.esPropia === true };
 }
 
 export interface LineaTiempoApi { estadoAnterior: string; estadoNuevo: string; observacion: string | null; usuarioResponsable: string; fecha: string }
@@ -155,7 +155,10 @@ export function planSeguimientoApi(d: PlanSeguimientoApi): PlanSeguimientoAdopci
       id: s.seguimientoId, numero: s.numero, fechaProgramada: s.fechaProgramada, fechaEnvio: s.fechaEnvio, fotos: s.fotosUrls ?? [],
       estado: enumPorNombre(s.estado, { pendiente: EstadoSeguimiento.Pendiente, enviado: EstadoSeguimiento.Enviado, vencido: EstadoSeguimiento.Vencido }, 'un estado de seguimiento'),
       // El backend manda el byte como texto ("0" o "1").
-      resultado: s.resultado === null || s.resultado === undefined ? null : Number(s.resultado) === 1 ? ResultadoSeguimiento.RequiereAtencion : ResultadoSeguimiento.Conforme,
+      // Desde 46c2e86 llega con nombre ("Conforme", "RequiereAtencion"); antes, como "0"/"1".
+      resultado: s.resultado === null || s.resultado === undefined || s.resultado === '' ? null
+        : /^\d+$/.test(s.resultado) ? (Number(s.resultado) === 1 ? ResultadoSeguimiento.RequiereAtencion : ResultadoSeguimiento.Conforme)
+        : enumPorNombre(s.resultado, { conforme: ResultadoSeguimiento.Conforme, requiereatencion: ResultadoSeguimiento.RequiereAtencion }, 'un resultado de seguimiento'),
     })),
   };
 }

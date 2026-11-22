@@ -1,6 +1,6 @@
 import { afterEach, expect, it, vi } from 'vitest';
 import {
-  crearApi, AlmacenMemoria, EstadoApadrinamiento, EstadoNecesidad, EstadoSeguimiento, ResultadoSeguimiento, TipoEvento, TipoNecesidad,
+  crearApi, AlmacenMemoria, EstadoApadrinamiento, EstadoReporte, EstadoNecesidad, EstadoSeguimiento, ResultadoSeguimiento, TipoEvento, TipoNecesidad,
   etiquetaEstadoSolicitud, describirNotificacion, agruparPorDia,
 } from '../packages/shared/src';
 
@@ -60,7 +60,7 @@ it('calificaciones: lista pública y puntaje validado antes de enviar', async ()
   const { api, fetch } = await preparar(Response.json(paginado([{ calificacionId: 1, adoptanteNombre: 'Ana', puntaje: 5, comentario: '', fecha: '2026-11-10' }])));
   const lista = await api.refugios.opiniones(7);
   expect(fetch.mock.calls[0][0]).toBe('http://api.test/api/v1/Refugios/7/calificaciones?pagina=1&tamano=10');
-  expect(lista.items[0]).toEqual({ id: 1, autor: 'Ana', puntaje: 5, comentario: null, fecha: '2026-11-10' });
+  expect(lista.items[0]).toEqual({ id: 1, autor: 'Ana', puntaje: 5, comentario: null, fecha: '2026-11-10', esPropia: false });
   await expect(api.refugios.calificar(7, { adopcionId: 1, puntaje: 6 })).rejects.toMatchObject({ estadoHttp: 400 });
 });
 
@@ -145,7 +145,10 @@ it('demo: el adoptante envía un seguimiento, el refugio lo evalúa y la calific
   await expect(api.trazabilidad.enviarReporte(pendiente.id, { estadoSalud: 'Bien', adaptacion: 'Juega', comentarios: '', fotosUrls: [] })).rejects.toMatchObject({ estadoHttp: 409 });
   await api.refugios.calificar(adopcion.refugioId!, { adopcionId: adopcion.adopcionId!, puntaje: 5, comentario: 'Gracias' });
   await expect(api.refugios.calificar(adopcion.refugioId!, { adopcionId: adopcion.adopcionId!, puntaje: 4 })).rejects.toMatchObject({ estadoHttp: 409 });
-  expect((await api.refugios.opiniones(adopcion.refugioId!)).items[0]).toMatchObject({ puntaje: 5, comentario: 'Gracias' });
+  const propia = (await api.refugios.opiniones(adopcion.refugioId!)).items[0]!;
+  expect(propia).toMatchObject({ puntaje: 5, comentario: 'Gracias', esPropia: true });
+  await api.refugios.editarCalificacion(adopcion.refugioId!, propia.id, { puntaje: 4, comentario: 'Muy bien' });
+  expect((await api.refugios.opiniones(adopcion.refugioId!)).items[0]).toMatchObject({ id: propia.id, puntaje: 4, comentario: 'Muy bien' });
 
   await api.autenticacion.login({ correo: 'refugio@huellitas.co', contrasena: 'Demo1234' });
   await api.trazabilidad.evaluarSeguimiento(pendiente.id, ResultadoSeguimiento.RequiereAtencion);
@@ -165,4 +168,41 @@ it('describe cada notificación del backend con un título, un tono y a dónde l
   const ahora = new Date('2026-11-21T12:00:00');
   const grupos = agruparPorDia([{ fecha: '2026-11-21T08:00:00' }, { fecha: '2026-11-20T20:00:00' }, { fecha: '2026-11-17T08:00:00' }, { fecha: '2026-10-01T08:00:00' }], ahora);
   expect(grupos.map(g => g.grupo)).toEqual(['Hoy', 'Ayer', 'Esta semana', 'Antes']);
+});
+
+it('Mateo: resultado por nombre, esPropia, editar/eliminar opinión y registro de refugio', async () => {
+  const { api, fetch } = await preparar(
+    Response.json({ planId: 1, adopcionId: 8, seguimientos: [
+      { seguimientoId: 3, numero: 1, fechaProgramada: '2026-12-20', fechaEnvio: null, estado: 'Enviado', resultado: 'RequiereAtencion', fotosUrls: [] },
+      { seguimientoId: 4, numero: 2, fechaProgramada: '2027-01-20', fechaEnvio: null, estado: 'Pendiente', resultado: null, fotosUrls: [] },
+    ] }),
+    Response.json(paginado([{ calificacionId: 9, adoptanteNombre: 'Yo', puntaje: 4, comentario: 'x', fecha: '2026-11-10', esPropia: true }])),
+    ok(), ok(), Response.json({ mensaje: 'ok' }, { status: 201 }),
+  );
+  const plan = await api.trazabilidad.planSeguimiento(8);
+  expect(plan.seguimientos.map(g => g.resultado)).toEqual([ResultadoSeguimiento.RequiereAtencion, null]);
+  expect((await api.refugios.opiniones(7)).items[0]!.esPropia).toBe(true);
+  await api.refugios.editarCalificacion(7, 9, { puntaje: 5, comentario: 'Mejor' });
+  expect([fetch.mock.calls[2][0], fetch.mock.calls[2][1].method]).toEqual(['http://api.test/api/v1/Refugios/7/calificaciones/9', 'PUT']);
+  await api.refugios.eliminarCalificacion(7, 9);
+  expect([fetch.mock.calls[3][0], fetch.mock.calls[3][1].method]).toEqual(['http://api.test/api/v1/Refugios/7/calificaciones/9', 'DELETE']);
+  await api.refugios.registrarRefugio({
+    nombre: 'Huellas', nit: '900123456-1', direccion: 'Cra 1', telefono: '3001234567', correo: 'a@b.co', encargado: 'Ana',
+    descripcion: 'Rescate', redesSociales: { instagram: '@huellas' }, contrasena: 'Clave1234*', aceptaPolitica: true,
+  } as never);
+  expect(fetch.mock.calls[4][0]).toBe('http://api.test/api/v1/Usuarios/registro-refugio');
+  expect(JSON.parse(fetch.mock.calls[4][1].body)).toMatchObject({ nombreEncargado: 'Ana', nombreRefugio: 'Huellas', contrasena: 'Clave1234*', aceptaPolitica: true });
+});
+
+it('demo: el refugio ve los reportes en el mapa, toma uno libre y lo cierra', async () => {
+  const api = crearApi({ urlBase: '', almacen: new AlmacenMemoria(), modoDemo: true });
+  await api.autenticacion.login({ correo: 'refugio@huellitas.co', contrasena: 'Demo1234' });
+  const mapa = await api.reportes.mapa();
+  expect(mapa.every(r => typeof r.latitud === 'number' && typeof r.longitud === 'number')).toBe(true);
+  const libre = mapa.find(r => !r.refugioAsignado)!;
+  await api.reportes.tomar(libre.id);
+  await expect(api.reportes.tomar(libre.id)).rejects.toMatchObject({ estadoHttp: 409 });
+  expect((await api.reportes.mapa()).find(r => r.id === libre.id)).toMatchObject({ estado: EstadoReporte.EnAtencion, refugioAsignado: expect.any(String) });
+  await api.reportes.cambiarEstado(libre.id, { nuevoEstado: EstadoReporte.Rescatado });
+  expect((await api.reportes.mapa()).find(r => r.id === libre.id)!.estado).toBe(EstadoReporte.Rescatado);
 });

@@ -81,6 +81,12 @@ export interface SolicitudRefugioDto {
   descripcion?: string;
 }
 
+/** Registro público de un refugio: crea a la vez la cuenta del encargado y el refugio. */
+export interface RegistroRefugioDto extends SolicitudRefugioDto {
+  contrasena: string;
+  aceptaPolitica: boolean;
+}
+
 /** Datos editables; NIT y verificación solo se gestionan por su flujo específico. */
 export type EditarRefugioDto = Omit<SolicitudRefugioDto, 'nit'>;
 
@@ -133,6 +139,8 @@ export interface OpinionRefugio {
   readonly puntaje: number;
   readonly comentario: string | null;
   readonly fecha: string;
+  /** La escribió el usuario de la sesión: puede editarla o borrarla. */
+  readonly esPropia: boolean;
 }
 
 export interface CalificarRefugioDto {

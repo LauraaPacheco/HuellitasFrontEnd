@@ -1,6 +1,7 @@
 import { useState, type FormEvent } from 'react';
 import {
   ErrorHttp,
+  esContrasenaValida,
   validarRefugio,
   normalizarRefugio,
   type SolicitudRefugioDto,
@@ -24,14 +25,19 @@ const VACIO: SolicitudRefugioDto = {
 };
 
 /**
- * HU-REF-01: un refugio pide entrar a la plataforma. No crea la cuenta: deja
- * la solicitud en revisión y el administrador la verifica (HU-ADM-01).
+ * HU-REF-01: un refugio se registra desde cero. Con el backend real
+ * (POST /api/v1/Usuarios/registro-refugio) se crean a la vez la cuenta del
+ * encargado y el refugio; el encargado confirma su correo y el refugio
+ * queda pendiente hasta que el administrador lo verifique (HU-ADM-01).
  */
 export function PaginaSolicitarRegistro() {
   const [datos, setDatos] = useState<SolicitudRefugioDto>(VACIO);
   const [error, setError] = useState<string | null>(null);
   const [enviando, setEnviando] = useState(false);
   const [enviado, setEnviado] = useState(false);
+  const [contrasena, setContrasena] = useState('');
+  const [confirmacion, setConfirmacion] = useState('');
+  const [aceptaPolitica, setAceptaPolitica] = useState(false);
 
   const cambiar =
     (campo: keyof SolicitudRefugioDto) =>
@@ -41,13 +47,16 @@ export function PaginaSolicitarRegistro() {
   async function alEnviar(evento: FormEvent) {
     evento.preventDefault();
     if (enviando) return;
-    const problema = validarRefugio(datos);
+    const problema = validarRefugio(datos)
+      ?? (!esContrasenaValida(contrasena) ? 'La contraseña debe tener al menos 8 caracteres.' : null)
+      ?? (contrasena !== confirmacion ? 'Las contraseñas no coinciden.' : null)
+      ?? (!aceptaPolitica ? 'Debes aceptar la política de tratamiento de datos.' : null);
     setError(problema);
     if (problema) return;
 
     setEnviando(true);
     try {
-      await api.refugios.solicitarRegistro(normalizarRefugio(datos));
+      await api.refugios.registrarRefugio({ ...normalizarRefugio(datos), contrasena, aceptaPolitica });
       setEnviado(true);
     } catch (causa) {
       setError(
@@ -60,22 +69,19 @@ export function PaginaSolicitarRegistro() {
     }
   }
 
-  if (!MODO_DEMO) return <MarcoAuth titulo="Registro de refugios">
-    <p>El registro de nuevos refugios aún no está disponible. Contacta al administrador para solicitar tu cuenta.</p>
-    <Link to="/login">Volver al inicio de sesión</Link>
-  </MarcoAuth>;
-
   if (enviado) {
     return (
       <MarcoAuth titulo="Solicitud enviada">
         <p style={{ margin: 0, color: 'var(--ink-muted)', lineHeight: '23px' }}>
-          Recibimos la solicitud de <strong>{datos.nombre}</strong>. El
-          administrador revisará los datos de contacto y el NIT. El correo registrado es{' '}
-          <strong>{datos.correo}</strong>.
+          Recibimos la solicitud de <strong>{datos.nombre}</strong>.
+          {MODO_DEMO ? ' ' : <> Te enviamos un correo a <strong>{datos.correo}</strong> para confirmar tu cuenta. </>}
+          El administrador revisará los datos de contacto y el NIT.
         </p>
         <p style={{ margin: 0, color: 'var(--ink-muted)', fontSize: 14 }}>
           Hasta que no esté verificado, el refugio no puede publicar mascotas.
+          {!MODO_DEMO && ' Mientras tanto puedes entrar con tu correo y contraseña.'}
         </p>
+        <Link to="/login">Ir a iniciar sesión</Link>
       </MarcoAuth>
     );
   }
@@ -156,6 +162,28 @@ export function PaginaSolicitarRegistro() {
           />
         </div>
 
+        <Campo
+          id="contrasena"
+          etiqueta="Contraseña para tu cuenta"
+          tipo="password"
+          autoComplete="new-password"
+          valor={contrasena}
+          alCambiar={setContrasena}
+          ayuda="Al menos 8 caracteres. Con ella entrarás al panel."
+        />
+        <Campo
+          id="confirmar-contrasena"
+          etiqueta="Confirma la contraseña"
+          tipo="password"
+          autoComplete="new-password"
+          valor={confirmacion}
+          alCambiar={setConfirmacion}
+        />
+        <label className="marco-auth__ancho-completo registro-politica">
+          <input type="checkbox" checked={aceptaPolitica} onChange={(e) => setAceptaPolitica(e.target.checked)} />
+          <span>Acepto la política de tratamiento de datos personales (Ley 1581 de 2012).</span>
+        </label>
+
         {error && (
           <p className="marco-auth__error marco-auth__ancho-completo" role="alert">
             {error}
@@ -164,7 +192,7 @@ export function PaginaSolicitarRegistro() {
 
         <div className="marco-auth__ancho-completo">
           <Boton tipo="submit" variante="primario" ancho cargando={enviando}>
-            Enviar solicitud
+            Registrar refugio
           </Boton>
         </div>
       </form>

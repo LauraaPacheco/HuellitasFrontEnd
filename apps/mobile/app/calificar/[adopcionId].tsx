@@ -21,15 +21,19 @@ export default function PantallaCalificar() {
   const router = useRouter();
   const cliente = useQueryClient();
   const { usuario, puedeActuar, cargando } = useSesion();
-  const params = useLocalSearchParams<{ adopcionId: string; refugioId?: string; mascota?: string }>();
+  // Con calificacionId se edita una opinión propia en lugar de crear una nueva.
+  const params = useLocalSearchParams<{ adopcionId: string; refugioId?: string; mascota?: string; calificacionId?: string; puntaje?: string; comentario?: string }>();
+  const calificacionId = params.calificacionId ? Number(params.calificacionId) : null;
   const adopcionId = Number(params.adopcionId);
   const refugioId = Number(params.refugioId);
-  const [puntaje, setPuntaje] = useState(0);
-  const [comentario, setComentario] = useState('');
+  const [puntaje, setPuntaje] = useState(() => Number(params.puntaje) || 0);
+  const [comentario, setComentario] = useState(params.comentario ?? '');
   const [error, setError] = useState('');
 
   const calificar = useMutation({
-    mutationFn: () => api.refugios.calificar(refugioId, { adopcionId, puntaje, comentario }),
+    mutationFn: () => calificacionId
+      ? api.refugios.editarCalificacion(refugioId, calificacionId, { puntaje, comentario })
+      : api.refugios.calificar(refugioId, { adopcionId, puntaje, comentario }),
     onSuccess: () => void cliente.invalidateQueries({ queryKey: ['opiniones', refugioId] }),
     onError: (e) => setError(e instanceof ErrorHttp && e.estadoHttp === 409 ? 'Ya calificaste esta adopción. ¡Gracias!' : e instanceof ErrorHttp ? e.detalle ?? e.message : 'No pudimos enviar tu calificación.'),
   });
@@ -64,7 +68,7 @@ export default function PantallaCalificar() {
       <Text style={[estilos.etiqueta, { color: paleta.inkMuted }]}>{puntaje ? ETIQUETAS[puntaje] : 'Toca las estrellas'}</Text>
       <Campo etiqueta="Cuéntale a otras familias (opcional)" valor={comentario} alCambiar={setComentario} multilinea marcador="Nos acompañaron en todo el proceso" deshabilitado={calificar.isPending} />
       {error !== '' && <Text accessibilityRole="alert" style={{ color: paleta.danger }}>{error}</Text>}
-      <Boton titulo="Enviar calificación" cargando={calificar.isPending} deshabilitado={!puntaje} alPresionar={() => calificar.mutate()} />
+      <Boton titulo={calificacionId ? 'Guardar cambios' : 'Enviar calificación'} cargando={calificar.isPending} deshabilitado={!puntaje} alPresionar={() => calificar.mutate()} />
     </ScrollView>
   );
 }

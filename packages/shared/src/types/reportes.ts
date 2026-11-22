@@ -21,6 +21,11 @@ export interface ReporteResumen {
   readonly refugioAsignado: string | null;
   /** Los heridos y los casos de maltrato se muestran primero. */
   readonly esPrioritario: boolean;
+  /** Para ubicarlo en el mapa del panel. Null si el reporte no trae coordenadas. */
+  readonly latitud: number | null;
+  readonly longitud: number | null;
+  readonly direccion: string | null;
+  readonly descripcion: string | null;
 }
 
 export interface ReporteCiudadano extends EntidadBase {

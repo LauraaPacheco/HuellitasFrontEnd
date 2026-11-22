@@ -1,0 +1,33 @@
+/* Ficha pública de la mascota (enlace de compartir). */
+.mascota-publica { display: grid; grid-template-columns: minmax(0, 6fr) minmax(0, 5fr); gap: var(--space-6); margin-top: var(--space-5); align-items: start; }
+@media (max-width: 860px) { .mascota-publica { grid-template-columns: minmax(0, 1fr); gap: var(--space-5); } }
+
+.mascota-publica__galeria { display: grid; gap: var(--space-3); }
+.mascota-publica__foto { position: relative; aspect-ratio: 4 / 3; overflow: hidden; border-radius: var(--radius-lg); background: var(--surface-200); }
+.mascota-publica__fondo { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; filter: blur(24px); transform: scale(1.15); opacity: .7; }
+.mascota-publica__principal { position: relative; width: 100%; height: 100%; object-fit: contain; }
+.mascota-publica__miniaturas { display: flex; flex-wrap: wrap; gap: var(--space-2); }
+.mascota-publica__miniaturas button { width: 64px; height: 64px; min-height: 64px; padding: 0; overflow: hidden; border: 2px solid transparent; border-radius: var(--radius-sm); background: var(--surface-200); cursor: pointer; }
+.mascota-publica__miniaturas button[aria-pressed='true'] { border-color: var(--brand); }
+.mascota-publica__miniaturas img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.mascota-publica__sin-foto { aspect-ratio: 4 / 3; display: grid; place-content: center; justify-items: center; gap: var(--space-2); border-radius: var(--radius-lg); background: var(--surface-200); color: var(--ink-muted); }
+
+.mascota-publica__info { display: grid; gap: var(--space-4); align-content: start; }
+.mascota-publica__titulo { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-3); }
+.mascota-publica__titulo h1 { margin: 0; font-size: clamp(2rem, 4vw, 2.75rem); line-height: 1.1; }
+.mascota-publica__datos { margin: 0; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--space-3); }
+.mascota-publica__dato { display: flex; gap: var(--space-2); align-items: center; padding: var(--space-3); border-radius: var(--radius-md); background: var(--surface-200); min-width: 0; }
+.mascota-publica__dato > span { flex-shrink: 0; width: 36px; height: 36px; display: grid; place-items: center; border-radius: 50%; background: var(--brand-tint); color: var(--brand-strong); }
+.mascota-publica__dato dt { font-size: 0.75rem; color: var(--ink-muted); }
+.mascota-publica__dato dd { margin: 0; font-weight: 600; overflow-wrap: anywhere; }
+.mascota-publica__descripcion { margin: 0; line-height: 1.6; white-space: pre-wrap; }
+.mascota-publica__accion { display: grid; gap: var(--space-2); padding: var(--space-4); border-radius: var(--radius-md); background: var(--brand-tint); }
+.mascota-publica__accion p { margin: 0; font-size: 0.875rem; color: var(--ink-muted); }
+.mascota-publica__accion .boton { justify-self: start; }
+.mascota-publica__refugio { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-3); padding: var(--space-4); border: 1px solid var(--border); border-radius: var(--radius-md); }
+.mascota-publica__refugio > svg { color: var(--brand-strong); }
+.mascota-publica__refugio > div { flex: 1; min-width: 0; }
+.mascota-publica__refugio p { margin: 0; font-size: 0.875rem; color: var(--ink-muted); }
+.mascota-publica__refugio .mascota-publica__refugio-nombre { font-size: 1rem; font-weight: 600; color: var(--ink); }
+.mascota-publica__historia { margin-top: var(--space-6); }
+@media (max-width: 420px) { .mascota-publica__datos { grid-template-columns: minmax(0, 1fr); } }

@@ -61,7 +61,8 @@ export function limpiarRedesSociales(redes: RedesSociales | null | undefined): R
 }
 
 export function etiquetaRedSocial(clave: string): string {
-  if (clave === CLAVE_LIBRE) return 'Otra';
+  // "redes" es la clave con que el backend guarda el texto suelto de registros viejos.
+  if (clave === CLAVE_LIBRE || clave === 'redes') return 'Otra';
   return REDES_SOCIALES.find((red) => red.clave === clave)?.etiqueta ?? clave;
 }
 

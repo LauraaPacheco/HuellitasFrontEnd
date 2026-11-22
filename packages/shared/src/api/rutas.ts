@@ -9,6 +9,7 @@ export const RUTAS = {
    */
   autenticacion: {
     registrar: '/api/v1/Usuarios',
+    registrarRefugio: '/api/v1/Usuarios/registro-refugio',
     confirmarCorreo: '/api/v1/Usuarios/confirmar',
     reenviarVerificacion: '/api/v1/Usuarios/reenviar-verificacion',
     login: '/api/v1/Auth/login',
