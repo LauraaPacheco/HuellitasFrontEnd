@@ -1,0 +1,21 @@
+/* HU-ADM-04: cifras y barras de una sola serie. */
+.indicadores-cifras { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 200px), 1fr)); gap: var(--space-3); margin-bottom: var(--space-5); }
+.indicadores-cifra { display: grid; gap: 2px; padding: var(--space-4); border: 1px solid var(--border); border-radius: var(--radius-md); background: var(--surface-200); }
+.indicadores-cifra__icono { width: 36px; height: 36px; display: grid; place-items: center; margin-bottom: var(--space-2); border-radius: 50%; background: var(--brand-tint); color: var(--brand-strong); }
+.indicadores-cifra__valor { margin: 0; font-size: 2rem; font-weight: 700; line-height: 1.1; font-variant-numeric: tabular-nums; }
+.indicadores-cifra__etiqueta { margin: 0; font-weight: 600; }
+.indicadores-cifra__nota { margin: 0; font-size: 0.8125rem; color: var(--ink-muted); }
+
+.indicadores-graficas { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 340px), 1fr)); gap: var(--space-4); align-items: start; }
+.indicadores-barras { padding: var(--space-4); border: 1px solid var(--border); border-radius: var(--radius-md); background: var(--surface-100); }
+.indicadores-barras h2 { margin: 0; font-size: 1rem; }
+.indicadores-barras__sub { margin: 2px 0 0; font-size: 0.8125rem; color: var(--ink-muted); }
+.indicadores-barras dl { margin: var(--space-3) 0 0; display: grid; gap: var(--space-2); }
+.indicadores-fila { display: grid; grid-template-columns: minmax(96px, 38%) minmax(0, 1fr); align-items: center; gap: var(--space-3); padding: 2px 0; border-radius: var(--radius-sm); }
+.indicadores-fila:hover { background: var(--surface-200); }
+.indicadores-fila dt { font-size: 0.875rem; color: var(--ink); overflow-wrap: anywhere; }
+.indicadores-fila dd { margin: 0; display: flex; align-items: center; gap: var(--space-2); }
+.indicadores-fila__pista { flex: 1; height: 10px; }
+.indicadores-fila__barra { display: block; height: 100%; min-width: 2px; border-radius: 0 4px 4px 0; background: var(--brand-strong); }
+.indicadores-fila__valor { min-width: 2ch; text-align: right; font-size: 0.875rem; font-weight: 600; font-variant-numeric: tabular-nums; color: var(--ink); }
+.indicadores-nota { display: flex; align-items: center; gap: var(--space-2); margin: var(--space-5) 0 0; font-size: 0.8125rem; color: var(--ink-muted); }

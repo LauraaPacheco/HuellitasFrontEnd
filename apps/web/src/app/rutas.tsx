@@ -21,6 +21,7 @@ import { PaginaBandeja } from '@/modulos/solicitudes/PaginaBandeja';
 import { PaginaDetalleSolicitud } from '@/modulos/solicitudes/PaginaDetalleSolicitud';
 import { PaginaPendiente } from '@/modulos/PaginaPendiente';
 import { PaginaReportes } from '@/modulos/reportes/PaginaReportes';
+import { PaginaIndicadores } from '@/modulos/indicadores/PaginaIndicadores';
 import { PaginaNecesidades } from '@/modulos/apoyos/PaginaNecesidades';
 import { PaginaPadrinos } from '@/modulos/apoyos/PaginaPadrinos';
 import { PaginaAuditoria } from '@/modulos/trazabilidad/PaginaAuditoria';
@@ -137,7 +138,7 @@ export const rutas = createBrowserRouter([
         path: 'indicadores',
         element: (
           <RutaProtegida niveles={REFUGIO_Y_ADMIN}>
-            <PaginaPendiente titulo="Indicadores" historias="HU-ADM-04" />
+            <PaginaIndicadores />
           </RutaProtegida>
         ),
       },
