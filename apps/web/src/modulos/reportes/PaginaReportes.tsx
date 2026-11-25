@@ -1,9 +1,9 @@
-import { useMemo, useState } from 'react';
+import { useMemo, useState, type CSSProperties } from 'react';
 import { Link } from 'react-router-dom';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { AlertTriangle, Clock, Hand, MapPin, Navigation, PawPrint, Pencil, Phone, Signpost, Trash2, User } from 'lucide-react';
 import {
-  ErrorHttp, ESTADO_REPORTE, ETIQUETA_TIPO_REPORTE, EstadoReporte, NivelRol, TipoReporte, esReportePrioritario, estadoPideMotivo,
+  COLOR_TIPO_REPORTE, ErrorHttp, ESTADO_REPORTE, ETIQUETA_TIPO_REPORTE, TIPOS_REPORTE_ORDEN, EstadoReporte, NivelRol, TipoReporte, esReportePrioritario, estadoPideMotivo,
   formatearFechaHora, haceCuanto, type DetalleReporte, type PinReporte, type ReporteBandeja,
 } from '@huellitas/shared';
 import { api } from '@/lib/api';
@@ -144,11 +144,14 @@ export function PaginaReportes() {
           <div className="reportes-vista">
             <div className="reportes-vista__mapa">
               <MapaReportes reportes={ubicados} seleccionado={seleccionado} alSeleccionar={(id) => { setSeleccionado(id); setMensaje(''); }} />
-              <ul className="reportes-leyenda" aria-label="Colores del mapa">
-                <li><span className="pin pin--urgente" aria-hidden="true"><span /></span> Urgente</li>
-                <li><span className="pin pin--nuevo" aria-hidden="true"><span /></span> Sin tomar</li>
-                <li><span className="pin pin--atencion" aria-hidden="true"><span /></span> En atención</li>
-                <li><span className="pin pin--cerrado" aria-hidden="true"><span /></span> Rescatado</li>
+              <ul className="reportes-leyenda" aria-label="Qué significa cada marcador">
+                {TIPOS_REPORTE_ORDEN.map((t) => (
+                  <li key={t}><span className="pin pin--libre" style={{ '--pin': COLOR_TIPO_REPORTE[t] } as CSSProperties} aria-hidden="true"><span /></span> {ETIQUETA_TIPO_REPORTE[t]}</li>
+                ))}
+                <li className="reportes-leyenda__separador" aria-hidden="true" />
+                <li><span className="pin pin--libre" style={{ '--pin': '#7b8a87' } as CSSProperties} aria-hidden="true"><span /></span> Sin tomar</li>
+                <li><span className="pin pin--atencion" style={{ '--pin': '#7b8a87' } as CSSProperties} aria-hidden="true"><span /></span> En atención</li>
+                <li><span className="pin pin--cerrado" style={{ '--pin': '#7b8a87' } as CSSProperties} aria-hidden="true"><span /></span> Rescatado</li>
               </ul>
             </div>
 

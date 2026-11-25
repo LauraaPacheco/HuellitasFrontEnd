@@ -150,6 +150,22 @@ export const ETIQUETA_TIPO_REPORTE: Record<TipoReporte, string> = {
   [TipoReporte.Otro]: 'Otro',
 };
 
+/**
+ * HU-REP-04: los marcadores del mapa se distinguen por tipo. Colores
+ * separados en tono (rojo, morado, naranja, azul), validados para daltonismo
+ * en modo claro y oscuro, y siempre con leyenda de
+ * texto, para que no dependa solo del color. Iguales en la web y en la app.
+ */
+export const COLOR_TIPO_REPORTE: Record<TipoReporte, string> = {
+  [TipoReporte.Herido]: '#d93025',
+  [TipoReporte.Maltrato]: '#8e3fd1',
+  [TipoReporte.EnCalle]: '#cc6a00',
+  [TipoReporte.Otro]: '#2f6fd6',
+};
+
+/** Orden en que se muestran los tipos: lo más urgente primero. */
+export const TIPOS_REPORTE_ORDEN: readonly TipoReporte[] = [TipoReporte.Herido, TipoReporte.Maltrato, TipoReporte.EnCalle, TipoReporte.Otro];
+
 export const ETIQUETA_TIPO_REGISTRO_CLINICO: Record<TipoRegistroClinico, string> = {
   [TipoRegistroClinico.Vacuna]: 'Vacuna',
   [TipoRegistroClinico.Desparasitacion]: 'Desparasitación',

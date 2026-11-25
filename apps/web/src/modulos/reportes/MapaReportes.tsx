@@ -1,7 +1,7 @@
 import { useEffect, useRef } from 'react';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
-import { ETIQUETA_TIPO_REPORTE, EstadoReporte, esReportePrioritario, type PinReporte } from '@huellitas/shared';
+import { COLOR_TIPO_REPORTE, ESTADO_REPORTE, ETIQUETA_TIPO_REPORTE, EstadoReporte, esReportePrioritario, type PinReporte } from '@huellitas/shared';
 
 /*
  * Tiles de OpenStreetMap: sirven para desarrollo y poco tráfico. Antes de
@@ -16,17 +16,21 @@ const CALI: L.LatLngTuple = [3.4516, -76.532];
 /** Lo mínimo para dibujar un pin: lo que trae GET /mapa. */
 export type ReporteUbicado = Pick<PinReporte, 'id' | 'numeroReporte' | 'tipo' | 'estado' | 'latitud' | 'longitud'>;
 
-/** Prioritarios en rojo, en atención en ámbar, cerrados en gris; el resto en verde. */
-function claseMarcador(r: ReporteUbicado): string {
-  if (r.estado === EstadoReporte.Recibido) return esReportePrioritario(r.tipo) ? 'pin--urgente' : 'pin--nuevo';
-  if (r.estado === EstadoReporte.EnAtencion) return 'pin--atencion';
+/**
+ * HU-REP-04: el color dice el tipo (herido, maltrato, en calle, otro) y el
+ * centro del pin el estado: lleno si nadie lo ha tomado, hueco si está en
+ * atención y el pin atenuado si ya fue rescatado.
+ */
+export function claseEstadoPin(estado: EstadoReporte): string {
+  if (estado === EstadoReporte.Recibido) return 'pin--libre';
+  if (estado === EstadoReporte.EnAtencion) return 'pin--atencion';
   return 'pin--cerrado';
 }
 
 function icono(r: ReporteUbicado, seleccionado: boolean) {
   return L.divIcon({
     className: '',
-    html: `<span class="pin ${claseMarcador(r)}${seleccionado ? ' pin--activo' : ''}"><span></span></span>`,
+    html: `<span class="pin ${claseEstadoPin(r.estado)}${seleccionado ? ' pin--activo' : ''}" style="--pin:${COLOR_TIPO_REPORTE[r.tipo]}"><span></span></span>`,
     iconSize: [30, 38],
     iconAnchor: [15, 36],
   });
@@ -71,8 +75,8 @@ export function MapaReportes({ reportes, seleccionado, alSeleccionar }: Props) {
     for (const r of reportes) {
       const marcador = L.marker([r.latitud, r.longitud], {
         icon: icono(r, r.id === seleccionado),
-        title: `${r.numeroReporte} · ${ETIQUETA_TIPO_REPORTE[r.tipo]}`,
-        alt: `${r.numeroReporte}, ${ETIQUETA_TIPO_REPORTE[r.tipo]}`,
+        title: `${r.numeroReporte} · ${ETIQUETA_TIPO_REPORTE[r.tipo]} · ${ESTADO_REPORTE[r.estado].etiqueta}`,
+        alt: `${r.numeroReporte}, ${ETIQUETA_TIPO_REPORTE[r.tipo]}, ${ESTADO_REPORTE[r.estado].etiqueta}`,
         keyboard: true,
         zIndexOffset: r.id === seleccionado ? 1000 : esReportePrioritario(r.tipo) ? 500 : 0,
       });

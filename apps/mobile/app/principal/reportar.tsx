@@ -4,7 +4,7 @@ import * as ImagePicker from 'expo-image-picker';
 import * as Location from 'expo-location';
 import { useRouter } from 'expo-router';
 import { useMutation } from '@tanstack/react-query';
-import { CircleCheck, Footprints, Hand, HeartPulse, ImagePlus, LocateFixed, Lock, MapPin, PawPrint, Search, ShieldAlert, X, type LucideIcon } from 'lucide-react-native';
+import { CircleCheck, Footprints, Hand, HeartPulse, ImagePlus, LocateFixed, Lock, Map as IconoMapa, MapPin, PawPrint, Search, ShieldAlert, X, type LucideIcon } from 'lucide-react-native';
 import { ETIQUETA_TIPO_REPORTE, TipoReporte, ErrorHttp, validarArchivoServidor, type ReporteCreado } from '@huellitas/shared';
 import { api } from '@/lib/api';
 import { useSesion } from '@/lib/sesion';
@@ -236,6 +236,17 @@ export default function PantallaReportar() {
           >
             <LocateFixed size={20} strokeWidth={1.9} color={paleta.ink} />
           </Pressable>
+          {/* HU-REP-04: ver los reportes activos de la ciudad. */}
+          {consulta === null && (
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="Ver el mapa de reportes"
+              onPress={() => router.push('/mapa-reportes')}
+              style={({ pressed }) => [estilos.redondo, sombra, { backgroundColor: paleta.surface100, opacity: pressed ? 0.8 : 1 }]}
+            >
+              <IconoMapa size={20} strokeWidth={1.9} color={paleta.ink} />
+            </Pressable>
+          )}
         </View>
 
         {consulta !== null && (resultados !== null || (consulta.trim().length >= 3 && !buscandoLugar)) && (

@@ -27,10 +27,9 @@
 /* Pin en forma de gota; el color dice el estado y la leyenda lo explica en texto. */
 .pin { --pin: var(--brand-strong); position: relative; display: inline-block; width: 26px; height: 26px; border-radius: 50% 50% 50% 0; transform: rotate(-45deg); background: var(--pin); border: 2px solid #fff; box-shadow: 0 2px 6px rgb(0 0 0 / .35); transition: transform .15s; }
 .pin > span { position: absolute; inset: 7px; border-radius: 50%; background: #fff; }
-.pin--urgente { --pin: #d93025; }
-.pin--nuevo { --pin: #00a676; }
-.pin--atencion { --pin: #e8930c; }
-.pin--cerrado { --pin: #8a9794; }
+.pin--atencion > span { background: transparent; border: 2.5px solid #fff; inset: 6px; }
+.pin--cerrado { opacity: .55; }
+.pin--cerrado > span { background: rgb(255 255 255 / .55); }
 .leaflet-marker-icon .pin { margin: 2px; }
 .pin--activo { transform: rotate(-45deg) scale(1.3); box-shadow: 0 0 0 4px color-mix(in srgb, var(--pin) 35%, transparent), 0 2px 8px rgb(0 0 0 / .4); }
 .leaflet-marker-icon:focus-visible { outline: none; }
@@ -40,6 +39,8 @@
 .reportes-leyenda li { display: flex; align-items: center; gap: var(--space-2); }
 .reportes-leyenda .pin { width: 14px; height: 14px; border-width: 1.5px; box-shadow: none; }
 .reportes-leyenda .pin > span { inset: 3px; }
+.reportes-leyenda .pin--atencion > span { inset: 2.5px; border-width: 1.5px; }
+.reportes-leyenda__separador { width: 1px; align-self: stretch; background: var(--border); }
 
 .reportes-lista { list-style: none; margin: 0; padding: 0; display: grid; gap: var(--space-2); }
 .reporte-fila { width: 100%; display: flex; align-items: center; gap: var(--space-3); padding: var(--space-3); border: 1px solid var(--border); border-radius: var(--radius-md); background: var(--surface-100); color: var(--ink); font: inherit; text-align: left; cursor: pointer; }
