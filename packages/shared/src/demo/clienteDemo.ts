@@ -7,15 +7,16 @@
  */
 
 import { ClienteApi, ErrorHttp, type ConfiguracionCliente } from '../api/client';
+import { RUTAS } from '../api/rutas';
 import { claimsDelToken } from '../api/sesion';
 import type { Usuario, PerfilAdoptanteDto, EditarPerfilDto } from '../types/usuarios';
 import { validarRefugio, normalizarRefugio, limpiarRedesSociales } from '../utils/refugios';
 import type { Refugio, SolicitudRefugioDto, EditarRefugioDto } from '../types/refugios';
 import { validarDatosPersonales, validarPerfilAdoptante } from '../utils/perfil';
-import { EstadoApadrinamiento, EstadoMascota, EstadoNecesidad, EstadoReporte, TipoReporte, EstadoSeguimiento, ResultadoSeguimiento, EstadoVerificacion, NivelRol, TipoEvento, TipoMultimedia, TipoNecesidad, type TipoRegistroClinico } from '../types/enums';
+import { EstadoApadrinamiento, EstadoMascota, EstadoNecesidad, EstadoReporte, TipoReporte, Procedencia, EstadoSeguimiento, ResultadoSeguimiento, EstadoVerificacion, NivelRol, TipoEvento, TipoMultimedia, TipoNecesidad, type TipoRegistroClinico } from '../types/enums';
 import type { ApadrinamientoResumen, NecesidadRefugio } from '../types/refugios';
 import type { NotificacionUsuario, SeguimientoAdopcion } from '../types/trazabilidad';
-import type { ReporteResumen } from '../types/reportes';
+import type { ConvertirReporteDto, DetalleReporte, PinReporte, ReporteBandeja } from '../types/reportes';
 import { validarArchivoMascota, coincideFirmaArchivo, esFoto, MAX_ARCHIVOS_MASCOTA } from '../utils/multimedia';
 import { validarMascota, estadosManualesMascota } from '../utils/mascotas';
 import type { Mascota, MascotaResumen, CrearMascotaDto, EditarMascotaDto, CambioEstadoMascotaDto } from '../types/mascotas';
@@ -27,6 +28,7 @@ import {
   RAZAS,
   REFUGIOS,
   REPORTES,
+  type ReporteDemo,
   TAMANOS,
   TEMPERAMENTOS,
   USUARIOS_DEMO,
@@ -125,7 +127,7 @@ export class ClienteDemo extends ClienteApi {
     { id: 4, nivel: NivelRol.Administrador, mensaje: 'Hay un refugio nuevo esperando verificación.', leida: false, fecha: hace(1) },
   ];
 
-  private readonly reportes: ReporteResumen[] = [...REPORTES];
+  private readonly reportes: ReporteDemo[] = REPORTES.map(r => ({ ...r, fotos: [...r.fotos] }));
 
   private readonly calificadas: { id: number; refugioId: number; adopcionId: number; puntaje: number; comentario: string | null; autor: string; fecha: string }[] = [];
 
@@ -312,6 +314,22 @@ export class ClienteDemo extends ClienteApi {
 
     /* ---------- Registro de refugio ---------- */
 
+    if (ruta === RUTAS.refugios.solicitarConMiCuenta && metodo === 'POST') {
+      const usuario = this.usuarioActual();
+      if (usuario.refugioId) throw new ErrorHttp({ titulo: 'Ya tienes un refugio asociado a tu cuenta.', estadoHttp: 409 });
+      const datos = cuerpo as SolicitudRefugioDto;
+      if (this.refugios.some(r => r.nit.replace(/[^0-9]/g, '') === datos.nit.replace(/[^0-9]/g, ''))) {
+        throw new ErrorHttp({ titulo: 'Ya existe un refugio registrado con este NIT.', estadoHttp: 409 });
+      }
+      this.refugios.push({
+        ...normalizarRefugio({ ...datos, telefono: datos.telefono ?? '', correo: datos.correo ?? '', encargado: datos.encargado ?? '' }),
+        id: Math.max(...this.refugios.map(r => r.id), 0) + 1, activo: true, fechaCreacion: new Date().toISOString(), fechaModificacion: null,
+        redesSociales: limpiarRedesSociales(datos.redesSociales), descripcion: datos.descripcion?.trim() || null,
+        estadoVerificacion: EstadoVerificacion.Pendiente, fechaVerificacion: null, motivoRechazo: null, promedioCalificacion: null, totalAdopciones: 0, requisitos: [],
+      });
+      return { mensaje: 'Solicitud de registro enviada. Un administrador revisará tu caso.' };
+    }
+
     if (ruta.endsWith('/refugios/solicitar-registro') && metodo === 'POST') {
       const datos = cuerpo as SolicitudRefugioDto;
       const error = validarRefugio(datos);
@@ -388,6 +406,12 @@ export class ClienteDemo extends ClienteApi {
     if (ruta.endsWith('/v1/Catalogos/tamanos')) return TAMANOS;
     if (ruta.endsWith('/v1/Catalogos/colores')) return COLORES;
     if (ruta.endsWith('/v1/Catalogos/temperamentos')) return TEMPERAMENTOS;
+    if (ruta.endsWith('/v1/Catalogos/tipos-vivienda')) return [{ id: 0, nombre: 'Casa' }, { id: 1, nombre: 'Apartamento' }, { id: 2, nombre: 'Finca' }];
+
+    if (ruta === RUTAS.seguimientos.procesarAlertas && metodo === 'POST') {
+      if (this.nivelActual !== NivelRol.Administrador) throw new ErrorHttp({ titulo: 'Solo el administrador puede procesar las alertas.', estadoHttp: 403 });
+      return { mensaje: 'Alertas procesadas.' };
+    }
 
     /* ---------- Mascotas ---------- */
 
@@ -597,43 +621,111 @@ export class ClienteDemo extends ClienteApi {
 
     /* ---------- Reportes ---------- */
 
-    if (ruta.endsWith('/reportes/canales-denuncia')) {
-      return [
-        'Policía Nacional — línea 123',
-        'Secretaría de Salud Pública de Cali',
-        'Fiscalía General de la Nación',
-      ];
-    }
+    // Mismas reglas que ReporteService (ca46f35, 7f6a3f1).
+    const nivel = this.nivelActual;
+    const usuarioId = nivel === null ? null : this.usuarioActual().id;
+    const miRefugioId = nivel === NivelRol.Refugio ? this.usuarioActual().refugioId : null;
+    const buscarReporte = (id: number) => {
+      const r = this.reportes.find(x => x.id === id && x.activo);
+      if (!r) throw new ErrorHttp({ titulo: 'El reporte no existe.', estadoHttp: 404 });
+      return r;
+    };
+    const visiblePublico = (e: EstadoReporte) => e === EstadoReporte.Recibido || e === EstadoReporte.EnAtencion || e === EstadoReporte.Rescatado;
+    const aDetalle = (r: ReporteDemo, completo: boolean): DetalleReporte => ({
+      id: r.id, numeroReporte: r.numeroReporte, tipo: r.tipo, estado: r.estado, descripcion: r.descripcion, fechaReporte: r.fechaReporte,
+      latitud: r.latitud, longitud: r.longitud, fotos: r.fotos, completo,
+      direccion: completo ? r.direccion : null, puntoReferencia: completo ? r.puntoReferencia : null, refugioAsignado: completo ? r.refugioNombre : null,
+      reportanteNombre: completo ? r.reportanteNombre : null, reportanteTelefono: completo ? r.reportanteTelefono : null, mascotaId: completo ? r.mascotaId : null,
+    });
 
-    if (ruta.endsWith('/reportes/mios')) return this.reportes.slice(0, 2);
-    if (ruta.endsWith('/reportes/mapa')) return [...this.reportes];
-    const accionReporte = /\/api\/reportes\/(\d+)\/(tomar|estado)$/.exec(ruta);
+    if (ruta === RUTAS.reportes.mapa) {
+      return this.reportes.filter(r => r.activo && visiblePublico(r.estado))
+        .sort((a, b) => b.fechaReporte.localeCompare(a.fechaReporte))
+        .map((r): PinReporte => ({ id: r.id, numeroReporte: r.numeroReporte, tipo: r.tipo, estado: r.estado, latitud: r.latitud, longitud: r.longitud }));
+    }
+    if (ruta === RUTAS.reportes.bandeja) {
+      if (nivel !== NivelRol.Refugio && nivel !== NivelRol.Administrador) throw new ErrorHttp({ titulo: 'No tienes permiso.', estadoHttp: 403 });
+      if (miRefugioId === null) throw new ErrorHttp({ titulo: 'El usuario no está asociado a un refugio.', estadoHttp: 400 });
+      const items = this.reportes
+        .filter(r => r.activo && ((r.refugioId === null && r.estado === EstadoReporte.Recibido) || r.refugioId === miRefugioId))
+        .sort((a, b) => Number(a.refugioId !== null) - Number(b.refugioId !== null) || a.fechaReporte.localeCompare(b.fechaReporte))
+        .map((r): ReporteBandeja => ({ id: r.id, numeroReporte: r.numeroReporte, tipo: r.tipo, estado: r.estado, descripcion: r.descripcion,
+          fechaReporte: r.fechaReporte, fotoPrincipal: r.fotos[0] ?? null, reportanteNombre: r.reportanteNombre, asignadoAMi: r.refugioId === miRefugioId }));
+      return paginar(items, Number(parametros?.pagina ?? 1), Number(parametros?.tamano ?? 10));
+    }
+    const accionReporte = /^\/api\/v1\/Reportes\/(\d+)\/(tomar|estado|convertir-mascota)$/.exec(ruta);
     if (accionReporte) {
-      const refugio = this.exigirPropietario();
-      const indice = this.reportes.findIndex(r => r.id === Number(accionReporte[1]));
-      const actual = this.reportes[indice];
-      if (!actual) throw new ErrorHttp({ titulo: 'Reporte no encontrado.', estadoHttp: 404 });
-      if (accionReporte[2] === 'tomar') {
-        if (actual.refugioAsignado) throw new ErrorHttp({ titulo: 'Otro refugio ya tomó este reporte.', estadoHttp: 409 });
-        this.reportes[indice] = { ...actual, refugioAsignado: refugio.nombre, estado: EstadoReporte.EnAtencion };
-      } else {
-        const { nuevoEstado } = cuerpo as { nuevoEstado: EstadoReporte };
-        this.reportes[indice] = { ...actual, estado: nuevoEstado };
+      const r = buscarReporte(Number(accionReporte[1]));
+      if (nivel !== NivelRol.Refugio && nivel !== NivelRol.Administrador) throw new ErrorHttp({ titulo: 'No tienes permiso.', estadoHttp: 403 });
+      const esAdmin = nivel === NivelRol.Administrador;
+      if (accionReporte[2] === 'tomar' && metodo === 'PATCH') {
+        if (r.refugioId !== null) throw new ErrorHttp({ titulo: r.refugioId === miRefugioId ? 'El reporte ya está asignado a tu refugio.' : 'El reporte ya fue tomado por otro refugio.', estadoHttp: 409 });
+        if (r.estado !== EstadoReporte.Recibido) throw new ErrorHttp({ titulo: 'Solo se pueden tomar reportes en estado Recibido.', estadoHttp: 409 });
+        const refugio = esAdmin ? null : this.exigirPropietario();
+        Object.assign(r, { refugioId: refugio?.id ?? null, refugioNombre: refugio?.nombre ?? null, estado: EstadoReporte.EnAtencion });
+        return { mensaje: 'Reporte tomado. Ahora está en atención.' };
       }
-      return undefined;
+      if (accionReporte[2] === 'estado' && metodo === 'PATCH') {
+        if (!esAdmin && r.refugioId !== miRefugioId) throw new ErrorHttp({ titulo: 'Solo el refugio asignado puede cambiar el estado del reporte.', estadoHttp: 403 });
+        const { nuevoEstado, motivo } = cuerpo as { nuevoEstado: EstadoReporte; motivo: string | null };
+        if ((nuevoEstado === EstadoReporte.NoEncontrado || nuevoEstado === EstadoReporte.Cerrado) && !motivo?.trim()) throw new ErrorHttp({ titulo: 'El motivo es obligatorio para el estado seleccionado.', estadoHttp: 400 });
+        const valida = r.estado === EstadoReporte.EnAtencion && [EstadoReporte.Rescatado, EstadoReporte.NoEncontrado, EstadoReporte.Cerrado].includes(nuevoEstado);
+        if (!valida) throw new ErrorHttp({ titulo: `No se permite pasar de ${EstadoReporte[r.estado]} a ${EstadoReporte[nuevoEstado]}.`, estadoHttp: 409 });
+        r.estado = nuevoEstado;
+        return { mensaje: 'Estado del reporte actualizado.' };
+      }
+      if (accionReporte[2] === 'convertir-mascota' && metodo === 'POST') {
+        const refugio = this.exigirPropietario();
+        if (r.refugioId !== refugio.id) throw new ErrorHttp({ titulo: 'Solo el refugio asignado puede convertir el reporte en mascota.', estadoHttp: 403 });
+        if (r.estado !== EstadoReporte.Rescatado) throw new ErrorHttp({ titulo: 'Solo se pueden convertir reportes en estado Rescatado.', estadoHttp: 409 });
+        if (r.mascotaId !== null) throw new ErrorHttp({ titulo: 'Este reporte ya tiene una mascota creada.', estadoHttp: 409 });
+        const d = cuerpo as ConvertirReporteDto;
+        const ahora = new Date().toISOString();
+        const campos = preparar({ ...d, razaId: d.razaId ?? undefined, edadAproximada: d.edadAproximada ?? undefined, descripcion: d.descripcion ?? undefined,
+          procedencia: Procedencia.ReporteCiudadano, fechaIngreso: new Date().toLocaleDateString('sv-SE'), temperamentoIds: [] });
+        const nueva: Mascota = { ...campos, id: Math.max(...this.mascotas.map(m => m.id), 0) + 1, activo: true, fechaCreacion: ahora, fechaModificacion: null,
+          refugioId: refugio.id, estado: EstadoMascota.Disponible, fechaUltimaActualizacion: ahora, motivoBaja: null, multimedia: [], historialClinico: [] };
+        this.mascotas.push(nueva);
+        r.mascotaId = nueva.id;
+        return { mensaje: 'Mascota creada desde el reporte.', mascotaId: nueva.id };
+      }
     }
-
-    if (ruta.endsWith('/api/reportes')) {
-      if (metodo === 'POST') {
-        const datos = cuerpo as { tipo: TipoReporte; descripcion: string; latitud: number; longitud: number; direccion?: string };
-        const id = Math.max(0, ...this.reportes.map(r => r.id)) + 1;
-        const numero = `REP-0${190 + id}`;
-        this.reportes.unshift({ id, numeroReporte: numero, tipo: datos.tipo, estado: EstadoReporte.Recibido, fechaReporte: new Date().toISOString(),
-          zona: null, fotoPrincipal: null, refugioAsignado: null, esPrioritario: datos.tipo === TipoReporte.Herido || datos.tipo === TipoReporte.Maltrato,
-          latitud: datos.latitud, longitud: datos.longitud, direccion: datos.direccion ?? null, descripcion: datos.descripcion });
-        return { ...REPORTES[0], id, numeroReporte: numero };
+    const porIdReporte = /^\/api\/v1\/Reportes\/(\d+)$/.exec(ruta.split('?')[0]!);
+    if (porIdReporte) {
+      const r = buscarReporte(Number(porIdReporte[1]));
+      const esAdmin = nivel === NivelRol.Administrador;
+      if (metodo === 'GET') {
+        const completo = esAdmin || (usuarioId !== null && r.usuarioId === usuarioId) || (miRefugioId !== null && r.refugioId === miRefugioId);
+        if (!completo && !visiblePublico(r.estado)) throw new ErrorHttp({ titulo: 'El reporte no está disponible.', estadoHttp: 404 });
+        return aDetalle(r, completo);
       }
-      return paginar(this.reportes, pagina, tamano);
+      if (metodo === 'PUT') {
+        if (!esAdmin) throw new ErrorHttp({ titulo: 'No tienes permiso.', estadoHttp: 403 });
+        if (r.mascotaId !== null) throw new ErrorHttp({ titulo: 'El reporte ya fue convertido en mascota.', estadoHttp: 409 });
+        const d = cuerpo as { tipo: TipoReporte; descripcion: string; latitud: number; longitud: number; direccion: string | null; puntoReferencia: string | null; fotosUrls: string[] };
+        Object.assign(r, { tipo: d.tipo, descripcion: d.descripcion, latitud: d.latitud, longitud: d.longitud, direccion: d.direccion, puntoReferencia: d.puntoReferencia, fotos: d.fotosUrls });
+        return { mensaje: 'Reporte actualizado.' };
+      }
+      if (metodo === 'DELETE') {
+        if (usuarioId === null) throw new ErrorHttp({ titulo: 'Sesión no iniciada', estadoHttp: 401 });
+        if (r.mascotaId !== null) throw new ErrorHttp({ titulo: 'El reporte ya fue convertido en mascota.', estadoHttp: 409 });
+        if (!esAdmin) {
+          if (r.usuarioId !== usuarioId) throw new ErrorHttp({ titulo: 'Solo puedes eliminar tus propios reportes.', estadoHttp: 403 });
+          if (r.refugioId !== null || r.estado !== EstadoReporte.Recibido) throw new ErrorHttp({ titulo: 'El reporte ya está siendo atendido y no se puede eliminar.', estadoHttp: 409 });
+        }
+        r.activo = false;
+        return { mensaje: 'Reporte eliminado.' };
+      }
+    }
+    if (ruta === RUTAS.reportes.base && metodo === 'POST') {
+      const d = cuerpo as { tipo: TipoReporte; descripcion: string; latitud: number; longitud: number; direccion: string | null; puntoReferencia: string | null; fotosUrls: string[] };
+      const id = Math.max(0, ...this.reportes.map(r => r.id)) + 1;
+      const usuario = nivel === null ? null : this.usuarioActual();
+      const numeroReporte = `REP-0${190 + id}`;
+      this.reportes.unshift({ id, numeroReporte, tipo: d.tipo, estado: EstadoReporte.Recibido, fechaReporte: new Date().toISOString(), descripcion: d.descripcion,
+        latitud: d.latitud, longitud: d.longitud, direccion: d.direccion, puntoReferencia: d.puntoReferencia, fotos: d.fotosUrls,
+        refugioId: null, refugioNombre: null, usuarioId: usuario?.id ?? null, reportanteNombre: usuario?.nombre ?? 'Anónimo', reportanteTelefono: usuario?.telefono ?? null, mascotaId: null, activo: true });
+      return { mensaje: 'Reporte registrado.', id, numeroReporte };
     }
 
     /* ---------- Refugios ---------- */

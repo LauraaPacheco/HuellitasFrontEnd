@@ -1,5 +1,6 @@
 import { ErrorHttp } from './client';
-import { EstadoApadrinamiento, EstadoMascota, EstadoNecesidad, EstadoSeguimiento, EstadoSolicitud, ResultadoSeguimiento, Sexo, TipoEvento, TipoNecesidad, TipoRegistroClinico } from '../types/enums';
+import { EstadoApadrinamiento, EstadoMascota, EstadoNecesidad, EstadoReporte, EstadoSeguimiento, EstadoSolicitud, ResultadoSeguimiento, Sexo, TipoEvento, TipoNecesidad, TipoRegistroClinico, TipoReporte } from '../types/enums';
+import type { DetalleReporte, PinReporte, ReporteBandeja } from '../types/reportes';
 import type { ApadrinamientoResumen, NecesidadRefugio, OpinionRefugio } from '../types/refugios';
 import type { EntradaAuditoria, EventoMascota, EventoSolicitud, NotificacionUsuario, PlanSeguimientoAdopcion } from '../types/trazabilidad';
 import type { MascotaResumen, RecomendacionMascota, RegistroClinico } from '../types/mascotas';
@@ -171,3 +172,42 @@ export function etiquetaEstadoSolicitud(valor: string | null): string {
   return estados[claveEnum(valor)] ?? valor;
 }
 
+
+/* ----- Reportes ciudadanos (ca46f35): tipo y estado llegan por nombre ----- */
+
+const tipoReporte = (v: string) => enumPorNombre(v, { encalle: TipoReporte.EnCalle, herido: TipoReporte.Herido, maltrato: TipoReporte.Maltrato, otro: TipoReporte.Otro }, 'un tipo de reporte');
+const estadoReporte = (v: string) => enumPorNombre(v, {
+  recibido: EstadoReporte.Recibido, enatencion: EstadoReporte.EnAtencion, rescatado: EstadoReporte.Rescatado,
+  noencontrado: EstadoReporte.NoEncontrado, cerrado: EstadoReporte.Cerrado,
+}, 'un estado de reporte');
+
+export interface ReporteMapaApi { reporteId: number; numeroReporte: string; tipo: string; estado: string; latitud: number; longitud: number }
+export function pinReporteApi(d: ReporteMapaApi): PinReporte {
+  return { id: d.reporteId, numeroReporte: d.numeroReporte, tipo: tipoReporte(d.tipo), estado: estadoReporte(d.estado), latitud: Number(d.latitud), longitud: Number(d.longitud) };
+}
+
+export interface ReporteResumenApi { reporteId: number; numeroReporte: string; tipo: string; descripcion: string; fechaReporte: string; estado: string; fotoPrincipal: string | null; reportanteNombre: string; asignadoAMi: boolean }
+export function reporteBandejaApi(d: ReporteResumenApi): ReporteBandeja {
+  return {
+    id: d.reporteId, numeroReporte: d.numeroReporte, tipo: tipoReporte(d.tipo), estado: estadoReporte(d.estado),
+    descripcion: d.descripcion, fechaReporte: d.fechaReporte, fotoPrincipal: d.fotoPrincipal || null,
+    reportanteNombre: d.reportanteNombre, asignadoAMi: d.asignadoAMi === true,
+  };
+}
+
+/** ReporteDetallePublicoDTO o ReporteDetalleDTO: el segundo agrega contacto, dirección y refugio. */
+export interface ReporteDetalleApi {
+  reporteId: number; numeroReporte: string; tipo: string; descripcion: string; fechaReporte: string; estado: string;
+  latitud: number; longitud: number; fotos: string[] | null;
+  direccion?: string | null; puntoReferencia?: string | null; refugioAsignado?: string | null;
+  reportanteNombre?: string; reportanteTelefono?: string | null; mascotaId?: number | null;
+}
+export function detalleReporteApi(d: ReporteDetalleApi): DetalleReporte {
+  return {
+    id: d.reporteId, numeroReporte: d.numeroReporte, tipo: tipoReporte(d.tipo), estado: estadoReporte(d.estado),
+    descripcion: d.descripcion, fechaReporte: d.fechaReporte, latitud: Number(d.latitud), longitud: Number(d.longitud),
+    fotos: d.fotos ?? [], completo: d.reportanteNombre !== undefined,
+    direccion: d.direccion || null, puntoReferencia: d.puntoReferencia || null, refugioAsignado: d.refugioAsignado || null,
+    reportanteNombre: d.reportanteNombre || null, reportanteTelefono: d.reportanteTelefono || null, mascotaId: d.mascotaId ?? null,
+  };
+}

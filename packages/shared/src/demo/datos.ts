@@ -23,7 +23,6 @@ import type { Rol, Usuario } from '../types/usuarios';
 import type { Refugio } from '../types/refugios';
 import type { Mascota, MascotaResumen } from '../types/mascotas';
 import type { SolicitudAdopcion, SolicitudResumen } from '../types/adopcion';
-import type { ReporteResumen } from '../types/reportes';
 import type { EtapaLineaTiempo } from '../types/trazabilidad';
 
 /** Credenciales de prueba. La contrasena es la misma para los tres. */
@@ -429,16 +428,32 @@ export function lineaTiempo(id: number): readonly EtapaLineaTiempo[] {
 
 /* ------------------------------------------------------------- Reportes */
 
+/** Reporte guardado en el demo: junta lo que el backend reparte entre mapa, bandeja y detalle. */
+export interface ReporteDemo {
+  id: number; numeroReporte: string; tipo: TipoReporte; estado: EstadoReporte; fechaReporte: string; descripcion: string;
+  latitud: number; longitud: number; direccion: string | null; puntoReferencia: string | null; fotos: string[];
+  refugioId: number | null; refugioNombre: string | null; usuarioId: number | null; reportanteNombre: string; reportanteTelefono: string | null;
+  mascotaId: number | null; activo: boolean;
+}
+
+const CIUDADANO = { usuarioId: null, reportanteNombre: 'Anónimo', reportanteTelefono: null };
+
 /** Reportes de ejemplo ubicados en barrios reales de Cali. */
-export const REPORTES: readonly ReporteResumen[] = [
-  { id: 1, numeroReporte: 'REP-0188', tipo: TipoReporte.Herido, estado: EstadoReporte.EnAtencion, fechaReporte: hace(0), zona: 'Comuna 18', fotoPrincipal: null, refugioAsignado: 'Refugio Patitas Felices', esPrioritario: true,
-    latitud: 3.3811, longitud: -76.5536, direccion: 'Cra. 94 #1-50, Meléndez', descripcion: 'Perro mediano, cojea de la pata trasera. Está junto a la tienda de la esquina.' },
-  { id: 2, numeroReporte: 'REP-0187', tipo: TipoReporte.EnCalle, estado: EstadoReporte.Recibido, fechaReporte: hace(1), zona: 'Comuna 22', fotoPrincipal: null, refugioAsignado: null, esPrioritario: false,
-    latitud: 3.3622, longitud: -76.5297, direccion: 'Calle 18 #122-35, Ciudad Jardín', descripcion: 'Gata con tres gatitos debajo de un carro. Parecen sanos pero sin hogar.' },
-  { id: 3, numeroReporte: 'REP-0186', tipo: TipoReporte.Maltrato, estado: EstadoReporte.Recibido, fechaReporte: hace(2), zona: 'Comuna 3', fotoPrincipal: null, refugioAsignado: null, esPrioritario: true,
-    latitud: 3.4495, longitud: -76.5329, direccion: 'Cra. 8 #13-80, El Calvario', descripcion: 'Perro amarrado al sol todo el día, sin agua. Los vecinos dicen que lleva semanas así.' },
-  { id: 4, numeroReporte: 'REP-0180', tipo: TipoReporte.EnCalle, estado: EstadoReporte.Rescatado, fechaReporte: hace(14), zona: 'Comuna 17', fotoPrincipal: null, refugioAsignado: 'Refugio Patitas Felices', esPrioritario: false,
-    latitud: 3.3754, longitud: -76.5392, direccion: 'Calle 13 #100-20, Ciudad Universitaria', descripcion: 'Cachorro solo en el parque. Ya fue rescatado.' },
-  { id: 5, numeroReporte: 'REP-0185', tipo: TipoReporte.Herido, estado: EstadoReporte.Recibido, fechaReporte: hace(0), zona: 'Comuna 2', fotoPrincipal: null, refugioAsignado: null, esPrioritario: true,
-    latitud: 3.4705, longitud: -76.5277, direccion: 'Av. 6N #28-10, Granada', descripcion: 'Gato atropellado en la avenida, respira pero no se mueve.' },
+export const REPORTES: readonly ReporteDemo[] = [
+  { id: 1, numeroReporte: 'REP-0188', tipo: TipoReporte.Herido, estado: EstadoReporte.EnAtencion, fechaReporte: hace(0), descripcion: 'Perro mediano, cojea de la pata trasera. Está junto a la tienda de la esquina.',
+    latitud: 3.3811, longitud: -76.5536, direccion: 'Cra. 94 #1-50, Meléndez', puntoReferencia: 'Frente a la tienda La Económica', fotos: [],
+    refugioId: 1, refugioNombre: 'Refugio Patitas Felices', usuarioId: null, reportanteNombre: 'Carlos Muñoz', reportanteTelefono: '3157778899', mascotaId: null, activo: true },
+  { id: 2, numeroReporte: 'REP-0187', tipo: TipoReporte.EnCalle, estado: EstadoReporte.Recibido, fechaReporte: hace(1), descripcion: 'Gata con tres gatitos debajo de un carro. Parecen sanos pero sin hogar.',
+    latitud: 3.3622, longitud: -76.5297, direccion: 'Calle 18 #122-35, Ciudad Jardín', puntoReferencia: null, fotos: [],
+    refugioId: null, refugioNombre: null, usuarioId: usuarioDemo(NivelRol.Adoptante).id, reportanteNombre: 'Mariana Ríos', reportanteTelefono: '3001234567', mascotaId: null, activo: true },
+  { id: 3, numeroReporte: 'REP-0186', tipo: TipoReporte.Maltrato, estado: EstadoReporte.Recibido, fechaReporte: hace(2), descripcion: 'Perro amarrado al sol todo el día, sin agua. Los vecinos dicen que lleva semanas así.',
+    latitud: 3.4495, longitud: -76.5329, direccion: 'Cra. 8 #13-80, El Calvario', puntoReferencia: 'Casa de reja verde', fotos: [], refugioId: null, refugioNombre: null, ...CIUDADANO, mascotaId: null, activo: true },
+  { id: 4, numeroReporte: 'REP-0180', tipo: TipoReporte.EnCalle, estado: EstadoReporte.Rescatado, fechaReporte: hace(14), descripcion: 'Cachorro solo en el parque, muy flaco.',
+    latitud: 3.3754, longitud: -76.5392, direccion: 'Calle 13 #100-20, Ciudad Universitaria', puntoReferencia: null, fotos: [],
+    refugioId: 1, refugioNombre: 'Refugio Patitas Felices', usuarioId: null, reportanteNombre: 'Laura Gómez', reportanteTelefono: '3204445566', mascotaId: null, activo: true },
+  { id: 5, numeroReporte: 'REP-0185', tipo: TipoReporte.Herido, estado: EstadoReporte.Recibido, fechaReporte: hace(0), descripcion: 'Gato atropellado en la avenida, respira pero no se mueve.',
+    latitud: 3.4705, longitud: -76.5277, direccion: 'Av. 6N #28-10, Granada', puntoReferencia: null, fotos: [], refugioId: null, refugioNombre: null, ...CIUDADANO, mascotaId: null, activo: true },
+  { id: 6, numeroReporte: 'REP-0183', tipo: TipoReporte.EnCalle, estado: EstadoReporte.EnAtencion, fechaReporte: hace(3), descripcion: 'Perra criolla con collar rojo, parece perdida.',
+    latitud: 3.4212, longitud: -76.5446, direccion: 'Calle 5 #38-20, San Fernando', puntoReferencia: null, fotos: [],
+    refugioId: 2, refugioNombre: 'Huellas del Valle', usuarioId: null, reportanteNombre: 'Pedro Arias', reportanteTelefono: null, mascotaId: null, activo: true },
 ];

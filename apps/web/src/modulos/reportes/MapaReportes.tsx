@@ -1,7 +1,7 @@
 import { useEffect, useRef } from 'react';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
-import { ETIQUETA_TIPO_REPORTE, EstadoReporte, type ReporteResumen } from '@huellitas/shared';
+import { ETIQUETA_TIPO_REPORTE, EstadoReporte, esReportePrioritario, type PinReporte } from '@huellitas/shared';
 
 /*
  * Tiles de OpenStreetMap: sirven para desarrollo y poco tráfico. Antes de
@@ -13,19 +13,17 @@ const ATRIBUCION = '&copy; <a href="https://www.openstreetmap.org/copyright">Ope
 /** Centro de Cali, por si todavía no hay reportes con ubicación. */
 const CALI: L.LatLngTuple = [3.4516, -76.532];
 
-export type ReporteUbicado = ReporteResumen & { latitud: number; longitud: number };
-
-export const tieneUbicacion = (r: ReporteResumen): r is ReporteUbicado =>
-  typeof r.latitud === 'number' && typeof r.longitud === 'number';
+/** Lo mínimo para dibujar un pin: lo que trae GET /mapa. */
+export type ReporteUbicado = Pick<PinReporte, 'id' | 'numeroReporte' | 'tipo' | 'estado' | 'latitud' | 'longitud'>;
 
 /** Prioritarios en rojo, en atención en ámbar, cerrados en gris; el resto en verde. */
-function claseMarcador(r: ReporteResumen): string {
-  if (r.estado === EstadoReporte.Recibido) return r.esPrioritario ? 'pin--urgente' : 'pin--nuevo';
+function claseMarcador(r: ReporteUbicado): string {
+  if (r.estado === EstadoReporte.Recibido) return esReportePrioritario(r.tipo) ? 'pin--urgente' : 'pin--nuevo';
   if (r.estado === EstadoReporte.EnAtencion) return 'pin--atencion';
   return 'pin--cerrado';
 }
 
-function icono(r: ReporteResumen, seleccionado: boolean) {
+function icono(r: ReporteUbicado, seleccionado: boolean) {
   return L.divIcon({
     className: '',
     html: `<span class="pin ${claseMarcador(r)}${seleccionado ? ' pin--activo' : ''}"><span></span></span>`,
@@ -76,7 +74,7 @@ export function MapaReportes({ reportes, seleccionado, alSeleccionar }: Props) {
         title: `${r.numeroReporte} · ${ETIQUETA_TIPO_REPORTE[r.tipo]}`,
         alt: `${r.numeroReporte}, ${ETIQUETA_TIPO_REPORTE[r.tipo]}`,
         keyboard: true,
-        zIndexOffset: r.id === seleccionado ? 1000 : r.esPrioritario ? 500 : 0,
+        zIndexOffset: r.id === seleccionado ? 1000 : esReportePrioritario(r.tipo) ? 500 : 0,
       });
       marcador.on('click', () => alSeleccionarActual.current(r.id));
       marcador.addTo(grupo);

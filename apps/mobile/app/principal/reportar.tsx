@@ -1,17 +1,16 @@
 import { useEffect, useRef, useState } from 'react';
-import { ActivityIndicator, Keyboard, KeyboardAvoidingView, Platform, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
-import { useRouter } from 'expo-router';
+import { ActivityIndicator, Image, Keyboard, KeyboardAvoidingView, Platform, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
+import * as ImagePicker from 'expo-image-picker';
 import * as Location from 'expo-location';
+import { useRouter } from 'expo-router';
 import { useMutation } from '@tanstack/react-query';
-import { CircleCheck, Footprints, Hand, HeartPulse, LocateFixed, MapPin, PawPrint, Search, ShieldAlert, X, type LucideIcon } from 'lucide-react-native';
-import { ETIQUETA_TIPO_REPORTE, TipoReporte, ErrorHttp } from '@huellitas/shared';
-import { api, MODO_DEMO } from '@/lib/api';
+import { CircleCheck, Footprints, Hand, HeartPulse, ImagePlus, LocateFixed, Lock, MapPin, PawPrint, Search, ShieldAlert, X, type LucideIcon } from 'lucide-react-native';
+import { ETIQUETA_TIPO_REPORTE, TipoReporte, ErrorHttp, validarArchivoServidor, type ReporteCreado } from '@huellitas/shared';
+import { api } from '@/lib/api';
 import { useSesion } from '@/lib/sesion';
 import { buscarDirecciones, direccionDe, type ResultadoDireccion } from '@/lib/direccion';
 import { useEspacioBarraPestanas } from '@/componentes/BarraPestanas';
-import { AvisoSesion } from '@/componentes/AvisoSesion';
 import { Boton } from '@/componentes/Boton';
-import { EstadoVacio } from '@/componentes/EstadoVacio';
 import { Mapa } from '@/componentes/mapa/Mapa';
 import { CENTRO_CALI, type ControlMapa, type Coordenada } from '@/componentes/mapa/tipos';
 import { espaciado, radios, usarPaleta } from '@/temas';
@@ -22,17 +21,25 @@ const TIPOS: readonly { valor: TipoReporte; icono: LucideIcon }[] = [
   { valor: TipoReporte.Maltrato, icono: ShieldAlert },
 ];
 const MINIMO_DESCRIPCION = 10;
+const MAX_FOTOS = 3;
+
+function textoError(e: unknown): string {
+  if (e instanceof ErrorHttp && e.estadoHttp === 429) return 'Enviaste varios reportes seguidos. Espera un minuto e inténtalo de nuevo.';
+  return e instanceof ErrorHttp ? e.detalle ?? e.message : 'No pudimos enviar el reporte. Revisa tu conexión e inténtalo de nuevo.';
+}
 
 /**
  * HU-REP-01: reportar un animal en la calle. El mapa ocupa toda la
  * pantalla y el pin queda fijo en el centro: se mueve el mapa hasta donde
  * está el animal (como al pedir un taxi). Al mantener presionado un punto,
  * el mapa se centra ahí y sube la tarjeta para contar qué pasó.
+ * No pide sesión: el backend acepta reportes anónimos. Las fotos sí piden
+ * sesión; con ella el reporte queda a nombre de la persona y puede retirarlo.
  */
 export default function PantallaReportar() {
   const paleta = usarPaleta();
-  const router = useRouter();
   const espacioBarra = useEspacioBarraPestanas();
+  const router = useRouter();
   const { usuario } = useSesion();
   const mapa = useRef<ControlMapa>(null);
   const [centro, setCentro] = useState<Coordenada>(CENTRO_CALI);
@@ -40,7 +47,11 @@ export default function PantallaReportar() {
   const [buscando, setBuscando] = useState(false);
   const [tipo, setTipo] = useState<TipoReporte>(TipoReporte.Herido);
   const [descripcion, setDescripcion] = useState('');
-  const [enviado, setEnviado] = useState<string | null>(null);
+  const [referencia, setReferencia] = useState('');
+  const [fotos, setFotos] = useState<string[]>([]);
+  const [subiendo, setSubiendo] = useState(false);
+  const [errorFotos, setErrorFotos] = useState('');
+  const [enviado, setEnviado] = useState<ReporteCreado | null>(null);
   const [altoTarjeta, setAltoTarjeta] = useState(0);
   // La tarjeta de "¿Qué le pasa al animal?" solo aparece al mantener presionado el mapa.
   const [abierta, setAbierta] = useState(false);
@@ -50,12 +61,47 @@ export default function PantallaReportar() {
   const [buscandoLugar, setBuscandoLugar] = useState(false);
 
   const enviar = useMutation({
-    mutationFn: () => api.reportes.crear({ tipo, descripcion: descripcion.trim(), latitud: centro.latitud, longitud: centro.longitud, direccion: direccion ?? undefined }),
-    onSuccess: (reporte) => { setEnviado(reporte.numeroReporte); setDescripcion(''); },
+    mutationFn: () => api.reportes.crear({
+      tipo, descripcion: descripcion.trim(), latitud: centro.latitud, longitud: centro.longitud,
+      direccion: direccion ?? undefined, puntoReferencia: referencia, fotosUrls: fotos,
+    }),
+    onSuccess: (reporte) => { setEnviado(reporte); setDescripcion(''); setReferencia(''); setFotos([]); },
+  });
+  // Quien reportó con sesión puede retirarlo mientras ningún refugio lo tome.
+  const retirar = useMutation({
+    mutationFn: (id: number) => api.reportes.eliminar(id, 'Retirado por quien lo reportó'),
+    onSuccess: () => cerrarTarjeta(),
   });
 
+  async function agregarFotos() {
+    setErrorFotos('');
+    const resultado = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ['images'], allowsMultipleSelection: true, selectionLimit: MAX_FOTOS - fotos.length, quality: 0.8 });
+    if (resultado.canceled) return;
+    setSubiendo(true);
+    try {
+      const nuevas: string[] = [];
+      for (const activo of resultado.assets) {
+        const nombre = activo.fileName ?? `reporte-${Date.now()}.jpg`;
+        const problema = validarArchivoServidor(nombre, activo.fileSize ?? 1, true);
+        if (problema) { setErrorFotos(`${nombre}: ${problema}`); continue; }
+        const form = new FormData();
+        form.append('tipo', 'reportes');
+        if (Platform.OS === 'web' && activo.file) form.append('archivo', activo.file);
+        else form.append('archivo', { uri: activo.uri, name: nombre, type: activo.mimeType ?? 'image/jpeg' } as unknown as Blob);
+        nuevas.push(await api.archivos.subir(form));
+      }
+      setFotos((f) => [...f, ...nuevas].slice(0, MAX_FOTOS));
+    } catch (e) {
+      setErrorFotos(e instanceof ErrorHttp && e.estadoHttp === 401
+        ? 'Tu sesión expiró. Inicia sesión de nuevo para subir fotos, o envía el reporte sin ellas.'
+        : e instanceof ErrorHttp ? e.detalle ?? e.message : 'No pudimos subir las fotos.');
+    } finally {
+      setSubiendo(false);
+    }
+  }
+
   // Al entrar, el mapa se ubica donde está la persona (si da permiso).
-  useEffect(() => { if (usuario && MODO_DEMO) void irAMiUbicacion(); }, [usuario]);
+  useEffect(() => { void irAMiUbicacion(); }, []);
 
   // La dirección se pide cuando el mapa se queda quieto, no en cada
   // movimiento (Nominatim admite una consulta por segundo).
@@ -118,23 +164,7 @@ export default function PantallaReportar() {
     setAbierta(false);
     setEnviado(null);
     enviar.reset();
-  }
-
-  if (!usuario) {
-    return <AvisoSesion titulo="Reporta un animal" mensaje="Para reportar necesitamos saber quién lo vio, por si el refugio debe contactarte." />;
-  }
-
-  // El backend todavía no tiene el endpoint de reportes ciudadanos (HU-REP-01):
-  // mejor avisarlo antes de que la persona llene el formulario.
-  if (!MODO_DEMO) {
-    return (
-      <EstadoVacio
-        ilustracion="trio"
-        titulo="Muy pronto podrás reportar"
-        descripcion="Estamos terminando esta función. Mientras tanto, si ves un animal en peligro, contacta directamente a un refugio desde su perfil."
-        accion={<Boton titulo="Ver mascotas y refugios" variante="secundario" alPresionar={() => router.navigate('/principal/catalogo')} />}
-      />
-    );
+    retirar.reset();
   }
 
   const listo = descripcion.trim().length >= MINIMO_DESCRIPCION;
@@ -264,11 +294,16 @@ export default function PantallaReportar() {
           {enviado ? (
             <View style={estilos.enviado}>
               <CircleCheck size={36} strokeWidth={1.75} color={paleta.brandStrong} />
-              <Text style={[estilos.titulo, { color: paleta.ink, textAlign: 'center' }]}>¡Gracias por reportar!</Text>
+              <Text style={[estilos.titulo, { color: paleta.ink, textAlign: 'center' }]}>¡Gracias por tu reporte!</Text>
               <Text style={[estilos.ayuda, { color: paleta.inkMuted, textAlign: 'center' }]}>
-                Tu reporte quedó con el número {enviado}. Te avisaremos cuando un refugio lo tome.
+                Quedó registrado con el número {enviado.numeroReporte}.
               </Text>
+              {retirar.isError && <Text accessibilityRole="alert" style={{ color: paleta.danger, fontSize: 13, textAlign: 'center' }}>{textoError(retirar.error)}</Text>}
               <Boton titulo="Hacer otro reporte" variante="secundario" alPresionar={cerrarTarjeta} />
+              {/* Retirar sí pide sesión en el backend: solo quien reportó con su cuenta. */}
+              {usuario && (
+                <Boton titulo="Me equivoqué, retirar el reporte" variante="peligro" cargando={retirar.isPending} alPresionar={() => retirar.mutate(enviado.id)} />
+              )}
             </View>
           ) : (
             <>
@@ -310,6 +345,47 @@ export default function PantallaReportar() {
                 placeholderTextColor={paleta.inkMuted}
                 style={[estilos.area, { borderColor: paleta.border, backgroundColor: paleta.surface200, color: paleta.ink }]}
               />
+              <TextInput
+                accessibilityLabel="Punto de referencia (opcional)"
+                value={referencia}
+                onChangeText={setReferencia}
+                maxLength={200}
+                placeholder="Punto de referencia (opcional): frente a la tienda…"
+                placeholderTextColor={paleta.inkMuted}
+                style={[estilos.linea, { borderColor: paleta.border, backgroundColor: paleta.surface200, color: paleta.ink }]}
+              />
+              {usuario ? (
+                <View style={estilos.fotos}>
+                  {fotos.map((uri, i) => (
+                    <Pressable key={uri} accessibilityRole="button" accessibilityLabel={`Quitar la foto ${i + 1}`} onPress={() => setFotos((f) => f.filter((x) => x !== uri))}>
+                      <Image source={{ uri }} style={estilos.foto} />
+                      <View style={[estilos.quitar, { backgroundColor: paleta.surface100 }]}><X size={12} strokeWidth={2.5} color={paleta.ink} /></View>
+                    </Pressable>
+                  ))}
+                  {fotos.length < MAX_FOTOS && (
+                    <Pressable accessibilityRole="button" accessibilityLabel="Agregar fotos del animal" disabled={subiendo} onPress={() => void agregarFotos()}
+                      style={[estilos.foto, estilos.agregar, { borderColor: paleta.border, backgroundColor: paleta.surface200 }]}>
+                      {subiendo ? <ActivityIndicator color={paleta.brandStrong} /> : <ImagePlus size={22} strokeWidth={1.75} color={paleta.brandStrong} />}
+                    </Pressable>
+                  )}
+                </View>
+              ) : (
+                // Sin sesión se puede reportar, pero las fotos quedan bloqueadas.
+                <View style={estilos.fotosBloqueadas}>
+                  <View accessible accessibilityRole="button" accessibilityState={{ disabled: true }} accessibilityLabel="Agregar fotos, bloqueado: solo con sesión iniciada"
+                    style={[estilos.foto, estilos.agregar, { borderColor: paleta.border, backgroundColor: paleta.surface200, opacity: 0.55 }]}>
+                    <ImagePlus size={20} strokeWidth={1.75} color={paleta.inkMuted} />
+                    <View style={[estilos.candado, { backgroundColor: paleta.surface100, borderColor: paleta.border }]}>
+                      <Lock size={11} strokeWidth={2.4} color={paleta.inkMuted} />
+                    </View>
+                  </View>
+                  <Text style={[estilos.ayuda, { color: paleta.inkMuted, flex: 1 }]}>
+                    Subir fotos es solo para quien inicia sesión.{' '}
+                    <Text accessibilityRole="link" onPress={() => router.push('/login')} style={{ color: paleta.brandStrong, fontWeight: '700' }}>Iniciar sesión</Text>
+                  </Text>
+                </View>
+              )}
+              {errorFotos !== '' && <Text accessibilityRole="alert" style={{ color: paleta.danger, fontSize: 13 }}>{errorFotos}</Text>}
               {tipo === TipoReporte.Maltrato && (
                 <Text style={[estilos.ayuda, { color: paleta.inkMuted }]}>
                   Este reporte avisa a los refugios; no reemplaza la denuncia ante las autoridades (Ley 1774 de 2016).
@@ -317,13 +393,13 @@ export default function PantallaReportar() {
               )}
               {enviar.isError && (
                 <Text accessibilityRole="alert" style={{ color: paleta.danger, fontSize: 13 }}>
-                  {enviar.error instanceof ErrorHttp ? enviar.error.message : 'No pudimos enviar el reporte. Inténtalo de nuevo.'}
+                  {textoError(enviar.error)}
                 </Text>
               )}
               <Boton
                 titulo={listo ? 'Enviar reporte' : 'Describe lo que viste para enviar'}
                 cargando={enviar.isPending}
-                deshabilitado={!listo}
+                deshabilitado={!listo || subiendo}
                 alPresionar={() => enviar.mutate()}
               />
             </>
@@ -365,5 +441,12 @@ const estilos = StyleSheet.create({
   chip: { flexDirection: 'row', alignItems: 'center', gap: 6, minHeight: 40, paddingHorizontal: espaciado.s3, borderWidth: 1, borderRadius: radios.pill },
   area: { minHeight: 72, maxHeight: 120, padding: espaciado.s3, borderWidth: 1, borderRadius: radios.md, fontSize: 15, textAlignVertical: 'top' },
   ayuda: { fontSize: 13, lineHeight: 19 },
+  linea: { minHeight: 44, paddingHorizontal: espaciado.s3, borderWidth: 1, borderRadius: radios.md, fontSize: 15 },
+  fotos: { flexDirection: 'row', flexWrap: 'wrap', gap: espaciado.s2 },
+  foto: { width: 56, height: 56, borderRadius: radios.sm },
+  agregar: { borderWidth: 1, borderStyle: 'dashed', alignItems: 'center', justifyContent: 'center' },
+  fotosBloqueadas: { flexDirection: 'row', alignItems: 'center', gap: espaciado.s3 },
+  candado: { position: 'absolute', right: -5, bottom: -5, width: 20, height: 20, borderRadius: 10, borderWidth: 1, alignItems: 'center', justifyContent: 'center' },
+  quitar: { position: 'absolute', top: -6, right: -6, width: 20, height: 20, borderRadius: 10, alignItems: 'center', justifyContent: 'center' },
   enviado: { alignItems: 'center', gap: espaciado.s2, paddingVertical: espaciado.s2 },
 });

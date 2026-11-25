@@ -1,6 +1,6 @@
 import { afterEach, expect, it, vi } from 'vitest';
 import {
-  crearApi, AlmacenMemoria, EstadoApadrinamiento, EstadoReporte, EstadoNecesidad, EstadoSeguimiento, ResultadoSeguimiento, TipoEvento, TipoNecesidad,
+  crearApi, AlmacenMemoria, EstadoApadrinamiento, EstadoReporte, TipoReporte, Sexo, EstadoNecesidad, EstadoSeguimiento, ResultadoSeguimiento, TipoEvento, TipoNecesidad,
   etiquetaEstadoSolicitud, describirNotificacion, agruparPorDia,
 } from '../packages/shared/src';
 
@@ -194,15 +194,72 @@ it('Mateo: resultado por nombre, esPropia, editar/eliminar opinión y registro d
   expect(JSON.parse(fetch.mock.calls[4][1].body)).toMatchObject({ nombreEncargado: 'Ana', nombreRefugio: 'Huellas', contrasena: 'Clave1234*', aceptaPolitica: true });
 });
 
-it('demo: el refugio ve los reportes en el mapa, toma uno libre y lo cierra', async () => {
+it('reportes: rutas, verbos y traducción de los DTOs del backend (ca46f35)', async () => {
+  const { api, fetch } = await preparar(
+    Response.json({ mensaje: 'Reporte registrado.', id: 31, numeroReporte: 'REP-2026-0031' }, { status: 201 }),
+    Response.json([{ reporteId: 31, numeroReporte: 'REP-2026-0031', tipo: 'Herido', estado: 'EnAtencion', latitud: 3.45, longitud: -76.53 }]),
+    Response.json(paginado([{ reporteId: 31, numeroReporte: 'REP-2026-0031', tipo: 'Maltrato', descripcion: 'x', fechaReporte: '2026-11-23T10:00:00', estado: 'Recibido', fotoPrincipal: null, reportanteNombre: 'Ana', asignadoAMi: false }])),
+    Response.json({ reporteId: 31, numeroReporte: 'REP-2026-0031', tipo: 'EnCalle', descripcion: 'x', fechaReporte: '2026-11-23', estado: 'NoEncontrado', latitud: 3.4, longitud: -76.5, fotos: [] }),
+    Response.json({ reporteId: 31, numeroReporte: 'REP-2026-0031', tipo: 'Otro', descripcion: 'x', fechaReporte: '2026-11-23', estado: 'Rescatado', latitud: 3.4, longitud: -76.5, fotos: ['https://x/f.jpg'],
+      direccion: 'Cra 1', puntoReferencia: null, refugioAsignado: 'Patitas', reportanteNombre: 'Ana', reportanteTelefono: '300', mascotaId: 9 }),
+    ok(), ok(), ok(), Response.json({ mensaje: 'Mascota creada desde el reporte.', mascotaId: 12 }, { status: 201 }),
+  );
+  const creado = await api.reportes.crear({ tipo: TipoReporte.Herido, descripcion: '  Cojea  ', latitud: 3.45, longitud: -76.53, puntoReferencia: ' ', fotosUrls: [] });
+  expect(creado).toEqual({ id: 31, numeroReporte: 'REP-2026-0031' });
+  expect([fetch.mock.calls[0][0], fetch.mock.calls[0][1].method]).toEqual(['http://api.test/api/v1/Reportes', 'POST']);
+  expect(JSON.parse(fetch.mock.calls[0][1].body)).toEqual({ tipo: 1, descripcion: 'Cojea', latitud: 3.45, longitud: -76.53, direccion: null, puntoReferencia: null, fotosUrls: [] });
+  expect((await api.reportes.mapa())[0]).toEqual({ id: 31, numeroReporte: 'REP-2026-0031', tipo: TipoReporte.Herido, estado: EstadoReporte.EnAtencion, latitud: 3.45, longitud: -76.53 });
+  expect((await api.reportes.bandeja()).items[0]).toMatchObject({ id: 31, tipo: TipoReporte.Maltrato, estado: EstadoReporte.Recibido, asignadoAMi: false });
+  expect(fetch.mock.calls[2][0]).toBe('http://api.test/api/v1/Reportes/bandeja?pagina=1&tamano=50');
+  expect(await api.reportes.obtener(31)).toMatchObject({ estado: EstadoReporte.NoEncontrado, completo: false, reportanteNombre: null });
+  expect(await api.reportes.obtener(31)).toMatchObject({ estado: EstadoReporte.Rescatado, completo: true, reportanteTelefono: '300', mascotaId: 9 });
+  await api.reportes.tomar(31);
+  expect([fetch.mock.calls[5][0], fetch.mock.calls[5][1].method]).toEqual(['http://api.test/api/v1/Reportes/31/tomar', 'PATCH']);
+  await expect(api.reportes.cambiarEstado(31, { nuevoEstado: EstadoReporte.Cerrado })).rejects.toMatchObject({ estadoHttp: 400 });
+  await api.reportes.cambiarEstado(31, { nuevoEstado: EstadoReporte.NoEncontrado, motivo: ' No estaba ' });
+  expect([fetch.mock.calls[6][1].method, JSON.parse(fetch.mock.calls[6][1].body)]).toEqual(['PATCH', { nuevoEstado: EstadoReporte.NoEncontrado, motivo: 'No estaba' }]);
+  await api.reportes.eliminar(31, 'Duplicado');
+  expect([fetch.mock.calls[7][0], fetch.mock.calls[7][1].method]).toEqual(['http://api.test/api/v1/Reportes/31?motivo=Duplicado', 'DELETE']);
+  expect(await api.reportes.convertirEnMascota(31, { nombre: 'Lupe', especieId: 1, tamanoId: 2, colorId: 3, sexo: Sexo.Hembra, esterilizada: false })).toBe(12);
+  expect(fetch.mock.calls[8][0]).toBe('http://api.test/api/v1/Reportes/31/convertir-mascota');
+});
+
+it('demo: reporte anónimo, bandeja del refugio, cierre con motivo y ficha de la mascota', async () => {
   const api = crearApi({ urlBase: '', almacen: new AlmacenMemoria(), modoDemo: true });
+  const { id } = await api.reportes.crear({ tipo: TipoReporte.Herido, descripcion: 'Perro con la pata herida', latitud: 3.44, longitud: -76.52 });
+  expect((await api.reportes.obtener(id)).completo).toBe(false);
+
   await api.autenticacion.login({ correo: 'refugio@huellitas.co', contrasena: 'Demo1234' });
-  const mapa = await api.reportes.mapa();
-  expect(mapa.every(r => typeof r.latitud === 'number' && typeof r.longitud === 'number')).toBe(true);
-  const libre = mapa.find(r => !r.refugioAsignado)!;
-  await api.reportes.tomar(libre.id);
-  await expect(api.reportes.tomar(libre.id)).rejects.toMatchObject({ estadoHttp: 409 });
-  expect((await api.reportes.mapa()).find(r => r.id === libre.id)).toMatchObject({ estado: EstadoReporte.EnAtencion, refugioAsignado: expect.any(String) });
-  await api.reportes.cambiarEstado(libre.id, { nuevoEstado: EstadoReporte.Rescatado });
-  expect((await api.reportes.mapa()).find(r => r.id === libre.id)!.estado).toBe(EstadoReporte.Rescatado);
+  const bandeja = (await api.reportes.bandeja()).items;
+  expect(bandeja.find(r => r.id === id)).toMatchObject({ asignadoAMi: false, reportanteNombre: 'Anónimo' });
+  expect(bandeja.some(r => r.numeroReporte === 'REP-0183')).toBe(false); // de otro refugio
+  await api.reportes.tomar(id);
+  await expect(api.reportes.tomar(id)).rejects.toMatchObject({ estadoHttp: 409 });
+  expect(await api.reportes.obtener(id)).toMatchObject({ completo: true, estado: EstadoReporte.EnAtencion, refugioAsignado: 'Refugio Patitas Felices' });
+  await expect(api.reportes.convertirEnMascota(id, { nombre: 'Toby', especieId: 1, tamanoId: 1, colorId: 1, sexo: Sexo.Macho, esterilizada: false })).rejects.toMatchObject({ estadoHttp: 409 });
+  await api.reportes.cambiarEstado(id, { nuevoEstado: EstadoReporte.Rescatado });
+  const mascotaId = await api.reportes.convertirEnMascota(id, { nombre: 'Toby', especieId: 1, tamanoId: 1, colorId: 1, sexo: Sexo.Macho, esterilizada: false });
+  expect((await api.reportes.obtener(id)).mascotaId).toBe(mascotaId);
+
+  const otro = (await api.reportes.bandeja()).items.find(r => r.estado === EstadoReporte.Recibido)!;
+  await api.reportes.tomar(otro.id);
+  await expect(api.reportes.cambiarEstado(otro.id, { nuevoEstado: EstadoReporte.Cerrado, motivo: '' })).rejects.toMatchObject({ estadoHttp: 400 });
+  await api.reportes.cambiarEstado(otro.id, { nuevoEstado: EstadoReporte.NoEncontrado, motivo: 'No estaba en el lugar' });
+  expect((await api.reportes.mapa()).some(r => r.id === otro.id)).toBe(false);
+});
+
+it('endpoints del back sin pantalla: alertas de seguimiento, solicitar refugio con mi cuenta y tipos de vivienda', async () => {
+  const { api, fetch } = await preparar(
+    Response.json({ mensaje: 'Alertas procesadas.' }),
+    Response.json({ mensaje: 'Solicitud de registro enviada.' }),
+    Response.json([{ id: 1, nombre: 'Casa' }, { id: 2, nombre: 'Apartamento' }]),
+  );
+  expect(await api.trazabilidad.procesarAlertas()).toBe('Alertas procesadas.');
+  expect([fetch.mock.calls[0][0], fetch.mock.calls[0][1].method]).toEqual(['http://api.test/api/v1/Seguimientos/procesar-alertas', 'POST']);
+  await expect(api.refugios.solicitarConMiCuenta({ nombre: '', nit: '', direccion: '', telefono: '', correo: '', encargado: '' })).rejects.toMatchObject({ estadoHttp: 400 });
+  await api.refugios.solicitarConMiCuenta({ nombre: ' Huellas ', nit: '900123456-7', direccion: 'Cra 1', telefono: '300 123 4567', correo: 'r@h.co', encargado: 'Ana', redesSociales: { instagram: '@huellas' } });
+  expect(fetch.mock.calls[1][0]).toBe('http://api.test/api/v1/Refugios/solicitar');
+  expect(JSON.parse(fetch.mock.calls[1][1].body)).toMatchObject({ nombre: 'Huellas', telefono: '3001234567', redesSociales: { instagram: '@huellas' } });
+  expect(await api.catalogos.tiposVivienda()).toEqual([{ id: 1, nombre: 'Casa' }, { id: 2, nombre: 'Apartamento' }]);
+  expect(fetch.mock.calls[2][0]).toBe('http://api.test/api/v1/Catalogos/tipos-vivienda');
 });

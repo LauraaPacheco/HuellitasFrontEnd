@@ -1,70 +1,95 @@
-import type { EntidadBase, FiltroPaginado } from './comun';
-import type { EstadoReporte, TipoReporte } from './enums';
-import type { Multimedia } from './mascotas';
+import type { EstadoReporte, Sexo, TipoReporte } from './enums';
 
-/** Objeto de valor embebido en el reporte: no tiene vida propia. */
-export interface Ubicacion {
-  readonly latitud: number;
-  readonly longitud: number;
-  readonly direccion: string | null;
-  readonly puntoDeReferencia: string | null;
-}
+/**
+ * Reportes ciudadanos (HU-REP-01 a 04) contra /api/v1/Reportes (ca46f35, 7f6a3f1).
+ * El backend parte la información en tres vistas: el mapa (público, solo
+ * ubicación), la bandeja del refugio (sin ubicación) y el detalle.
+ */
 
-export interface ReporteResumen {
+/** GET /mapa: pin público. Solo trae reportes Recibido, En atención y Rescatado. */
+export interface PinReporte {
   readonly id: number;
   readonly numeroReporte: string;
   readonly tipo: TipoReporte;
   readonly estado: EstadoReporte;
-  readonly fechaReporte: string;
-  readonly zona: string | null;
-  readonly fotoPrincipal: string | null;
-  readonly refugioAsignado: string | null;
-  /** Los heridos y los casos de maltrato se muestran primero. */
-  readonly esPrioritario: boolean;
-  /** Para ubicarlo en el mapa del panel. Null si el reporte no trae coordenadas. */
-  readonly latitud: number | null;
-  readonly longitud: number | null;
-  readonly direccion: string | null;
-  readonly descripcion: string | null;
+  readonly latitud: number;
+  readonly longitud: number;
 }
 
-export interface ReporteCiudadano extends EntidadBase {
+/** GET /bandeja: los reportes libres y los que ya tomó el refugio que consulta. */
+export interface ReporteBandeja {
+  readonly id: number;
   readonly numeroReporte: string;
-  readonly usuarioId: number;
-  readonly nombreReportante: string;
-  readonly refugioId: number | null;
-  readonly refugioNombre: string | null;
-  readonly mascotaId: number | null;
   readonly tipo: TipoReporte;
+  readonly estado: EstadoReporte;
   readonly descripcion: string;
   readonly fechaReporte: string;
+  readonly fotoPrincipal: string | null;
+  readonly reportanteNombre: string;
+  readonly asignadoAMi: boolean;
+}
+
+/**
+ * GET /{id}. Lo público (tipo, descripción, fotos, ubicación) lo ve
+ * cualquiera; el resto solo el refugio asignado, el admin o quien reportó.
+ * `completo` dice cuál de las dos versiones llegó.
+ */
+export interface DetalleReporte {
+  readonly id: number;
+  readonly numeroReporte: string;
+  readonly tipo: TipoReporte;
   readonly estado: EstadoReporte;
-  readonly motivoCierre: string | null;
-  readonly ubicacion: Ubicacion;
-  readonly evidencias: readonly Multimedia[];
+  readonly descripcion: string;
+  readonly fechaReporte: string;
+  readonly latitud: number;
+  readonly longitud: number;
+  readonly fotos: readonly string[];
+  readonly completo: boolean;
+  readonly direccion: string | null;
+  readonly puntoReferencia: string | null;
+  readonly refugioAsignado: string | null;
+  readonly reportanteNombre: string | null;
+  readonly reportanteTelefono: string | null;
+  /** La ficha creada desde el reporte rescatado. */
+  readonly mascotaId: number | null;
 }
 
-/* ---------- Filtros y DTOs ---------- */
+/* ---------- DTOs ---------- */
 
-export interface FiltroReporte extends FiltroPaginado {
-  tipo?: TipoReporte;
-  estado?: EstadoReporte;
-  refugioId?: number;
-  soloActivos?: boolean;
-  desde?: string;
-  hasta?: string;
-}
-
+/** POST / (también sin sesión) y PUT /{id} (solo administrador). */
 export interface CrearReporteDto {
   tipo: TipoReporte;
   descripcion: string;
   latitud: number;
   longitud: number;
   direccion?: string;
-  puntoDeReferencia?: string;
+  puntoReferencia?: string;
+  /** Ya subidas a /api/v1/Archivos (eso sí pide sesión). */
+  fotosUrls?: readonly string[];
 }
 
+export type EditarReporteDto = CrearReporteDto;
+
+export interface ReporteCreado {
+  readonly id: number;
+  readonly numeroReporte: string;
+}
+
+/** Desde En atención a Rescatado, No encontrado o Cerrado; los dos últimos piden motivo. */
 export interface CambioEstadoReporteDto {
   nuevoEstado: EstadoReporte;
   motivo?: string;
+}
+
+/** POST /{id}/convertir-mascota: solo con el reporte Rescatado y por el refugio asignado. */
+export interface ConvertirReporteDto {
+  nombre: string;
+  especieId: number;
+  razaId?: number | null;
+  tamanoId: number;
+  colorId: number;
+  sexo: Sexo;
+  edadAproximada?: number | null;
+  descripcion?: string;
+  esterilizada: boolean;
 }

@@ -68,5 +68,17 @@
 .reporte-detalle__nota { margin: 0; padding: var(--space-3); border-radius: var(--radius-md); background: color-mix(in srgb, var(--warn) 10%, var(--surface-100)); color: var(--ink); font-size: 0.875rem; }
 .reporte-detalle__acciones { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-2); }
 .reporte-detalle__acciones > .boton--texto:last-child { margin-left: auto; }
-.reporte-detalle__estado { display: flex; gap: var(--space-2); flex-wrap: wrap; }
-.reporte-detalle__estado select { min-width: 150px; }
+
+.reporte-detalle__fotos { display: flex; flex-wrap: wrap; gap: var(--space-2); }
+.reporte-detalle__fotos a { display: block; width: 84px; height: 84px; border-radius: var(--radius-sm); overflow: hidden; background: var(--surface-300); }
+.reporte-detalle__fotos img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.reporte-detalle__datos a { color: var(--brand-strong); font-weight: 600; }
+.reporte-detalle__estado { display: grid; gap: var(--space-2); padding-top: var(--space-2); border-top: 1px solid var(--border); }
+.reporte-detalle__estado .boton { justify-self: start; }
+.reporte-detalle__acciones > .boton--texto:last-child { margin-left: auto; }
+
+.reporte-formulario { display: grid; gap: var(--space-3); }
+.reporte-formulario__ayuda { margin: 0; font-size: 0.875rem; color: var(--ink-muted); }
+.reporte-formulario__fila { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--space-3); }
+@media (max-width: 540px) { .reporte-formulario__fila { grid-template-columns: minmax(0, 1fr); } }
+.reporte-formulario__check { display: flex; align-items: center; gap: var(--space-2); min-height: 40px; }
