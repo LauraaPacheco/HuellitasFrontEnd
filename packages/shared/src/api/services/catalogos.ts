@@ -43,4 +43,9 @@ export class ServicioCatalogos {
   temperamentos(): Promise<readonly Temperamento[]> {
     return this.api.get<readonly Temperamento[]>(RUTAS.catalogos.temperamentos);
   }
+
+  /** Tabla TiposVivienda: { id, nombre }. Los nombres coinciden con el enum (Casa, Apartamento, Finca). */
+  tiposVivienda(): Promise<readonly { id: number; nombre: string }[]> {
+    return this.api.get<readonly { id: number; nombre: string }[]>(RUTAS.catalogos.tiposVivienda);
+  }
 }

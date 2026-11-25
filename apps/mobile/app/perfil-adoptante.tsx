@@ -1,4 +1,5 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import { ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -7,6 +8,7 @@ import {
   ErrorHttp, TipoVivienda, ETIQUETA_TIPO_VIVIENDA, prepararPerfilAdoptante,
   validarPerfilAdoptante, type PerfilAdoptanteFormulario, type Usuario,
 } from '@huellitas/shared';
+import { api } from '@/lib/api';
 import { useSesion } from '@/lib/sesion';
 import { CargarPerfil } from '@/componentes/CargarPerfil';
 import { OpcionesPerfil } from '@/componentes/OpcionesPerfil';
@@ -28,6 +30,20 @@ const VIVIENDAS = [TipoVivienda.Casa, TipoVivienda.Apartamento, TipoVivienda.Fin
   etiqueta: ETIQUETA_TIPO_VIVIENDA[valor],
   icono: ICONO_VIVIENDA[valor],
 }));
+const POR_NOMBRE: Record<string, TipoVivienda> = { casa: TipoVivienda.Casa, apartamento: TipoVivienda.Apartamento, finca: TipoVivienda.Finca };
+
+/**
+ * Las opciones salen de GET /Catalogos/tipos-vivienda; el perfil se guarda
+ * con el número del enum, así que se cruzan por nombre. Si el catálogo no
+ * carga o no trae nada conocido, se usan las tres de siempre.
+ */
+function opcionesVivienda(catalogo?: readonly { id: number; nombre: string }[]) {
+  const opciones = (catalogo ?? []).flatMap(({ nombre }) => {
+    const valor = POR_NOMBRE[nombre.trim().toLowerCase()];
+    return valor === undefined ? [] : [{ valor, etiqueta: nombre.trim(), icono: ICONO_VIVIENDA[valor] }];
+  });
+  return opciones.length ? opciones : VIVIENDAS;
+}
 
 /** Cuantas de las seis preguntas ya tienen respuesta. */
 function respondidas(d: PerfilAdoptanteFormulario) {
@@ -56,6 +72,8 @@ function FormularioAdoptante({ usuario }: { usuario: Usuario }) {
   const margenes = useSafeAreaInsets();
   const router = useRouter();
   const { guardarPerfilAdoptante } = useSesion();
+  const catalogo = useQuery({ queryKey: ['catalogo', 'tipos-vivienda'], queryFn: () => api.catalogos.tiposVivienda(), staleTime: 60 * 60 * 1000, retry: false });
+  const viviendas = useMemo(() => opcionesVivienda(catalogo.data), [catalogo.data]);
   const [datos, setDatos] = useState<PerfilAdoptanteFormulario>(() => ({
     tipoVivienda: usuario.perfil?.tipoVivienda ?? null,
     espacioDisponible: usuario.perfil?.espacioDisponible ?? '',
@@ -126,7 +144,7 @@ function FormularioAdoptante({ usuario }: { usuario: Usuario }) {
         </View>
 
         <Tarjeta titulo="Tu hogar" icono={House}>
-          <OpcionesPerfil apiladas etiqueta="Tipo de vivienda" opciones={VIVIENDAS} valor={datos.tipoVivienda}
+          <OpcionesPerfil apiladas etiqueta="Tipo de vivienda" opciones={viviendas} valor={datos.tipoVivienda}
             alCambiar={(valor) => cambiar('tipoVivienda', valor)} error={errores.tipoVivienda} deshabilitado={guardando} />
           <Campo etiqueta="Espacio disponible" valor={datos.espacioDisponible} multilinea
             marcador="Por ejemplo: apartamento con balcón protegido"

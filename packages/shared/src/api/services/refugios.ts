@@ -1,6 +1,6 @@
 import { ErrorHttp, type ClienteApi } from '../client';
 import { EstadoVerificacion } from '../../types/enums';
-import { leerRedesSociales, limpiarRedesSociales } from '../../utils/refugios';
+import { leerRedesSociales, limpiarRedesSociales, normalizarRefugio, validarRefugio } from '../../utils/refugios';
 import { RUTAS } from '../rutas';
 import type { FiltroPaginado, Paginado } from '../../types/comun';
 import {
@@ -91,6 +91,23 @@ export class ServicioRefugios {
       nombreEncargado: datos.encargado, correo: datos.correo, contrasena: datos.contrasena, telefono: datos.telefono,
       aceptaPolitica: datos.aceptaPolitica, nombreRefugio: datos.nombre, nit: datos.nit, direccion: datos.direccion,
       descripcion: datos.descripcion?.trim() || null, redesSociales: redes ? JSON.stringify(redes) : null,
+    });
+  }
+
+  /**
+   * POST /api/v1/Refugios/solicitar (HU-REF-01): alguien que ya tiene cuenta
+   * pide registrar su refugio. Queda Pendiente y su cuenta pasa a rol Refugio,
+   * así que después debe volver a iniciar sesión.
+   */
+  async solicitarConMiCuenta(datos: SolicitudRefugioDto): Promise<void> {
+    const problema = validarRefugio(datos);
+    if (problema) throw new ErrorHttp({ titulo: problema, estadoHttp: 400 });
+    const limpios = normalizarRefugio(datos);
+    // Aquí el backend recibe las redes como diccionario, no como texto JSON.
+    await this.api.post(RUTAS.refugios.solicitarConMiCuenta, {
+      nombre: limpios.nombre, nit: limpios.nit, direccion: limpios.direccion, telefono: limpios.telefono || null,
+      correo: limpios.correo || null, encargado: limpios.encargado || null, descripcion: limpios.descripcion || null,
+      redesSociales: limpiarRedesSociales(datos.redesSociales),
     });
   }
 

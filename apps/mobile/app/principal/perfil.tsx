@@ -3,7 +3,7 @@ import { EstadoCargando } from '@/componentes/EstadoCargando';
 import { useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useRouter } from 'expo-router';
-import { ChevronRight, CircleCheck, Heart, HeartHandshake, LogOut, Moon, ShieldCheck, Sun, UserRound, type LucideIcon } from 'lucide-react-native';
+import { ChevronRight, CircleCheck, Heart, HeartHandshake, House, LogOut, Moon, ShieldCheck, Sun, UserRound, type LucideIcon } from 'lucide-react-native';
 import { ESTADO_USUARIO, NivelRol, tokens } from '@huellitas/shared';
 import { useSesion } from '@/lib/sesion';
 import { AvisoSesion } from '@/componentes/AvisoSesion';
@@ -49,7 +49,8 @@ export default function PantallaPerfil() {
     </View>}
     <View><Text style={[estilos.seccion, { color: paleta.inkMuted }]}>CUENTA</Text><View style={[estilos.grupo, { backgroundColor: paleta.surface200 }]}>
       <Fila icono={UserRound} titulo="Datos personales" detalle="Nombre y teléfono" alPresionar={() => router.push('/datos-personales')} borde />
-      <Fila icono={ShieldCheck} titulo="Seguridad" detalle="Contraseña, correo y cuenta" alPresionar={() => router.push('/seguridad-cuenta')} />
+      <Fila icono={ShieldCheck} titulo="Seguridad" detalle="Contraseña, correo y cuenta" alPresionar={() => router.push('/seguridad-cuenta')} borde={!usuario.refugioId} />
+      {!usuario.refugioId && <Fila icono={House} titulo="¿Tienes un refugio?" detalle="Regístralo con esta misma cuenta" alPresionar={() => router.push('/registrar-refugio')} />}
     </View></View>
     <View><Text style={[estilos.seccion, { color: paleta.inkMuted }]}>PREFERENCIAS</Text><View style={[estilos.grupo, { backgroundColor: paleta.surface200 }]}><Fila icono={tema === 'oscuro' ? Moon : Sun} titulo="Apariencia" valor={tokens.nombreTema(tema)} alPresionar={alternarTema} /></View></View>
     <View style={[estilos.grupo, { backgroundColor: paleta.surface200 }]}><Fila icono={LogOut} titulo={saliendo ? 'Cerrando sesión…' : 'Cerrar sesión'} alPresionar={() => void salir()} deshabilitado={saliendo} /></View>

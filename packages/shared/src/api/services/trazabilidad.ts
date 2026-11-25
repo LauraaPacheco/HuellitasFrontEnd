@@ -59,6 +59,15 @@ export class ServicioTrazabilidad {
    * Necesita el ID de la adopción, que ningún endpoint del backend devuelve
    * todavía: queda listo para cuando la solicitud lo exponga.
    */
+  /**
+   * HU-TRA-06, solo administrador: revisa los seguimientos vencidos y envía
+   * las alertas. El backend no lo corre solo (no tiene tarea programada).
+   */
+  async procesarAlertas(): Promise<string> {
+    const r = await this.api.post<{ mensaje?: string }>(RUTAS.seguimientos.procesarAlertas);
+    return r?.mensaje ?? 'Alertas procesadas.';
+  }
+
   async planSeguimiento(adopcionId: number): Promise<PlanSeguimientoAdopcion> {
     if (this.modoDemo) return this.api.get(RUTAS.seguimientos.plan(adopcionId));
     return planSeguimientoApi(await this.api.get<PlanSeguimientoApi>(RUTAS.seguimientos.plan(adopcionId)));

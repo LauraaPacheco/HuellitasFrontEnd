@@ -1,13 +1,14 @@
 import { useState } from 'react';
-import { useQuery } from '@tanstack/react-query';
-import { ArrowRight } from 'lucide-react';
-import { etiquetaEstadoSolicitud, formatearFechaHora, type EntradaAuditoria } from '@huellitas/shared';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { ArrowRight, BellRing } from 'lucide-react';
+import { ErrorHttp, etiquetaEstadoSolicitud, formatearFechaHora, type EntradaAuditoria } from '@huellitas/shared';
 import { api } from '@/lib/api';
 import { Encabezado } from '@/componentes/layout/Encabezado';
 import { Boton } from '@/componentes/ui/Boton';
 import { EstadoCargando } from '@/componentes/ui/EstadoCargando';
 import { EstadoError } from '@/componentes/ui/EstadoError';
 import { EstadoVacio } from '@/componentes/ui/EstadoVacio';
+import '@/componentes/ui/Campo/campo.css';
 import '@/estilos/tabla.css';
 import './trazabilidad.css';
 
@@ -34,10 +35,34 @@ export function PaginaAuditoria() {
     retry: false,
   });
   const datos = consulta.data;
+  const cache = useQueryClient();
+  // HU-TRA-06: el backend no tiene tarea programada, así que el admin las lanza desde aquí.
+  const alertas = useMutation({
+    mutationFn: () => api.trazabilidad.procesarAlertas(),
+    onSuccess: () => void cache.invalidateQueries({ queryKey: ['auditoria'] }),
+  });
 
   return (
     <>
-      <Encabezado titulo="Auditoría" resumen="Cada cambio de estado queda registrado con quién lo hizo y cuándo." />
+      <Encabezado
+        titulo="Auditoría"
+        resumen="Cada cambio de estado queda registrado con quién lo hizo y cuándo."
+        acciones={(
+          <Boton cargando={alertas.isPending} onClick={() => alertas.mutate()} title="Revisa los seguimientos post-adopción vencidos y avisa a adoptantes y refugios">
+            <BellRing size={16} strokeWidth={1.75} aria-hidden="true" /> Procesar alertas de seguimiento
+          </Boton>
+        )}
+      />
+      {alertas.isSuccess && (
+        <p role="status" className="auditoria-aviso">
+          {alertas.data} Se avisó a quienes tienen un seguimiento post-adopción vencido.
+        </p>
+      )}
+      {alertas.isError && (
+        <p role="alert" className="campo__error">
+          {alertas.error instanceof ErrorHttp ? alertas.error.detalle ?? alertas.error.message : 'No pudimos procesar las alertas.'}
+        </p>
+      )}
       {consulta.isPending ? (
         <EstadoCargando mensaje="Cargando auditoría…" />
       ) : consulta.isError ? (

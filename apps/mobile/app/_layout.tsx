@@ -69,6 +69,7 @@ function Navegacion() {
         <Stack.Screen name="restablecer-contrasena" options={{ title: 'Nueva contraseña' }} />
         <Stack.Screen name="seguridad-cuenta" options={{ title: 'Seguridad de la cuenta' }} />
         <Stack.Screen name="datos-personales" options={{ title: 'Datos personales' }} />
+        <Stack.Screen name="registrar-refugio" options={{ title: 'Registrar mi refugio' }} />
         <Stack.Screen name="perfil-adoptante" options={{ title: 'Perfil de adoptante' }} />
         <Stack.Screen name="registro" options={{ title: '' }} />
         <Stack.Screen name="confirmar" options={{ title: 'Confirmar correo' }} />
