@@ -24,6 +24,10 @@ export interface RespuestaTokenApi {
   readonly expiraEnSegundos: number;
   readonly nombre: string;
   readonly rol: string;
+  /** HU-ADM-03 (adafb78): se publicó una política nueva que la persona no ha aceptado. */
+  readonly requiereAceptarPolitica?: boolean;
+  readonly versionPoliticaActual?: string | null;
+  readonly politicaIdActual?: number | null;
 }
 
 /** Lo que responde POST /api/v1/Usuarios. */
@@ -181,6 +185,9 @@ export function sesionDesdeRespuesta(
     estado: EstadoUsuario.Activo,
     fechaRegistro: ahora,
     perfil: null,
+    politicaPendiente: respuesta.requiereAceptarPolitica
+      ? { id: respuesta.politicaIdActual ?? null, version: respuesta.versionPoliticaActual ?? null }
+      : null,
   };
 
   return {

@@ -76,7 +76,6 @@ it('aprueba y rechaza por PATCH al mismo endpoint con el motivo correcto', async
 
 it('no envía peticiones a funciones que el controlador no publica', async () => {
   const { api, fetch } = await preparar();
-  expect(() => api.refugios.suspender(7, { motivo: 'Prueba' })).toThrow();
   expect(() => api.refugios.eliminarRequisito(7, 12)).toThrow();
   expect(() => api.refugios.editarRequisito(7, 12, { descripcion: 'Otro', esObligatorio: false })).toThrow();
   expect(() => api.refugios.solicitarRegistro({ nombre: 'Prueba', nit: '123', encargado: 'Prueba', correo: 'a@b.co', telefono: '3001234567', direccion: 'Cali' })).toThrow();

@@ -228,3 +228,9 @@
 .estrellas { display: inline-flex; gap: 2px; vertical-align: middle; }
 .estrellas__llena { color: #f5a524; fill: #f5a524; }
 .estrellas__vacia { color: var(--border); }
+
+.refugio-soportes { margin: var(--space-3) 0; }
+.refugio-soportes h3 { margin: 0 0 var(--space-2); font-size: 0.9375rem; }
+.refugio-soportes ul { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: var(--space-2); }
+.refugio-soportes a { display: inline-flex; align-items: center; gap: 6px; padding: 6px 12px; border: 1px solid var(--border); border-radius: var(--radius-pill); color: var(--ink); text-decoration: none; font-size: 0.875rem; }
+.refugio-soportes a:hover { border-color: var(--brand-strong); color: var(--brand-strong); }

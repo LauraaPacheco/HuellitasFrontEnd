@@ -13,10 +13,11 @@ import type { Usuario, PerfilAdoptanteDto, EditarPerfilDto } from '../types/usua
 import { validarRefugio, normalizarRefugio, limpiarRedesSociales } from '../utils/refugios';
 import type { Refugio, SolicitudRefugioDto, EditarRefugioDto } from '../types/refugios';
 import { validarDatosPersonales, validarPerfilAdoptante } from '../utils/perfil';
-import { EstadoApadrinamiento, EstadoMascota, EstadoNecesidad, EstadoReporte, TipoReporte, Procedencia, EstadoSeguimiento, ResultadoSeguimiento, EstadoVerificacion, NivelRol, TipoEvento, TipoMultimedia, TipoNecesidad, type TipoRegistroClinico } from '../types/enums';
+import { EstadoApadrinamiento, EstadoMascota, EstadoNecesidad, EstadoReporte, TipoReporte, Procedencia, EstadoDenuncia, EstadoModeracion, MotivoDenuncia, TipoContenido, EstadoSeguimiento, ResultadoSeguimiento, EstadoVerificacion, NivelRol, TipoEvento, TipoMultimedia, TipoNecesidad, type TipoRegistroClinico } from '../types/enums';
 import type { ApadrinamientoResumen, NecesidadRefugio } from '../types/refugios';
 import type { NotificacionUsuario, SeguimientoAdopcion } from '../types/trazabilidad';
 import type { ConvertirReporteDto, DetalleReporte, PinReporte, ReporteBandeja } from '../types/reportes';
+import type { CalificacionAdmin, ConfiguracionSistema, CrearDenunciaDto, Denuncia, GuardarConfiguracionDto, Politica, PublicarPoliticaDto, ResolverDenunciaDto, UsuarioAdmin } from '../types/administracion';
 import { validarArchivoMascota, coincideFirmaArchivo, esFoto, MAX_ARCHIVOS_MASCOTA } from '../utils/multimedia';
 import { validarMascota, estadosManualesMascota } from '../utils/mascotas';
 import type { Mascota, MascotaResumen, CrearMascotaDto, EditarMascotaDto, CambioEstadoMascotaDto } from '../types/mascotas';
@@ -126,6 +127,33 @@ export class ClienteDemo extends ClienteApi {
     { id: 3, nivel: NivelRol.Refugio, mensaje: 'Recibiste una nueva solicitud de adopción para Canela.', leida: false, fecha: hace(1) },
     { id: 4, nivel: NivelRol.Administrador, mensaje: 'Hay un refugio nuevo esperando verificación.', leida: false, fecha: hace(1) },
   ];
+
+  /* ----- Administración (HU-ADM-01 a 04, REF-04) ----- */
+  private readonly usuariosAdmin: UsuarioAdmin[] = [
+    ...USUARIOS_DEMO.map((u) => { const d = usuarioDemo(u.rol); return { id: d.id, nombre: d.nombre, correo: u.correo, rol: d.rol.nombre, estado: 'Activo', activo: true, fechaRegistro: d.fechaRegistro }; }),
+    { id: 31, nombre: 'Carlos Muñoz', correo: 'carlos.munoz@correo.co', rol: 'Adoptante', estado: 'Activo', activo: true, fechaRegistro: hace(40) },
+    { id: 32, nombre: 'Laura Gómez', correo: 'laura.gomez@correo.co', rol: 'Adoptante', estado: 'PendienteVerificacion', activo: false, fechaRegistro: hace(2) },
+    { id: 33, nombre: 'Pedro Arias', correo: 'pedro.arias@correo.co', rol: 'Adoptante', estado: 'Desactivado', activo: false, fechaRegistro: hace(90) },
+    { id: 34, nombre: 'Huellas del Valle', correo: 'contacto@huellasdelvalle.org', rol: 'Refugio', estado: 'Activo', activo: true, fechaRegistro: hace(150) },
+  ];
+  private readonly denuncias: Denuncia[] = [
+    { id: 1, denunciante: 'Carlos Muñoz', tipoContenido: TipoContenido.Mascota, idContenido: 3, motivo: MotivoDenuncia.PosibleEstafa, descripcion: 'Piden dinero por adelantado para "gastos de envío".', estado: EstadoDenuncia.Recibida, resultado: null, fecha: hace(1) },
+    { id: 2, denunciante: 'Mariana Ríos', tipoContenido: TipoContenido.Calificacion, idContenido: 12, motivo: MotivoDenuncia.ContenidoInapropiado, descripcion: 'El comentario tiene insultos.', estado: EstadoDenuncia.EnRevision, resultado: null, fecha: hace(4) },
+    { id: 3, denunciante: 'Pedro Arias', tipoContenido: TipoContenido.Reporte, idContenido: 5, motivo: MotivoDenuncia.InformacionFalsa, descripcion: null, estado: EstadoDenuncia.Resuelta, resultado: 'Se verificó con el refugio: el reporte es real.', fecha: hace(10) },
+  ];
+  private readonly configuracion: ConfiguracionSistema[] = [
+    { id: 1, clave: 'dias_alerta_desactualizacion', valor: '30', descripcion: 'Días sin actualizar una ficha antes de avisar al refugio.', activo: true },
+    { id: 2, clave: 'seguimientos_por_defecto', valor: '3', descripcion: 'Seguimientos post-adopción del plan por defecto.', activo: true },
+    { id: 3, clave: 'dias_recordatorio_seguimiento', valor: '7', descripcion: 'Días antes del seguimiento para recordar al adoptante.', activo: true },
+    { id: 4, clave: 'canales_denuncia_maltrato', valor: 'Policía Nacional — línea 123; Fiscalía General de la Nación', descripcion: 'Canales que se muestran en los reportes de maltrato.', activo: true },
+  ];
+  private readonly politicas: Politica[] = [
+    { id: 1, version: '1.0', contenido: 'Huellitas trata tus datos según la Ley 1581 de 2012. Usamos tu información para gestionar adopciones, reportes y comunicaciones con los refugios.', fechaPublicacion: hace(200), activo: true },
+  ];
+  /** Versión de la política que aceptó cada cuenta demo. */
+  private readonly politicaAceptada = new Map<NivelRol, string>();
+  /** Opiniones ocultadas por el administrador (REF-04). */
+  private readonly opinionesOcultas = new Set<number>();
 
   private readonly reportes: ReporteDemo[] = REPORTES.map(r => ({ ...r, fotos: [...r.fotos] }));
 
@@ -247,12 +275,18 @@ export class ClienteDemo extends ClienteApi {
 
       this.nivelActual = encontrado.rol;
       const usuario = this.usuarioActual();
+      const vigente = this.politicas.find((p) => p.activo);
+      // Al empezar, todas las cuentas demo aceptaron la 1.0; si el admin publica otra, la piden.
+      const aceptada = this.politicaAceptada.get(encontrado.rol) ?? '1.0';
       return {
         accessToken: tokenDemo(usuario),
         refreshToken: `demo.refresh.${Date.now()}`,
         expiraEnSegundos: 900,
         nombre: usuario.nombre,
         rol: usuario.rol.nombre,
+        requiereAceptarPolitica: !!vigente && vigente.version !== aceptada,
+        versionPoliticaActual: vigente?.version ?? null,
+        politicaIdActual: vigente?.id ?? null,
       };
     }
 
@@ -728,6 +762,162 @@ export class ClienteDemo extends ClienteApi {
       return { mensaje: 'Reporte registrado.', id, numeroReporte };
     }
 
+    /* ---------- Administración (HU-ADM-01 a 04, REF-04) ---------- */
+
+    const soloAdmin = () => { if (this.nivelActual !== NivelRol.Administrador) throw new ErrorHttp({ titulo: 'No tienes permiso.', estadoHttp: 403 }); };
+    const ROL_POR_ID: Record<number, string> = { 2: 'Administrador', 3: 'Refugio', 4: 'Adoptante' };
+    const ESTADO_POR_ID: Record<number, string> = { 0: 'PendienteVerificacion', 1: 'Activo', 2: 'Bloqueado', 3: 'Desactivado' };
+
+    if (ruta === RUTAS.administracion.usuarios && metodo === 'GET') {
+      soloAdmin();
+      const texto = String(parametros?.busqueda ?? '').trim().toLowerCase();
+      const rol = parametros?.rolId === undefined ? null : ROL_POR_ID[Number(parametros.rolId)];
+      const estado = parametros?.estado === undefined ? null : ESTADO_POR_ID[Number(parametros.estado)];
+      const lista = this.usuariosAdmin.filter((u) => (!texto || u.nombre.toLowerCase().includes(texto) || u.correo.toLowerCase().includes(texto))
+        && (!rol || u.rol === rol) && (!estado || u.estado === estado));
+      return paginar(lista, Number(parametros?.pagina ?? 1), Number(parametros?.tamano ?? 20));
+    }
+    const usuarioAdmin = /^\/api\/v1\/Admin\/usuarios\/(\d+)\/(estado|rol)$/.exec(ruta);
+    if (usuarioAdmin && metodo === 'PATCH') {
+      soloAdmin();
+      const i = this.usuariosAdmin.findIndex((u) => u.id === Number(usuarioAdmin[1]));
+      const u = this.usuariosAdmin[i];
+      if (!u) throw new ErrorHttp({ titulo: 'El usuario no existe.', estadoHttp: 404 });
+      const admins = this.usuariosAdmin.filter((x) => x.rol === 'Administrador' && x.activo);
+      if (usuarioAdmin[2] === 'estado') {
+        const { activo, motivo } = cuerpo as { activo: boolean; motivo: string | null };
+        if (!activo && !motivo?.trim()) throw new ErrorHttp({ titulo: 'El motivo es obligatorio al desactivar un usuario.', estadoHttp: 400 });
+        if (!activo && u.id === this.usuarioActual().id) throw new ErrorHttp({ titulo: 'No puedes desactivar tu propia cuenta.', estadoHttp: 400 });
+        if (!activo && u.rol === 'Administrador' && admins.length <= 1) throw new ErrorHttp({ titulo: 'No se puede desactivar al último administrador activo.', estadoHttp: 409 });
+        this.usuariosAdmin[i] = { ...u, activo, estado: activo ? 'Activo' : 'Desactivado' };
+        return { mensaje: activo ? 'Usuario activado.' : 'Usuario desactivado.' };
+      }
+      const { nuevoRolId } = cuerpo as { nuevoRolId: number };
+      const nombreRol = ROL_POR_ID[nuevoRolId];
+      if (!nombreRol) throw new ErrorHttp({ titulo: 'El rol indicado no existe.', estadoHttp: 400 });
+      if (u.rol === 'Administrador' && nombreRol !== 'Administrador' && admins.length <= 1) throw new ErrorHttp({ titulo: 'No se puede retirar el rol al último administrador activo.', estadoHttp: 409 });
+      this.usuariosAdmin[i] = { ...u, rol: nombreRol };
+      return { mensaje: 'Rol actualizado.' };
+    }
+
+    if (ruta === RUTAS.denuncias.crear && metodo === 'POST') {
+      const usuario = this.usuarioActual();
+      const d = cuerpo as CrearDenunciaDto;
+      this.denuncias.unshift({ id: Math.max(0, ...this.denuncias.map((x) => x.id)) + 1, denunciante: usuario.nombre, tipoContenido: d.tipoContenido, idContenido: d.idContenido,
+        motivo: d.motivo, descripcion: d.descripcion ?? null, estado: EstadoDenuncia.Recibida, resultado: null, fecha: new Date().toISOString() });
+      return { mensaje: 'Denuncia registrada. El equipo la revisará.' };
+    }
+    if (ruta === RUTAS.administracion.denuncias && metodo === 'GET') {
+      soloAdmin();
+      const estado = parametros?.estado === undefined ? null : Number(parametros.estado);
+      return paginar(this.denuncias.filter((d) => estado === null || d.estado === estado), Number(parametros?.pagina ?? 1), Number(parametros?.tamano ?? 20));
+    }
+    const resolver = /^\/api\/v1\/Admin\/denuncias\/(\d+)\/resolver$/.exec(ruta);
+    if (resolver && metodo === 'PATCH') {
+      soloAdmin();
+      const i = this.denuncias.findIndex((d) => d.id === Number(resolver[1]));
+      if (i < 0) throw new ErrorHttp({ titulo: 'La denuncia no existe.', estadoHttp: 404 });
+      const d = cuerpo as ResolverDenunciaDto;
+      this.denuncias[i] = { ...this.denuncias[i]!, estado: EstadoDenuncia.Resuelta, resultado: d.resultado };
+      if (d.ocultarContenido && this.denuncias[i]!.tipoContenido === TipoContenido.Calificacion) this.opinionesOcultas.add(this.denuncias[i]!.idContenido);
+      return { mensaje: 'Denuncia resuelta.' };
+    }
+
+    if (ruta === RUTAS.administracion.configuracion) {
+      soloAdmin();
+      if (metodo === 'GET') return [...this.configuracion];
+      if (metodo === 'POST') {
+        const d = cuerpo as GuardarConfiguracionDto;
+        if (this.configuracion.some((c) => c.clave === d.clave)) throw new ErrorHttp({ titulo: 'Ya existe un parámetro con esa clave.', estadoHttp: 409 });
+        this.configuracion.push({ id: Math.max(0, ...this.configuracion.map((c) => c.id)) + 1, clave: d.clave, valor: d.valor, descripcion: d.descripcion ?? null, activo: true });
+        return { mensaje: 'Parámetro creado.' };
+      }
+    }
+    const config = /^\/api\/v1\/Admin\/configuracion\/(\d+)$/.exec(ruta);
+    if (config && metodo === 'PUT') {
+      soloAdmin();
+      const i = this.configuracion.findIndex((c) => c.id === Number(config[1]));
+      if (i < 0) throw new ErrorHttp({ titulo: 'El parámetro no existe.', estadoHttp: 404 });
+      const d = cuerpo as GuardarConfiguracionDto;
+      this.configuracion[i] = { ...this.configuracion[i]!, clave: d.clave, valor: d.valor, descripcion: d.descripcion ?? null };
+      return { mensaje: 'Parámetro actualizado.' };
+    }
+
+    if (ruta === RUTAS.politicas.activa) {
+      const vigente = this.politicas.find((p) => p.activo);
+      if (!vigente) throw new ErrorHttp({ titulo: 'No hay una política publicada.', estadoHttp: 404 });
+      return vigente;
+    }
+    if (ruta === RUTAS.politicas.base) {
+      soloAdmin();
+      if (metodo === 'GET') return [...this.politicas];
+      if (metodo === 'POST') {
+        const d = cuerpo as PublicarPoliticaDto;
+        if (this.politicas.some((p) => p.version === d.version)) throw new ErrorHttp({ titulo: 'Ya existe una política con esa versión.', estadoHttp: 409 });
+        this.politicas.forEach((p, i) => { this.politicas[i] = { ...p, activo: false }; });
+        const id = Math.max(0, ...this.politicas.map((p) => p.id)) + 1;
+        this.politicas.push({ id, version: d.version, contenido: d.contenido, fechaPublicacion: new Date().toISOString(), activo: true });
+        // Quien la publica la acepta al publicarla.
+        this.politicaAceptada.set(NivelRol.Administrador, d.version);
+        return { mensaje: 'Política publicada. Los usuarios deberán aceptarla nuevamente.', politicaId: id };
+      }
+    }
+    if (ruta === RUTAS.politicas.aceptar && metodo === 'POST') {
+      this.usuarioActual();
+      const vigente = this.politicas.find((p) => p.activo);
+      if (vigente && this.nivelActual !== null) this.politicaAceptada.set(this.nivelActual, vigente.version);
+      return { mensaje: 'Política aceptada.' };
+    }
+
+    if (ruta === RUTAS.administracion.dashboard) {
+      soloAdmin();
+      const reportes = this.reportes.filter((r) => r.activo);
+      const porEstado = [EstadoReporte.Recibido, EstadoReporte.EnAtencion, EstadoReporte.Rescatado, EstadoReporte.NoEncontrado, EstadoReporte.Cerrado]
+        .map((e) => ({ estado: EstadoReporte[e], total: reportes.filter((r) => r.estado === e).length }));
+      return {
+        adopcionesExitosas: solicitudesResumen().filter((x) => x.adopcionId).length, mascotasDisponibles: this.mascotas.filter((m) => m.activo && m.estado === EstadoMascota.Disponible).length,
+        usuariosRegistrados: this.usuariosAdmin.length, refugiosVerificados: this.refugios.filter((r) => r.estadoVerificacion === EstadoVerificacion.Verificado).length,
+        reportesCiudadanos: reportes.length, tiempoPromedioAdopcionDias: 18.5, reportesPorEstado: porEstado,
+      };
+    }
+
+    if (ruta === RUTAS.administracion.calificaciones && metodo === 'GET') {
+      soloAdmin();
+      const todas = this.refugios.filter((r) => r.estadoVerificacion === EstadoVerificacion.Verificado).flatMap((r) => [
+        { id: r.id * 10 + 1, refugioId: r.id, refugioNombre: r.nombre, adoptanteNombre: 'Valentina R.', puntaje: 5, comentario: 'Nos acompañaron en todo el proceso y resolvieron todas nuestras dudas.', fecha: hace(12) },
+        { id: r.id * 10 + 2, refugioId: r.id, refugioNombre: r.nombre, adoptanteNombre: 'Andrés M.', puntaje: 1, comentario: 'Pésima atención, son unos estafadores y no responden nunca.', fecha: hace(40) },
+        ...this.calificadas.filter((c) => c.refugioId === r.id).map((c) => ({ id: c.id, refugioId: r.id, refugioNombre: r.nombre, adoptanteNombre: c.autor, puntaje: c.puntaje, comentario: c.comentario, fecha: c.fecha })),
+      ]).map((c): CalificacionAdmin => ({ ...c, estado: this.opinionesOcultas.has(c.id) ? EstadoModeracion.Oculta : EstadoModeracion.Publicada }));
+      const estado = parametros?.estado === undefined ? null : Number(parametros.estado);
+      return paginar(todas.filter((c) => estado === null || c.estado === estado), Number(parametros?.pagina ?? 1), Number(parametros?.tamano ?? 20));
+    }
+    const moderar = /^\/api\/v1\/Admin\/calificaciones\/(\d+)\/moderar$/.exec(ruta);
+    if (moderar && metodo === 'PATCH') {
+      soloAdmin();
+      const { estadoModeracion } = cuerpo as { estadoModeracion: EstadoModeracion };
+      if (estadoModeracion === EstadoModeracion.Oculta) this.opinionesOcultas.add(Number(moderar[1]));
+      else this.opinionesOcultas.delete(Number(moderar[1]));
+      return { mensaje: 'Calificación moderada.' };
+    }
+
+    if (ruta === RUTAS.refugios.pendientes && metodo === 'GET') {
+      soloAdmin();
+      const pendientes = this.refugios.filter((r) => r.estadoVerificacion === EstadoVerificacion.Pendiente).map((r) => ({
+        ...r, soportes: [{ id: r.id * 100 + 1, tipo: 'PDF', url: 'https://res.cloudinary.com/demo/raw/upload/camara-de-comercio.pdf', fecha: r.fechaCreacion }],
+      }));
+      return paginar(pendientes, Number(parametros?.pagina ?? 1), Number(parametros?.tamano ?? 10));
+    }
+    const suspender = /^\/api\/v1\/Refugios\/(\d+)\/suspender$/.exec(ruta);
+    if (suspender && metodo === 'PATCH') {
+      soloAdmin();
+      const i = this.refugios.findIndex((r) => r.id === Number(suspender[1]));
+      const r = this.refugios[i];
+      if (!r) throw new ErrorHttp({ titulo: 'No encontramos ese refugio', estadoHttp: 404 });
+      if (r.estadoVerificacion === EstadoVerificacion.Suspendido) throw new ErrorHttp({ titulo: 'El refugio ya está suspendido.', estadoHttp: 409 });
+      this.refugios[i] = { ...r, estadoVerificacion: EstadoVerificacion.Suspendido, motivoRechazo: (cuerpo as { motivo: string }).motivo, fechaModificacion: new Date().toISOString() };
+      return { mensaje: 'Refugio suspendido.' };
+    }
+
     /* ---------- Refugios ---------- */
 
     const coincideRefugio = /\/api\/refugios\/(\d+)(?:\/(verificar|rechazar|suspender|requisitos)(?:\/(\d+))?)?$/.exec(ruta);
@@ -897,7 +1087,7 @@ export class ClienteDemo extends ClienteApi {
         { id: id * 10 + 2, autor: 'Andrés M.', puntaje: 4, comentario: 'Muy organizados. La visita fue puntual.', fecha: hace(40), esPropia: false },
         { id: id * 10 + 3, autor: 'Laura P.', puntaje: 5, comentario: null, fecha: hace(75), esPropia: false },
       ];
-      return paginar(opiniones, pagina, tamanoDemo);
+      return paginar(opiniones.filter((o) => !this.opinionesOcultas.has(o.id)), pagina, tamanoDemo);
     }
 
     /* ---------- Trazabilidad (HU-TRA-01 a 04) ---------- */

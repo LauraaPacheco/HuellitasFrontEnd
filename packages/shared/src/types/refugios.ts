@@ -14,6 +14,15 @@ import type {
  */
 export type RedesSociales = Readonly<Record<string, string>>;
 
+/** Un soporte (PDF o imagen) de la solicitud de registro (HU-REF-01). */
+export interface SoporteRefugio {
+  readonly id: number;
+  /** "PDF" o "Imagen". */
+  readonly tipo: string;
+  readonly url: string;
+  readonly fecha: string;
+}
+
 export interface Refugio extends EntidadBase {
   readonly nombre: string;
   readonly nit: string;
@@ -30,6 +39,8 @@ export interface Refugio extends EntidadBase {
   readonly promedioCalificacion: number | null;
   readonly totalAdopciones: number | null;
   readonly requisitos: readonly RequisitoAdopcion[];
+  /** Solo en la vista del administrador (GET /Refugios/pendientes). */
+  readonly soportes?: readonly SoporteRefugio[];
 }
 
 export interface RequisitoAdopcion extends EntidadBase {
@@ -79,6 +90,8 @@ export interface SolicitudRefugioDto {
   encargado: string;
   redesSociales?: RedesSociales | null;
   descripcion?: string;
+  /** URLs ya subidas (PDF o imagen) que respaldan la solicitud. */
+  soportesUrls?: readonly string[];
 }
 
 /** Registro público de un refugio: crea a la vez la cuenta del encargado y el refugio. */

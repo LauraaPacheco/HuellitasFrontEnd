@@ -1,6 +1,9 @@
-import { useState, type FormEvent } from 'react';
+import { useState, type ChangeEvent, type FormEvent } from 'react';
+import { useQuery } from '@tanstack/react-query';
+import { FileText, Paperclip, X } from 'lucide-react';
 import {
   ErrorHttp,
+  validarArchivoServidor,
   esContrasenaValida,
   validarRefugio,
   normalizarRefugio,
@@ -30,6 +33,8 @@ const VACIO: SolicitudRefugioDto = {
  * encargado y el refugio; el encargado confirma su correo y el refugio
  * queda pendiente hasta que el administrador lo verifique (HU-ADM-01).
  */
+const MAX_SOPORTES = 5;
+
 export function PaginaSolicitarRegistro() {
   const [datos, setDatos] = useState<SolicitudRefugioDto>(VACIO);
   const [error, setError] = useState<string | null>(null);
@@ -38,6 +43,35 @@ export function PaginaSolicitarRegistro() {
   const [contrasena, setContrasena] = useState('');
   const [confirmacion, setConfirmacion] = useState('');
   const [aceptaPolitica, setAceptaPolitica] = useState(false);
+  const [verPolitica, setVerPolitica] = useState(false);
+  // HU-REF-01: soportes en PDF o imagen, subidos sin sesión a /Archivos/soporte-publico.
+  const [soportes, setSoportes] = useState<{ nombre: string; url: string }[]>([]);
+  const [subiendo, setSubiendo] = useState(false);
+  const [errorSoporte, setErrorSoporte] = useState('');
+  const politica = useQuery({ queryKey: ['politica', 'activa'], queryFn: () => api.administracion.politicaActiva(), enabled: verPolitica, retry: false });
+
+  async function agregarSoportes(evento: ChangeEvent<HTMLInputElement>) {
+    const archivos = Array.from(evento.target.files ?? []);
+    evento.target.value = '';
+    setErrorSoporte('');
+    if (soportes.length + archivos.length > MAX_SOPORTES) { setErrorSoporte(`Puedes adjuntar hasta ${MAX_SOPORTES} soportes.`); return; }
+    setSubiendo(true);
+    try {
+      for (const archivo of archivos) {
+        const problema = validarArchivoServidor(archivo.name, archivo.size);
+        if (problema) { setErrorSoporte(`${archivo.name}: ${problema}`); continue; }
+        const form = new FormData();
+        form.append('archivo', archivo);
+        const url = await api.archivos.subirSoportePublico(form);
+        setSoportes((s) => [...s, { nombre: archivo.name, url }]);
+      }
+    } catch (e) {
+      setErrorSoporte(e instanceof ErrorHttp && e.estadoHttp === 429 ? 'Subiste varios archivos seguidos. Espera un minuto e inténtalo de nuevo.'
+        : e instanceof ErrorHttp ? e.detalle ?? e.message : 'No pudimos subir el soporte.');
+    } finally {
+      setSubiendo(false);
+    }
+  }
 
   const cambiar =
     (campo: keyof SolicitudRefugioDto) =>
@@ -56,7 +90,7 @@ export function PaginaSolicitarRegistro() {
 
     setEnviando(true);
     try {
-      await api.refugios.registrarRefugio({ ...normalizarRefugio(datos), contrasena, aceptaPolitica });
+      await api.refugios.registrarRefugio({ ...normalizarRefugio(datos), contrasena, aceptaPolitica, soportesUrls: soportes.map((s) => s.url) });
       setEnviado(true);
     } catch (causa) {
       setError(
@@ -162,6 +196,26 @@ export function PaginaSolicitarRegistro() {
           />
         </div>
 
+        <fieldset className="marco-auth__ancho-completo registro-soportes">
+          <legend>Soportes (opcional)</legend>
+          <p>Cámara de comercio, RUT o fotos de la sede, en PDF o imagen. Ayudan al administrador a verificar tu refugio.</p>
+          {soportes.length > 0 && (
+            <ul>{soportes.map((s) => (
+              <li key={s.url}>
+                <FileText size={16} strokeWidth={1.75} aria-hidden="true" /><span>{s.nombre}</span>
+                <button type="button" aria-label={`Quitar ${s.nombre}`} onClick={() => setSoportes((l) => l.filter((x) => x.url !== s.url))}><X size={14} strokeWidth={2} /></button>
+              </li>
+            ))}</ul>
+          )}
+          {soportes.length < MAX_SOPORTES && (
+            <label className="boton boton--secundario registro-soportes__boton" aria-disabled={subiendo}>
+              <Paperclip size={16} strokeWidth={1.75} aria-hidden="true" /> {subiendo ? 'Subiendo…' : 'Adjuntar soportes'}
+              <input type="file" accept=".pdf,.jpg,.jpeg,.png,.webp,application/pdf,image/*" multiple disabled={subiendo} onChange={(e) => void agregarSoportes(e)} />
+            </label>
+          )}
+          {errorSoporte && <p role="alert" className="marco-auth__error">{errorSoporte}</p>}
+        </fieldset>
+
         <Campo
           id="contrasena"
           etiqueta="Contraseña para tu cuenta"
@@ -181,8 +235,13 @@ export function PaginaSolicitarRegistro() {
         />
         <label className="marco-auth__ancho-completo registro-politica">
           <input type="checkbox" checked={aceptaPolitica} onChange={(e) => setAceptaPolitica(e.target.checked)} />
-          <span>Acepto la política de tratamiento de datos personales (Ley 1581 de 2012).</span>
+          <span>Acepto la política de tratamiento de datos personales (Ley 1581 de 2012). <button type="button" className="registro-politica__ver" onClick={() => setVerPolitica((v) => !v)}>{verPolitica ? 'Ocultar' : 'Leer la política'}</button></span>
         </label>
+        {verPolitica && (
+          <div className="marco-auth__ancho-completo registro-politica__texto">
+            {politica.isPending ? 'Cargando…' : politica.data ? <><strong>Versión {politica.data.version}</strong><p>{politica.data.contenido}</p></> : 'No pudimos cargar la política.'}
+          </div>
+        )}
 
         {error && (
           <p className="marco-auth__error marco-auth__ancho-completo" role="alert">

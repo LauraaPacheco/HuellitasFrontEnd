@@ -1,15 +1,51 @@
-import type { EntidadBase, FiltroPaginado } from './comun';
-import type {
-  EstadoDenuncia,
-  EstadoUsuario,
-  MotivoDenuncia,
-  NivelRol,
-  TipoContenido,
-} from './enums';
+import type { FiltroPaginado } from './comun';
+import type { EstadoDenuncia, EstadoModeracion, MotivoDenuncia, TipoContenido } from './enums';
 
-export interface Denuncia extends EntidadBase {
-  readonly usuarioId: number;
-  readonly nombreDenunciante: string;
+/**
+ * Administración (HU-ADM-01 a 04, HU-REF-04) contra /api/v1/Admin,
+ * /Denuncias y /Politicas (8c9f391, adafb78).
+ */
+
+/* ---------- Usuarios (ADM-01) ---------- */
+
+export interface UsuarioAdmin {
+  readonly id: number;
+  readonly nombre: string;
+  readonly correo: string;
+  /** Nombre del rol tal como lo manda el backend: Administrador, Refugio, Adoptante. */
+  readonly rol: string;
+  /** Activo, PendienteVerificacion, Inactivo… */
+  readonly estado: string;
+  readonly activo: boolean;
+  readonly fechaRegistro: string;
+}
+
+export interface FiltroUsuarioAdmin extends FiltroPaginado {
+  busqueda?: string;
+  rolId?: number;
+  estado?: number;
+}
+
+/** Ids de la tabla Roles (enum RolUsuario del backend; Visitante = 1 no se asigna). */
+export const ROLES_ADMIN = [
+  { id: 2, nombre: 'Administrador' },
+  { id: 3, nombre: 'Refugio' },
+  { id: 4, nombre: 'Adoptante' },
+] as const;
+
+/** Enum EstadoUsuario del backend, para el filtro del listado. */
+export const ESTADOS_USUARIO_ADMIN = [
+  { id: 1, nombre: 'Activo' },
+  { id: 0, nombre: 'Pendiente de verificación' },
+  { id: 2, nombre: 'Bloqueado' },
+  { id: 3, nombre: 'Desactivado' },
+] as const;
+
+/* ---------- Denuncias (ADM-02) ---------- */
+
+export interface Denuncia {
+  readonly id: number;
+  readonly denunciante: string;
   readonly tipoContenido: TipoContenido;
   readonly idContenido: number;
   readonly motivo: MotivoDenuncia;
@@ -19,73 +55,8 @@ export interface Denuncia extends EntidadBase {
   readonly fecha: string;
 }
 
-export interface PoliticaDatos extends EntidadBase {
-  readonly version: string;
-  readonly contenido: string;
-  readonly fechaPublicacion: string;
-  readonly esVigente: boolean;
-}
-
-export interface ConfiguracionSistema extends EntidadBase {
-  readonly clave: string;
-  readonly valor: string;
-  readonly descripcion: string | null;
-}
-
-/** Claves conocidas de ConfiguracionSistema. Evita strings sueltos en el codigo. */
-export const CLAVES_CONFIGURACION = {
-  diasAlertaDesactualizacion: 'dias_alerta_desactualizacion',
-  seguimientosPorDefecto: 'seguimientos_por_defecto',
-  diasRecordatorioSeguimiento: 'dias_recordatorio_seguimiento',
-  diasAlertaSolicitudSinRespuesta: 'dias_alerta_solicitud_sin_respuesta',
-  maxArchivosMascota: 'max_archivos_mascota',
-  maxIntentosLogin: 'max_intentos_login',
-  minutosBloqueoLogin: 'minutos_bloqueo_login',
-  minutosVigenciaToken: 'minutos_vigencia_token',
-  canalesDenunciaMaltrato: 'canales_denuncia_maltrato',
-} as const;
-
-export type ClaveConfiguracion =
-  (typeof CLAVES_CONFIGURACION)[keyof typeof CLAVES_CONFIGURACION];
-
-/* ---------- Indicadores: no son entidades, se calculan ---------- */
-
-export interface Indicador {
-  readonly nombre: string;
-  readonly valor: number;
-  readonly periodo: string;
-}
-
-export interface DashboardRefugio {
-  readonly mascotasPorEstado: Readonly<Record<string, number>>;
-  readonly solicitudesPorEstado: Readonly<Record<string, number>>;
-  readonly adopcionesDelPeriodo: number;
-  readonly tiempoPromedioRespuestaDias: number;
-  readonly tiempoPromedioAdopcionDias: number;
-  readonly tasaAprobacion: number;
-  readonly cumplimientoSeguimientos: number;
-}
-
-export interface DashboardGeneral {
-  readonly totalRefugios: number;
-  readonly refugiosVerificados: number;
-  readonly totalUsuarios: number;
-  readonly adopcionesDelPeriodo: number;
-  readonly reportesPorEstado: Readonly<Record<string, number>>;
-  readonly reportesPorZona: readonly Indicador[];
-}
-
-/* ---------- Filtros y DTOs ---------- */
-
-export interface FiltroUsuario extends FiltroPaginado {
-  texto?: string;
-  nivelRol?: NivelRol;
-  estado?: EstadoUsuario;
-}
-
 export interface FiltroDenuncia extends FiltroPaginado {
   estado?: EstadoDenuncia;
-  tipoContenido?: TipoContenido;
 }
 
 export interface CrearDenunciaDto {
@@ -97,15 +68,61 @@ export interface CrearDenunciaDto {
 
 export interface ResolverDenunciaDto {
   resultado: string;
+  /** Oculta lo denunciado (mascota, refugio, opinión o reporte). */
   ocultarContenido: boolean;
 }
 
-export interface ModeracionDto {
-  tipoContenido: TipoContenido;
-  idContenido: number;
-  motivo: string;
+/* ---------- Configuración y política (ADM-03) ---------- */
+
+export interface ConfiguracionSistema {
+  readonly id: number;
+  readonly clave: string;
+  readonly valor: string;
+  readonly descripcion: string | null;
+  readonly activo: boolean;
 }
 
-export interface CambioRolDto {
-  rolId: number;
+export interface GuardarConfiguracionDto {
+  clave: string;
+  valor: string;
+  descripcion?: string;
+}
+
+export interface Politica {
+  readonly id: number;
+  readonly version: string;
+  readonly contenido: string;
+  readonly fechaPublicacion: string;
+  /** La vigente; las demás son historial. */
+  readonly activo: boolean;
+}
+
+export interface PublicarPoliticaDto {
+  version: string;
+  contenido: string;
+}
+
+/* ---------- Indicadores (ADM-04) ---------- */
+
+export interface DashboardAdmin {
+  readonly adopcionesExitosas: number;
+  readonly mascotasDisponibles: number;
+  readonly usuariosRegistrados: number;
+  readonly refugiosVerificados: number;
+  readonly reportesCiudadanos: number;
+  readonly tiempoPromedioAdopcionDias: number;
+  readonly reportesPorEstado: readonly { readonly estado: string; readonly total: number }[];
+}
+
+/* ---------- Moderación de opiniones (REF-04) ---------- */
+
+export interface CalificacionAdmin {
+  readonly id: number;
+  readonly refugioId: number;
+  readonly refugioNombre: string;
+  readonly adoptanteNombre: string;
+  readonly puntaje: number;
+  readonly comentario: string | null;
+  readonly estado: EstadoModeracion;
+  readonly fecha: string;
 }

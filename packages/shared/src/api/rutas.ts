@@ -26,13 +26,9 @@ export const RUTAS = {
    * tanto solo las usa el modo demo.
    */
   usuarios: {
-    base: '/api/usuarios',
-    porId: (id: number) => `/api/usuarios/${id}`,
     yo: '/api/v1/Usuarios/perfil',
     misDatos: '/api/v1/Usuarios/perfil',
     perfilAdoptante: '/api/v1/Usuarios/perfil-adoptante',
-    cambiarRol: (id: number) => `/api/usuarios/${id}/rol`,
-    desactivar: (id: number) => `/api/usuarios/${id}/desactivar`,
   },
   // Contrato del demo. ServicioRefugios adapta el backend real versionado.
   refugios: {
@@ -43,7 +39,9 @@ export const RUTAS = {
     solicitarConMiCuenta: '/api/v1/Refugios/solicitar',
     verificar: (id: number) => `/api/refugios/${id}/verificar`,
     rechazar: (id: number) => `/api/refugios/${id}/rechazar`,
-    suspender: (id: number) => `/api/refugios/${id}/suspender`,
+    suspender: (id: number) => `/api/v1/Refugios/${id}/suspender`,
+    pendientes: '/api/v1/Refugios/pendientes',
+    soportes: (id: number) => `/api/v1/Refugios/${id}/soportes`,
     requisitos: (id: number) => `/api/refugios/${id}/requisitos`,
     calificaciones: (id: number) => `/api/v1/Refugios/${id}/calificaciones`,
     calificacion: (id: number, calificacionId: number) => `/api/v1/Refugios/${id}/calificaciones/${calificacionId}`,
@@ -134,13 +132,23 @@ export const RUTAS = {
     leer: (id: number) => `/api/v1/Notificaciones/${id}/leer`,
   },
   administracion: {
-    denuncias: '/api/denuncias',
-    resolverDenuncia: (id: number) => `/api/denuncias/${id}/resolver`,
-    moderarOcultar: '/api/moderacion/ocultar',
-    moderarRestaurar: '/api/moderacion/restaurar',
-    configuracion: '/api/configuracion',
-    politica: '/api/configuracion/politica',
-    dashboardRefugio: (id: number) => `/api/indicadores/refugios/${id}`,
-    dashboardGeneral: '/api/indicadores/general',
+    usuarios: '/api/v1/Admin/usuarios',
+    estadoUsuario: (id: number) => `/api/v1/Admin/usuarios/${id}/estado`,
+    rolUsuario: (id: number) => `/api/v1/Admin/usuarios/${id}/rol`,
+    denuncias: '/api/v1/Admin/denuncias',
+    resolverDenuncia: (id: number) => `/api/v1/Admin/denuncias/${id}/resolver`,
+    configuracion: '/api/v1/Admin/configuracion',
+    configuracionPorId: (id: number) => `/api/v1/Admin/configuracion/${id}`,
+    dashboard: '/api/v1/Admin/dashboard',
+    calificaciones: '/api/v1/Admin/calificaciones',
+    moderarCalificacion: (id: number) => `/api/v1/Admin/calificaciones/${id}/moderar`,
+  },
+  denuncias: {
+    crear: '/api/v1/Denuncias',
+  },
+  politicas: {
+    base: '/api/v1/Politicas',
+    activa: '/api/v1/Politicas/activa',
+    aceptar: '/api/v1/Politicas/aceptar',
   },
 } as const;

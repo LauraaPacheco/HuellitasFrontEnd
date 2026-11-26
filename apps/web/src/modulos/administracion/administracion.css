@@ -1,0 +1,26 @@
+/* Pantallas del administrador: usuarios, denuncias, opiniones y configuración. */
+.admin-filtros { display: flex; flex-wrap: wrap; align-items: flex-end; gap: var(--space-3); margin-bottom: var(--space-4); }
+.admin-busqueda { position: relative; flex: 1 1 240px; display: flex; align-items: center; }
+.admin-busqueda svg { position: absolute; left: 12px; color: var(--ink-muted); pointer-events: none; }
+.admin-busqueda input { padding-left: 36px; width: 100%; }
+.admin-filtro { display: grid; gap: 4px; font-size: 0.8125rem; color: var(--ink-muted); }
+.admin-filtro select { min-width: 150px; }
+.admin-acciones { display: flex; flex-wrap: wrap; gap: var(--space-2); justify-content: flex-end; }
+.admin-paginas { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: var(--space-2); margin-top: var(--space-4); font-size: 0.875rem; color: var(--ink-muted); }
+.admin-ayuda { margin: 0; font-size: 0.875rem; color: var(--ink-muted); }
+.admin-check { display: flex; align-items: flex-start; gap: var(--space-2); margin: var(--space-3) 0; font-size: 0.9375rem; }
+.admin-check input { margin-top: 3px; }
+.admin-resultado { margin: 0; padding: var(--space-2) var(--space-3); border-radius: var(--radius-sm); background: var(--surface-100); font-size: 0.875rem; }
+.admin-estrellas { display: inline-flex; gap: 2px; color: #f5a524; }
+
+.admin-secciones { display: grid; gap: var(--space-5); }
+.admin-seccion { display: grid; gap: var(--space-3); padding: var(--space-5); border-radius: var(--radius-lg); background: var(--surface-200); }
+.admin-seccion__cabecera { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: var(--space-3); }
+.admin-seccion__cabecera h2 { margin: 0; font-size: 1.125rem; }
+.admin-politica { display: grid; gap: var(--space-2); padding: var(--space-4); border-radius: var(--radius-md); background: var(--surface-100); }
+.admin-politica__version { margin: 0; display: flex; align-items: center; gap: var(--space-2); font-size: 0.875rem; font-weight: 600; color: var(--brand-strong); }
+.admin-politica__texto { margin: 0; white-space: pre-wrap; line-height: 1.6; max-height: 240px; overflow: auto; }
+.admin-historial summary { cursor: pointer; font-size: 0.875rem; color: var(--ink-muted); }
+.admin-historial ul { margin: var(--space-2) 0 0; padding-left: var(--space-5); font-size: 0.875rem; }
+.admin-clave { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 0.875rem; }
+.admin-texto-largo { min-height: 220px; padding: var(--space-3); resize: vertical; font: inherit; line-height: 1.5; }

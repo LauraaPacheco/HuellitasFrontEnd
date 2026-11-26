@@ -1,7 +1,11 @@
 import { useEffect, useRef, useState } from 'react';
 import { NavLink, Outlet, useLocation } from 'react-router-dom';
+import { PuertaPolitica } from '@/modulos/autenticacion/PuertaPolitica';
 import {
   BadgeCheck,
+  Flag,
+  MessageSquareText,
+  Settings,
   ChartColumn,
   ChevronLeft,
   ChevronRight,
@@ -19,7 +23,6 @@ import {
   type LucideIcon,
 } from 'lucide-react';
 import { NivelRol } from '@huellitas/shared';
-import { MODO_DEMO } from '@/lib/api';
 import { useSesion } from '@/modulos/autenticacion/ContextoSesion';
 import { Isotipo } from '@/componentes/ui/Isotipo';
 import { BotonTema } from '@/componentes/ui/BotonTema';
@@ -55,8 +58,11 @@ const MENU: readonly ItemMenu[] = [
   { ruta: '/padrinos', etiqueta: 'Padrinos', icono: HeartHandshake, niveles: [NivelRol.Refugio] },
   { ruta: '/seguimientos', etiqueta: 'Seguimientos', icono: ClipboardCheck, niveles: [NivelRol.Refugio], enBarra: true },
   { ruta: '/indicadores', etiqueta: 'Indicadores', icono: ChartColumn, niveles: [NivelRol.Refugio, NivelRol.Administrador] },
-  { ruta: '/refugios', etiqueta: MODO_DEMO ? 'Verificar refugios' : 'Refugios', icono: BadgeCheck, niveles: [NivelRol.Administrador], enBarra: true },
+  { ruta: '/refugios', etiqueta: 'Verificar refugios', icono: BadgeCheck, niveles: [NivelRol.Administrador], enBarra: true },
   { ruta: '/usuarios', etiqueta: 'Usuarios', icono: Users, niveles: [NivelRol.Administrador] },
+  { ruta: '/denuncias', etiqueta: 'Denuncias', icono: Flag, niveles: [NivelRol.Administrador] },
+  { ruta: '/opiniones', etiqueta: 'Opiniones', icono: MessageSquareText, niveles: [NivelRol.Administrador] },
+  { ruta: '/configuracion', etiqueta: 'Configuración', icono: Settings, niveles: [NivelRol.Administrador] },
   { ruta: '/auditoria', etiqueta: 'Auditoría', icono: ScrollText, niveles: [NivelRol.Administrador] },
 ];
 
@@ -256,6 +262,7 @@ export function Layout() {
         <ContextoTituloPagina.Provider value={setTituloPagina}>
           <ContextoSeccion.Provider value={seccionActual}>
             <Outlet />
+            <PuertaPolitica />
           </ContextoSeccion.Provider>
         </ContextoTituloPagina.Provider>
       </main>

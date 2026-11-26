@@ -1,0 +1,6 @@
+.puerta-politica { display: grid; gap: var(--space-3); }
+.puerta-politica__intro { margin: 0; display: flex; align-items: flex-start; gap: var(--space-2); }
+.puerta-politica__intro svg { flex-shrink: 0; margin-top: 2px; color: var(--brand-strong); }
+.puerta-politica__texto { max-height: 45vh; overflow: auto; padding: var(--space-4); border-radius: var(--radius-md); background: var(--surface-200); white-space: pre-wrap; line-height: 1.6; font-size: 0.9375rem; }
+.puerta-politica__texto:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
+.puerta-politica__acciones { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: var(--space-3); }

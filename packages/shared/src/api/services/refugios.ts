@@ -31,6 +31,24 @@ interface PerfilApi {
 interface PerfilPropioApi extends PerfilApi { estadoVerificacion: EstadoVerificacion }
 interface PublicoApi extends PerfilApi { refugioId: number; correo: string | null; verificado: boolean }
 interface ResumenApi { refugioId: number; nombre: string; direccion: string }
+interface RefugioAdminApi {
+  refugioId: number; nombre: string; nit: string; direccion: string; telefono: string | null; correo: string | null; encargado: string | null;
+  descripcion: string | null; redesSociales: Record<string, string> | null; estadoVerificacion: string; fechaCreacion: string;
+  fechaVerificacion: string | null; motivoRechazo: string | null;
+  soportes?: { soporteId: number; tipo: string; archivo: string; fechaCarga: string }[];
+}
+const ESTADO_VERIFICACION: Record<string, EstadoVerificacion> = {
+  pendiente: EstadoVerificacion.Pendiente, verificado: EstadoVerificacion.Verificado, rechazado: EstadoVerificacion.Rechazado, suspendido: EstadoVerificacion.Suspendido,
+};
+export function refugioAdminApi(r: RefugioAdminApi): Refugio {
+  return {
+    ...refugioBase(r.refugioId, r.nombre, r.direccion), nit: r.nit, telefono: r.telefono, correo: r.correo, encargado: r.encargado,
+    descripcion: r.descripcion || null, redesSociales: leerRedesSociales(r.redesSociales),
+    estadoVerificacion: ESTADO_VERIFICACION[r.estadoVerificacion.trim().toLowerCase()] ?? EstadoVerificacion.Pendiente,
+    fechaCreacion: r.fechaCreacion, fechaVerificacion: r.fechaVerificacion, motivoRechazo: r.motivoRechazo,
+    soportes: (r.soportes ?? []).map((s) => ({ id: s.soporteId, tipo: s.tipo, url: s.archivo, fecha: s.fechaCarga })),
+  };
+}
 function refugioBase(id: number, nombre: string, direccion: string): Refugio {
   return { id, nombre, direccion, nit: '', telefono: null, correo: null, encargado: null,
     descripcion: null, redesSociales: null, estadoVerificacion: EstadoVerificacion.Pendiente,
@@ -91,6 +109,7 @@ export class ServicioRefugios {
       nombreEncargado: datos.encargado, correo: datos.correo, contrasena: datos.contrasena, telefono: datos.telefono,
       aceptaPolitica: datos.aceptaPolitica, nombreRefugio: datos.nombre, nit: datos.nit, direccion: datos.direccion,
       descripcion: datos.descripcion?.trim() || null, redesSociales: redes ? JSON.stringify(redes) : null,
+      soportesUrls: [...(datos.soportesUrls ?? [])],
     });
   }
 
@@ -107,7 +126,7 @@ export class ServicioRefugios {
     await this.api.post(RUTAS.refugios.solicitarConMiCuenta, {
       nombre: limpios.nombre, nit: limpios.nit, direccion: limpios.direccion, telefono: limpios.telefono || null,
       correo: limpios.correo || null, encargado: limpios.encargado || null, descripcion: limpios.descripcion || null,
-      redesSociales: limpiarRedesSociales(datos.redesSociales),
+      redesSociales: limpiarRedesSociales(datos.redesSociales), soportesUrls: [...(datos.soportesUrls ?? [])],
     });
   }
 
@@ -146,9 +165,18 @@ export class ServicioRefugios {
     return this.api.post<void>(RUTAS.refugios.rechazar(id), datos);
   }
 
-  suspender(id: number, datos: MotivoDto): Promise<void> {
-    if (!this.modoDemo) this.noDisponible('La suspensión de refugios');
-    return this.api.post<void>(RUTAS.refugios.suspender(id), datos);
+  /** Solo administrador. El motivo es obligatorio. */
+  async suspender(id: number, datos: MotivoDto): Promise<void> {
+    if (!datos.motivo.trim()) throw new ErrorHttp({ titulo: 'Escribe el motivo de la suspensión.', estadoHttp: 400 });
+    await this.api.patch(RUTAS.refugios.suspender(id), { motivo: datos.motivo.trim() });
+  }
+
+  /** HU-ADM-01 / REF-01: solicitudes por verificar, con NIT, contacto y soportes (solo administrador). */
+  async pendientes(filtro: FiltroPaginado = {}): Promise<Paginado<Refugio>> {
+    const consulta = { pagina: filtro.pagina ?? 1, tamano: filtro.tamanoPagina ?? 10 };
+    if (this.modoDemo) return this.api.get(RUTAS.refugios.pendientes, consulta);
+    const dto = await this.api.get<{ items: RefugioAdminApi[]; pagina: number; tamanoPagina: number; totalRegistros: number; totalPaginas: number }>(RUTAS.refugios.pendientes, consulta);
+    return { items: dto.items.map(refugioAdminApi), pagina: dto.pagina, tamanoPagina: dto.tamanoPagina, total: dto.totalRegistros, totalPaginas: dto.totalPaginas };
   }
 
   async requisitos(id: number): Promise<readonly RequisitoAdopcion[]> {

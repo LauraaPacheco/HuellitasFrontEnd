@@ -4,7 +4,6 @@ import { EstadoUsuario, NivelRol, TipoVivienda } from '../../types/enums';
 import type { PerfilUsuarioApi, PerfilAdoptanteApi } from '../contratosBackend';
 import { RUTAS } from '../rutas';
 import type { Paginado } from '../../types/comun';
-import type { CambioRolDto, FiltroUsuario } from '../../types/administracion';
 import type {
   EditarPerfilDto,
   PerfilAdoptante,
@@ -16,7 +15,11 @@ export class ServicioUsuarios {
   constructor(private readonly api: ClienteApi, private readonly opciones?: Partial<ConfiguracionCliente> & { modoDemo?: boolean }) {}
 
   async yo(contexto?: Usuario): Promise<Usuario> {
-    if (this.opciones?.modoDemo) return this.api.get<Usuario>(RUTAS.usuarios.yo);
+    if (this.opciones?.modoDemo) {
+      // Lo de la sesión (la política pendiente) no lo tiene el perfil: se conserva.
+      const demo = await this.api.get<Usuario>(RUTAS.usuarios.yo);
+      return contexto?.politicaPendiente ? { ...demo, politicaPendiente: contexto.politicaPendiente } : demo;
+    }
     const token = await this.opciones?.almacen?.obtener() ?? '';
     const claims = claimsDelToken(token);
     const rol = contexto?.rol.nombre ?? String(claims['http://schemas.microsoft.com/ws/2008/06/identity/claims/role'] ?? 'Visitante');
@@ -33,14 +36,6 @@ export class ServicioUsuarios {
     const dto = await this.api.get<PerfilAdoptanteApi>(RUTAS.usuarios.perfilAdoptante);
     const vivienda = dto.tipoVivienda === null ? null : ({ Casa: TipoVivienda.Casa, Apartamento: TipoVivienda.Apartamento, Finca: TipoVivienda.Finca } as Record<string, TipoVivienda>)[dto.tipoVivienda] ?? null;
     return { ...dto, tipoVivienda: vivienda, id: 0, usuarioId, activo: true, fechaCreacion: '', fechaModificacion: null };
-  }
-
-  listar(filtro: FiltroUsuario = {}): Promise<Paginado<Usuario>> {
-    return this.api.get<Paginado<Usuario>>(RUTAS.usuarios.base, { ...filtro });
-  }
-
-  obtener(id: number): Promise<Usuario> {
-    return this.api.get<Usuario>(RUTAS.usuarios.porId(id));
   }
 
   async editarPerfil(datos: EditarPerfilDto): Promise<Usuario> {
@@ -70,11 +65,4 @@ export class ServicioUsuarios {
   }
   private seguridadReal() { if (this.opciones?.modoDemo) throw new ErrorHttp({ titulo: 'Los cambios de seguridad requieren conexión al servidor.', estadoHttp: 501 }); }
 
-  cambiarRol(id: number, datos: CambioRolDto): Promise<void> {
-    return this.api.put<void>(RUTAS.usuarios.cambiarRol(id), datos);
-  }
-
-  desactivar(id: number, motivo: string): Promise<void> {
-    return this.api.post<void>(RUTAS.usuarios.desactivar(id), { motivo });
-  }
 }

@@ -14,4 +14,15 @@ export class ServicioArchivos {
     if (!/^https:\/\//i.test(respuesta.url)) throw new ErrorHttp({ titulo: 'El servidor no devolvió un enlace seguro al archivo.', estadoHttp: 502 });
     return respuesta.url;
   }
+
+  /**
+   * HU-REF-01: soporte (PDF o imagen) para el registro de refugio, sin sesión.
+   * El backend limita las subidas por minuto.
+   */
+  async subirSoportePublico(formulario: FormData): Promise<string> {
+    if (this.modoDemo) throw new ErrorHttp({ titulo: 'La carga de archivos requiere conexión al backend real.', estadoHttp: 501 });
+    const respuesta = await this.api.post<{ url: string }>('/api/v1/Archivos/soporte-publico', formulario);
+    if (!/^https?:\/\//i.test(respuesta.url)) throw new ErrorHttp({ titulo: 'El servidor no devolvió un enlace válido al archivo.', estadoHttp: 502 });
+    return respuesta.url;
+  }
 }

@@ -19,9 +19,12 @@ import { RutaProtegida } from '@/modulos/autenticacion/RutaProtegida';
 import { PaginaMascotas } from '@/modulos/mascotas/PaginaMascotas';
 import { PaginaBandeja } from '@/modulos/solicitudes/PaginaBandeja';
 import { PaginaDetalleSolicitud } from '@/modulos/solicitudes/PaginaDetalleSolicitud';
-import { PaginaPendiente } from '@/modulos/PaginaPendiente';
 import { PaginaReportes } from '@/modulos/reportes/PaginaReportes';
 import { PaginaIndicadores } from '@/modulos/indicadores/PaginaIndicadores';
+import { PaginaUsuarios } from '@/modulos/administracion/PaginaUsuarios';
+import { PaginaDenuncias } from '@/modulos/administracion/PaginaDenuncias';
+import { PaginaOpiniones } from '@/modulos/administracion/PaginaOpiniones';
+import { PaginaConfiguracion } from '@/modulos/administracion/PaginaConfiguracion';
 import { PaginaNecesidades } from '@/modulos/apoyos/PaginaNecesidades';
 import { PaginaPadrinos } from '@/modulos/apoyos/PaginaPadrinos';
 import { PaginaAuditoria } from '@/modulos/trazabilidad/PaginaAuditoria';
@@ -158,10 +161,13 @@ export const rutas = createBrowserRouter([
         path: 'usuarios',
         element: (
           <RutaProtegida niveles={[NivelRol.Administrador]}>
-            <PaginaPendiente titulo="Usuarios" historias="HU-ADM-01" />
+            <PaginaUsuarios />
           </RutaProtegida>
         ),
       },
+      { path: 'denuncias', element: <RutaProtegida niveles={[NivelRol.Administrador]}><PaginaDenuncias /></RutaProtegida> },
+      { path: 'opiniones', element: <RutaProtegida niveles={[NivelRol.Administrador]}><PaginaOpiniones /></RutaProtegida> },
+      { path: 'configuracion', element: <RutaProtegida niveles={[NivelRol.Administrador]}><PaginaConfiguracion /></RutaProtegida> },
     ],
   },
   {
