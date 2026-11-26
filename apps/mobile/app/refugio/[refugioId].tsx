@@ -14,10 +14,11 @@ import {
   Star,
   type LucideIcon,
 } from 'lucide-react-native';
-import { describirRedesSociales, EstadoVerificacion } from '@huellitas/shared';
+import { describirRedesSociales, EstadoVerificacion, TipoContenido } from '@huellitas/shared';
 import { api } from '@/lib/api';
 import { EstadoCargando } from '@/componentes/EstadoCargando';
 import { NecesidadesRefugio, OpinionesRefugio } from '@/componentes/ApoyosRefugio';
+import { BotonDenunciar } from '@/componentes/BotonDenunciar';
 import { EstadoError } from '@/componentes/EstadoError';
 import { EstadoVacio } from '@/componentes/EstadoVacio';
 import { espaciado, radios, usarPaleta } from '@/temas';
@@ -190,6 +191,8 @@ export default function PantallaRefugio() {
           )}
         </View>
       )}
+      {/* Fuera de las pestañas: se puede denunciar desde cualquiera. */}
+      <BotonDenunciar tipo={TipoContenido.Refugio} id={id} que="este refugio" />
     </ScrollView>
   );
 }

@@ -3,6 +3,7 @@ import { DarkTheme, DefaultTheme, Stack, ThemeProvider } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { ProveedorSesion } from '@/lib/sesion';
+import { PuertaPolitica } from '@/componentes/PuertaPolitica';
 import { ProveedorTema, usarTema } from '@/temas';
 
 const clienteQuery = new QueryClient({
@@ -20,6 +21,7 @@ export default function LayoutRaiz() {
         <QueryClientProvider client={clienteQuery}>
           <ProveedorSesion>
             <Navegacion />
+            <PuertaPolitica />
           </ProveedorSesion>
         </QueryClientProvider>
       </SafeAreaProvider>
@@ -70,7 +72,6 @@ function Navegacion() {
         <Stack.Screen name="seguridad-cuenta" options={{ title: 'Seguridad de la cuenta' }} />
         <Stack.Screen name="datos-personales" options={{ title: 'Datos personales' }} />
         <Stack.Screen name="registrar-refugio" options={{ title: 'Registrar mi refugio' }} />
-        <Stack.Screen name="mapa-reportes" options={{ title: 'Mapa de reportes' }} />
         <Stack.Screen name="perfil-adoptante" options={{ title: 'Perfil de adoptante' }} />
         <Stack.Screen name="registro" options={{ title: '' }} />
         <Stack.Screen name="confirmar" options={{ title: 'Confirmar correo' }} />

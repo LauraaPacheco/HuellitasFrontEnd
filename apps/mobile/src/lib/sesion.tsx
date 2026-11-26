@@ -28,6 +28,8 @@ interface ValorSesion {
   readonly puedeActuar: boolean;
   readonly guardarDatosPersonales: (datos: EditarPerfilDto) => Promise<void>;
   readonly guardarPerfilAdoptante: (datos: PerfilAdoptanteDto) => Promise<void>;
+  /** HU-ADM-03: acepta la política vigente que el login marcó como pendiente. */
+  readonly aceptarPolitica: () => Promise<void>;
 }
 
 const ContextoSesion = createContext<ValorSesion | null>(null);
@@ -112,9 +114,17 @@ export function ProveedorSesion({ children }: { children: ReactNode }) {
     setUsuario(sesion.usuario);
   }, []);
 
+  const aceptarPolitica = useCallback(async () => {
+    if (!usuario?.politicaPendiente) return;
+    await api.administracion.aceptarPolitica(usuario.politicaPendiente);
+    const sesion = await api.cliente.actualizarUsuarioSesion({ ...usuario, politicaPendiente: null });
+    setUsuario(sesion.usuario);
+  }, [usuario]);
+
   const valor = useMemo<ValorSesion>(
     () => ({
       usuario,
+      aceptarPolitica,
       cargando,
       iniciarSesion,
       cerrarSesion,
@@ -122,7 +132,7 @@ export function ProveedorSesion({ children }: { children: ReactNode }) {
       guardarPerfilAdoptante,
       puedeActuar: usuario?.rol.nivel === NivelRol.Adoptante,
     }),
-    [usuario, cargando, iniciarSesion, cerrarSesion, guardarDatosPersonales, guardarPerfilAdoptante],
+    [usuario, cargando, iniciarSesion, cerrarSesion, guardarDatosPersonales, guardarPerfilAdoptante, aceptarPolitica],
   );
 
   return <ContextoSesion.Provider value={valor}>{children}</ContextoSesion.Provider>;

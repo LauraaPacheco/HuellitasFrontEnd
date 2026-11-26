@@ -22,6 +22,7 @@ import {
   ETIQUETA_TIPO_REGISTRO_CLINICO,
   EstadoMascota,
   Sexo,
+  TipoContenido,
   TipoRegistroClinico,
   formatearFecha,
 } from '@huellitas/shared';
@@ -30,6 +31,7 @@ import { useSesion } from '@/lib/sesion';
 import { useFavoritos } from '@/lib/favoritos';
 import { BotonFavorito } from '@/componentes/BotonFavorito';
 import { HistoriaMascota } from '@/componentes/HistoriaMascota';
+import { BotonDenunciar } from '@/componentes/BotonDenunciar';
 import { Boton } from '@/componentes/Boton';
 import { Insignia } from '@/componentes/Insignia';
 import { DatosMascota, datosMascota } from '@/componentes/DatosMascota';
@@ -238,6 +240,8 @@ export default function PantallaMascota() {
               </Seccion>
 
               <HistoriaMascota mascotaId={mascotaId} />
+
+              <BotonDenunciar tipo={TipoContenido.Mascota} id={mascotaId} que="esta publicación" />
 
               {disponible && favoritos.disponible && (
                 <Pressable

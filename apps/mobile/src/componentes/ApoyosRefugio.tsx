@@ -2,9 +2,10 @@ import { Alert, Platform, StyleSheet, Text, View } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { HandHeart, Star } from 'lucide-react-native';
-import { ETIQUETA_TIPO_NECESIDAD, EstadoNecesidad, formatearFecha } from '@huellitas/shared';
+import { ETIQUETA_TIPO_NECESIDAD, EstadoNecesidad, TipoContenido, formatearFecha } from '@huellitas/shared';
 import { api } from '@/lib/api';
 import { Boton } from '@/componentes/Boton';
+import { BotonDenunciar } from '@/componentes/BotonDenunciar';
 import { EstadoCargando } from '@/componentes/EstadoCargando';
 import { espaciado, radios, usarPaleta } from '@/temas';
 
@@ -75,6 +76,7 @@ export function OpinionesRefugio({ refugioId }: { readonly refugioId: number }) 
           </View>
           {o.comentario && <Text style={[estilos.texto, { color: paleta.ink }]}>{o.comentario}</Text>}
           <Text style={[estilos.meta, { color: paleta.inkMuted }]}>{formatearFecha(o.fecha)}</Text>
+          {!o.esPropia && <BotonDenunciar tipo={TipoContenido.Calificacion} id={o.id} que="esta opinión" compacto />}
           {o.esPropia && (
             <View style={estilos.propia}>
               <Boton titulo="Editar" variante="secundario" alPresionar={() => router.push({ pathname: '/calificar/[adopcionId]', params: { adopcionId: '0', refugioId: String(refugioId), calificacionId: String(o.id), puntaje: String(o.puntaje), comentario: o.comentario ?? '' } })} />
