@@ -2,6 +2,7 @@ import { PaginaCuenta } from '@/modulos/cuenta/PaginaCuenta';
 import { PaginaGestionMascota } from '@/modulos/mascotas/PaginaGestionMascota';
 import { PaginaVerificacionRefugios } from '@/modulos/refugios/PaginaVerificacionRefugios';
 import { PaginaPerfilRefugio } from '@/modulos/refugios/PaginaPerfilRefugio';
+import { PaginaMascotaPublica } from '@/modulos/mascotas/PaginaMascotaPublica';
 import { PaginaEditarRefugio } from '@/modulos/refugios/PaginaEditarRefugio';
 import { PaginaRestablecerContrasena } from '@/modulos/autenticacion/PaginaRestablecerContrasena';
 import { lazy, Suspense } from 'react';
@@ -18,7 +19,16 @@ import { RutaProtegida } from '@/modulos/autenticacion/RutaProtegida';
 import { PaginaMascotas } from '@/modulos/mascotas/PaginaMascotas';
 import { PaginaBandeja } from '@/modulos/solicitudes/PaginaBandeja';
 import { PaginaDetalleSolicitud } from '@/modulos/solicitudes/PaginaDetalleSolicitud';
-import { PaginaPendiente } from '@/modulos/PaginaPendiente';
+import { PaginaReportes } from '@/modulos/reportes/PaginaReportes';
+import { PaginaIndicadores } from '@/modulos/indicadores/PaginaIndicadores';
+import { PaginaUsuarios } from '@/modulos/administracion/PaginaUsuarios';
+import { PaginaDenuncias } from '@/modulos/administracion/PaginaDenuncias';
+import { PaginaOpiniones } from '@/modulos/administracion/PaginaOpiniones';
+import { PaginaConfiguracion } from '@/modulos/administracion/PaginaConfiguracion';
+import { PaginaNecesidades } from '@/modulos/apoyos/PaginaNecesidades';
+import { PaginaPadrinos } from '@/modulos/apoyos/PaginaPadrinos';
+import { PaginaAuditoria } from '@/modulos/trazabilidad/PaginaAuditoria';
+import { PaginaSeguimientos } from '@/modulos/trazabilidad/PaginaSeguimientos';
 import { EstadoCargando } from '@/componentes/ui/EstadoCargando';
 
 const REFUGIO_Y_ADMIN = [NivelRol.Refugio, NivelRol.Administrador] as const;
@@ -67,6 +77,10 @@ export const rutas = createBrowserRouter([
   { path: '/login', element: <PaginaLogin /> },
   { path: '/confirmar', element: <PaginaConfirmarCorreo /> },
   { path: '/restablecer-contrasena', element: <PaginaRestablecerContrasena /> },
+  // Enlace del correo de recuperación (App:RecoveryFrontendPath del backend).
+  { path: '/restablecer', element: <PaginaRestablecerContrasena /> },
+  // Enlace de compartir una mascota (MascotasController.Compartir): público.
+  { path: '/public/mascotas/:id', element: <PaginaMascotaPublica /> },
   { path: '/olvide-contrasena', element: <PaginaOlvideContrasena /> },
   { path: '/solicitar-registro', element: <PaginaSolicitarRegistro /> },
   {
@@ -111,7 +125,7 @@ export const rutas = createBrowserRouter([
         path: 'reportes',
         element: (
           <RutaProtegida niveles={REFUGIO_Y_ADMIN}>
-            <PaginaPendiente titulo="Reportes ciudadanos" historias="HU-REP-02" />
+            <PaginaReportes />
           </RutaProtegida>
         ),
       },
@@ -119,7 +133,7 @@ export const rutas = createBrowserRouter([
         path: 'seguimientos',
         element: (
           <RutaProtegida niveles={[NivelRol.Refugio]}>
-            <PaginaPendiente titulo="Seguimientos" historias="HU-TRA-03" />
+            <PaginaSeguimientos />
           </RutaProtegida>
         ),
       },
@@ -127,10 +141,13 @@ export const rutas = createBrowserRouter([
         path: 'indicadores',
         element: (
           <RutaProtegida niveles={REFUGIO_Y_ADMIN}>
-            <PaginaPendiente titulo="Indicadores" historias="HU-ADM-04" />
+            <PaginaIndicadores />
           </RutaProtegida>
         ),
       },
+      { path: 'necesidades', element: <RutaProtegida niveles={[NivelRol.Refugio]}><PaginaNecesidades /></RutaProtegida> },
+      { path: 'padrinos', element: <RutaProtegida niveles={[NivelRol.Refugio]}><PaginaPadrinos /></RutaProtegida> },
+      { path: 'auditoria', element: <RutaProtegida niveles={[NivelRol.Administrador]}><PaginaAuditoria /></RutaProtegida> },
       { path: 'mi-refugio', element: <RutaProtegida niveles={[NivelRol.Refugio]}><PaginaEditarRefugio /></RutaProtegida> },
       {
         path: 'refugios',
@@ -144,10 +161,13 @@ export const rutas = createBrowserRouter([
         path: 'usuarios',
         element: (
           <RutaProtegida niveles={[NivelRol.Administrador]}>
-            <PaginaPendiente titulo="Usuarios" historias="HU-ADM-01" />
+            <PaginaUsuarios />
           </RutaProtegida>
         ),
       },
+      { path: 'denuncias', element: <RutaProtegida niveles={[NivelRol.Administrador]}><PaginaDenuncias /></RutaProtegida> },
+      { path: 'opiniones', element: <RutaProtegida niveles={[NivelRol.Administrador]}><PaginaOpiniones /></RutaProtegida> },
+      { path: 'configuracion', element: <RutaProtegida niveles={[NivelRol.Administrador]}><PaginaConfiguracion /></RutaProtegida> },
     ],
   },
   {

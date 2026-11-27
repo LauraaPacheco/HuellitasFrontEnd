@@ -1,0 +1,108 @@
+/* HU-ADM-04: indicadores en tarjetas tipo bento. */
+
+/* Selector de período: pastillas, la activa oscura. */
+.ind-periodo { display: inline-flex; gap: 4px; padding: 4px; border-radius: var(--radius-pill); background: var(--surface-200); border: 1px solid var(--border); }
+.ind-periodo button { min-height: 36px; padding: 0 var(--space-4); border: 0; border-radius: var(--radius-pill); background: transparent; color: var(--ink-muted); font: inherit; font-size: 0.875rem; font-weight: 600; cursor: pointer; }
+.ind-periodo button:hover { color: var(--ink); }
+.ind-periodo button[aria-checked='true'] { background: var(--ink); color: var(--surface-100); }
+.ind-periodo button:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
+
+.ind-bento { display: grid; grid-template-columns: repeat(12, minmax(0, 1fr)); gap: var(--space-4); align-items: stretch; }
+.ind-bento__mascotas { grid-column: span 3; }
+.ind-bento__solicitudes { grid-column: span 6; }
+.ind-bento__adopciones { grid-column: span 3; }
+.ind-bento__estados, .ind-bento__reportes, .ind-bento__mini { grid-column: span 4; }
+.ind-bento__mini--ancho { grid-column: span 8; }
+@media (max-width: 1240px) {
+  .ind-bento__mascotas, .ind-bento__adopciones { grid-column: span 6; }
+  .ind-bento__solicitudes { grid-column: span 12; order: -1; }
+  .ind-bento__estados, .ind-bento__reportes { grid-column: span 6; }
+  .ind-bento__mini { grid-column: span 12; }
+}
+@media (max-width: 720px) {
+  .ind-bento > * { grid-column: span 12 !important; }
+}
+
+.ind-tarjeta { display: flex; flex-direction: column; gap: var(--space-3); min-width: 0; padding: var(--space-5); border-radius: var(--radius-lg); background: var(--surface-200); }
+.ind-tarjeta__cabecera { display: flex; align-items: center; gap: var(--space-2); }
+.ind-tarjeta__cabecera h2 { margin: 0; flex: 1; font-family: var(--fuente-cuerpo); font-size: 0.9375rem; font-weight: 600; }
+.ind-tarjeta__icono { display: grid; place-items: center; width: 32px; height: 32px; border-radius: 50%; background: var(--surface-100); color: var(--ink); }
+/* El cuadrito de color junto al título, como en la referencia. */
+.ind-marca { width: 14px; height: 14px; border-radius: 4px; background: var(--brand); flex-shrink: 0; }
+
+/* Tarjeta destacada: el verde de la marca de fondo. */
+.ind-tarjeta--destacada { background: var(--brand); color: var(--on-brand); }
+.ind-tarjeta--destacada .ind-marca { background: var(--on-brand); }
+.ind-tarjeta--destacada .ind-tarjeta__icono { background: color-mix(in srgb, var(--on-brand) 12%, transparent); color: var(--on-brand); }
+.ind-tarjeta--destacada .ind-pie, .ind-tarjeta--destacada .ind-fila dt, .ind-tarjeta--destacada .ind-fila__valor { color: var(--on-brand); }
+.ind-tarjeta--destacada .ind-insignia { background: var(--on-brand); color: var(--brand); }
+.ind-tarjeta--destacada .ind-fila__pista { background: color-mix(in srgb, var(--on-brand) 15%, transparent); }
+.ind-tarjeta--destacada .ind-fila__pista > span { background: var(--on-brand); }
+
+.ind-cifra { margin: 0; display: flex; align-items: baseline; gap: var(--space-2); flex-wrap: wrap; font-family: var(--fuente-display); font-size: 2.75rem; font-weight: 600; line-height: 1; letter-spacing: -0.02em; font-variant-numeric: tabular-nums; }
+.ind-cifra--pequena { font-size: 2rem; }
+.ind-cifra--grande { font-size: 3.5rem; }
+.ind-cifra__unidad { font-family: var(--fuente-cuerpo); font-size: 0.875rem; font-weight: 600; letter-spacing: 0; color: inherit; opacity: .75; }
+.ind-pie { margin: 0; font-size: 0.8125rem; color: var(--ink-muted); }
+.ind-linea { display: flex; align-items: center; gap: var(--space-3); flex-wrap: wrap; }
+
+/* Insignia de tendencia: "↗ 24%". */
+.ind-insignia { display: inline-flex; align-items: center; gap: 3px; padding: 3px 8px; border-radius: var(--radius-pill); background: var(--brand-tint); color: var(--brand-strong); font-size: 0.75rem; font-weight: 700; white-space: nowrap; }
+.ind-insignia--baja { background: color-mix(in srgb, var(--danger) 14%, var(--surface-100)); color: var(--danger); }
+.ind-insignia--neutra { background: var(--surface-100); color: var(--ink-muted); }
+
+.ind-dividido { display: grid; grid-template-columns: 1fr 1fr; margin-top: auto; padding-top: var(--space-4); border-top: 1px solid var(--border); }
+.ind-dividido > div { display: grid; gap: 4px; }
+.ind-dividido > div + div { padding-left: var(--space-4); border-left: 1px solid var(--border); }
+
+.ind-cabecera-doble { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--space-4); }
+.ind-cabecera-doble > div { display: grid; gap: var(--space-2); }
+@media (max-width: 480px) { .ind-cabecera-doble { grid-template-columns: minmax(0, 1fr); } }
+
+/* Columnas redondeadas; la semana actual en verde con su valor encima. */
+.ind-columnas { margin: var(--space-2) 0 0; display: grid; gap: var(--space-2); }
+.ind-columnas__area { height: 170px; display: flex; align-items: flex-end; gap: clamp(4px, 1.2vw, 10px); }
+.ind-columna { position: relative; flex: 1; height: 100%; display: flex; flex-direction: column; justify-content: flex-end; align-items: center; min-width: 0; }
+.ind-columna__barra { width: 100%; max-width: 28px; border-radius: var(--radius-pill); background: color-mix(in srgb, var(--ink) 88%, transparent); transition: opacity .15s; }
+.ind-columna__barra[data-vacia] { background: var(--border); }
+.ind-columna--actual .ind-columna__barra { background: var(--brand); box-shadow: 0 0 0 3px color-mix(in srgb, var(--brand) 25%, transparent); }
+.ind-columna__valor { margin-bottom: 6px; padding: 2px 8px; border-radius: var(--radius-pill); background: var(--surface-100); font-size: 0.75rem; font-weight: 700; font-variant-numeric: tabular-nums; }
+.ind-columnas__area:hover .ind-columna__barra { opacity: .45; }
+.ind-columnas__area .ind-columna:hover .ind-columna__barra { opacity: 1; }
+.ind-columnas__eje { display: flex; justify-content: space-between; font-size: 0.75rem; color: var(--ink-muted); }
+.ind-columnas__eje--categorias { justify-content: space-around; text-align: center; }
+.ind-columnas__eje--categorias span { flex: 1; }
+.ind-columnas--categorias .ind-columna__barra { max-width: 56px; border-radius: 14px; }
+
+/* Pastillas con los estados del período, la primera resaltada. */
+.ind-pildoras { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: var(--space-2); }
+.ind-pildoras li { padding: 6px 12px; border: 1px solid var(--border); border-radius: var(--radius-sm); background: var(--surface-100); font-size: 0.8125rem; }
+.ind-pildoras li.ind-pildora--activa { border-color: transparent; background: var(--brand); color: var(--on-brand); font-weight: 600; }
+
+/* Lista tipo "checkbox": etiqueta, pista fina y valor. */
+.ind-lista { display: grid; gap: var(--space-2); }
+.ind-lista__titulo { margin: var(--space-2) 0 0; font-size: 0.8125rem; font-weight: 600; }
+.ind-lista dl { margin: 0; display: grid; gap: var(--space-1); }
+.ind-fila { display: grid; grid-template-columns: minmax(90px, 40%) minmax(0, 1fr); align-items: center; gap: var(--space-3); padding: 6px 0; border-bottom: 1px solid var(--border); }
+.ind-fila:last-child { border-bottom: 0; }
+.ind-fila dt { font-size: 0.875rem; overflow-wrap: anywhere; }
+.ind-fila dd { margin: 0; display: flex; align-items: center; gap: var(--space-2); }
+.ind-fila__pista { flex: 1; height: 6px; border-radius: var(--radius-pill); background: var(--surface-300); overflow: hidden; }
+.ind-fila__pista > span { display: block; height: 100%; border-radius: var(--radius-pill); background: var(--brand-strong); }
+.ind-fila__valor { min-width: 2ch; text-align: right; font-size: 0.875rem; font-weight: 700; font-variant-numeric: tabular-nums; }
+
+.ind-proporcion { display: grid; gap: var(--space-2); }
+.ind-proporcion__pista { height: 8px; border-radius: var(--radius-pill); background: var(--surface-300); overflow: hidden; }
+.ind-proporcion__pista > span { display: block; height: 100%; border-radius: var(--radius-pill); background: var(--brand); }
+.ind-proporcion strong { color: var(--ink); }
+.ind-tasa { display: grid; gap: var(--space-2); margin-top: auto; }
+.ind-tasa__pista { height: 8px; border-radius: var(--radius-pill); background: color-mix(in srgb, var(--on-brand) 15%, transparent); overflow: hidden; }
+.ind-tasa__pista > span { display: block; height: 100%; border-radius: var(--radius-pill); background: var(--on-brand); }
+.ind-tasa p { margin: 0; font-size: 0.8125rem; }
+
+.ind-bento__mini { display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-4); }
+.ind-mini { display: flex; flex-direction: column; gap: var(--space-2); padding: var(--space-5); border-radius: var(--radius-lg); background: var(--surface-200); }
+.ind-mini .ind-cifra { font-size: 2.5rem; margin-top: auto; }
+.ind-mini__nota { margin: 0; font-size: 0.75rem; color: var(--ink-muted); }
+
+.ind-nota { grid-column: span 12; display: flex; align-items: center; gap: var(--space-2); margin: 0; font-size: 0.8125rem; color: var(--ink-muted); }

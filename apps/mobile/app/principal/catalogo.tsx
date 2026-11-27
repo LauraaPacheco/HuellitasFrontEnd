@@ -1,11 +1,12 @@
+import { useEspacioBarraPestanas } from '@/componentes/BarraPestanas';
 import { usePantallaActiva, useActualizarAlVolver } from '@/hooks/usePantallaActiva';
 import { HojaFiltros, contarFiltros, type FiltrosCatalogo } from '@/componentes/HojaFiltros';
 import { useState } from 'react';
-import { House, ImageOff, PawPrint, Search, ShieldCheck, SlidersHorizontal, X } from 'lucide-react-native';
-import { DatosMascota, datosMascota } from '@/componentes/DatosMascota';
+import { PawPrint, Search, SlidersHorizontal, X } from 'lucide-react-native';
+import { TarjetaMascota } from '@/componentes/TarjetaMascota';
+import { Recomendaciones } from '@/componentes/Recomendaciones';
 import { Paginacion } from '@/componentes/Paginacion';
 import {
-  Image,
   FlatList,
   Pressable,
   StyleSheet,
@@ -13,17 +14,11 @@ import {
   TextInput,
   View,
 } from 'react-native';
-import { Link, useRouter } from 'expo-router';
+import { useRouter } from 'expo-router';
 import { useSesion } from '@/lib/sesion';
 import { useQuery } from '@tanstack/react-query';
-import {
-  ESTADO_MASCOTA,
-  tiempoRelativo,
-  type FiltroMascota,
-  type MascotaResumen,
-} from '@huellitas/shared';
+import { type FiltroMascota } from '@huellitas/shared';
 import { api, MODO_DEMO } from '@/lib/api';
-import { Insignia } from '@/componentes/Insignia';
 import { AvisoDemo } from '@/componentes/AvisoDemo';
 import { EstadoCargando } from '@/componentes/EstadoCargando';
 import { EstadoError } from '@/componentes/EstadoError';
@@ -34,6 +29,7 @@ const UNA_HORA = 60 * 60 * 1000;
 
 export default function PantallaCatalogo() {
   const paleta = usarPaleta();
+  const espacioBarra = useEspacioBarraPestanas();
   const activa = usePantallaActiva();
   const [filtrosAbiertos, setFiltrosAbiertos] = useState(false);
   // Los catálogos solo los usa la hoja de filtros: se piden la primera vez que se abre,
@@ -146,7 +142,7 @@ export default function PantallaCatalogo() {
       {!isLoading && !isError && <FlatList
         data={data?.items ?? []}
         keyExtractor={(mascota) => String(mascota.id)}
-        contentContainerStyle={estilos.lista}
+        contentContainerStyle={[estilos.lista, { paddingBottom: espacioBarra }]}
         refreshing={isRefetching}
         onRefresh={() => void refetch()}
         ListEmptyComponent={
@@ -159,69 +155,9 @@ export default function PantallaCatalogo() {
         ListFooterComponent={data ? (
           <Paginacion pagina={data.pagina} totalPaginas={data.totalPaginas} ocupado={isRefetching} alCambiar={(pagina) => setFiltro((p) => ({ ...p, pagina }))} />
         ) : undefined}
+        ListHeaderComponent={filtro.pagina === 1 && !filtro.texto && !filtrosActivos ? <Recomendaciones /> : undefined}
         renderItem={({ item }) => <TarjetaMascota mascota={item} />}
       />}
-    </View>
-  );
-}
-
-function TarjetaMascota({ mascota }: { readonly mascota: MascotaResumen }) {
-  const paleta = usarPaleta();
-
-  return (
-    <Link href={`/mascota/${mascota.id}`} asChild>
-      <Pressable
-        accessibilityRole="button"
-        accessibilityLabel={`${mascota.nombre}, ${mascota.especie}, ${mascota.refugioNombre ? `del refugio ${mascota.refugioNombre}` : ''}`}
-        // Hijo de <Link asChild>: expo-router clona este elemento con
-        // @radix-ui/react-slot y lanza si su prop style es un array.
-        style={StyleSheet.flatten([
-          estilos.tarjeta,
-          { borderColor: paleta.border, backgroundColor: paleta.surface200 },
-        ])}
-      >
-        <FotoCatalogo uri={mascota.fotoPrincipal} nombre={mascota.nombre} />
-
-        <View style={estilos.cuerpo}>
-          <View style={estilos.fila}>
-            <Text numberOfLines={1} style={[estilos.nombre, { color: paleta.ink }]}>{mascota.nombre}</Text>
-            <Insignia estado={ESTADO_MASCOTA[mascota.estado]} />
-          </View>
-
-          {/* Los datos de dos en dos con su icono, como en Mi cuenta de la web. */}
-          <DatosMascota datos={datosMascota(mascota)} />
-
-          {(mascota.refugioNombre || mascota.fechaUltimaActualizacion) && (
-            <View style={[estilos.pieTarjeta, { borderTopColor: paleta.border }]}>
-              {mascota.refugioNombre && (
-                <View style={estilos.refugio}>
-                  {mascota.refugioVerificado
-                    ? <ShieldCheck size={15} strokeWidth={1.75} color={paleta.brandStrong} />
-                    : <House size={15} strokeWidth={1.75} color={paleta.inkMuted} />}
-                  <Text numberOfLines={1} style={[estilos.refugioTexto, { color: paleta.ink }]}>{mascota.refugioNombre}</Text>
-                </View>
-              )}
-              {/* La frescura del dato fue la queja principal de la encuesta. */}
-              {mascota.fechaUltimaActualizacion && (
-                <Text style={[estilos.detalle, { color: paleta.inkMuted }]}>{tiempoRelativo(mascota.fechaUltimaActualizacion)}</Text>
-              )}
-            </View>
-          )}
-        </View>
-      </Pressable>
-    </Link>
-  );
-}
-
-function FotoCatalogo({ uri, nombre }: { uri: string | null; nombre: string }) {
-  const [fallo, setFallo] = useState(false);
-  const paleta = usarPaleta();
-  return uri && !fallo ? (
-    <Image source={{ uri }} accessibilityLabel={`Foto de ${nombre}`} resizeMode="cover" onError={() => setFallo(true)} style={estilos.foto} />
-  ) : (
-    <View style={[estilos.foto, estilos.sinFoto, { backgroundColor: paleta.surface300 }]}>
-      <ImageOff size={28} strokeWidth={1.5} color={paleta.inkMuted} />
-      <Text style={{ color: paleta.inkMuted, fontSize: 13 }}>Sin foto disponible</Text>
     </View>
   );
 }
@@ -288,16 +224,6 @@ const estilos = StyleSheet.create({
     fontSize: 15,
   },
   lista: { flexGrow: 1, paddingHorizontal: espaciado.s4, paddingBottom: espaciado.s6, gap: espaciado.s4 },
-  tarjeta: { borderWidth: 1, borderRadius: radios.lg, overflow: 'hidden' },
-  foto: { width: '100%', height: 200 },
-  sinFoto: { alignItems: 'center', justifyContent: 'center', gap: espaciado.s2 },
-  cuerpo: { padding: espaciado.s4, gap: espaciado.s3 },
-  fila: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: espaciado.s2 },
-  nombre: { flexShrink: 1, fontSize: 20, fontWeight: '700' },
-  detalle: { fontSize: 13 },
-  pieTarjeta: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: espaciado.s3, paddingTop: espaciado.s3, borderTopWidth: 1 },
-  refugio: { flexDirection: 'row', alignItems: 'center', gap: 6, flexShrink: 1 },
-  refugioTexto: { fontSize: 13, fontWeight: '600', flexShrink: 1 },
   invitacion: { flexDirection: 'row', alignItems: 'flex-start', gap: espaciado.s3, padding: espaciado.s3, borderWidth: 1, borderRadius: radios.md },
   invitacionIcono: { width: 40, height: 40, borderRadius: radios.pill, alignItems: 'center', justifyContent: 'center' },
   invitacionTitulo: { fontSize: 15, fontWeight: '600' },

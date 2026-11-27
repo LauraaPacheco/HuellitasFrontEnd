@@ -147,3 +147,24 @@
   grid-column: 1 / -1;
 }
 @media (max-width: 380px) { .marco-auth__tarjeta { padding: 16px; } .marco-auth__titulo { font-size: 24px; line-height: 1.3; } }
+
+/* Casilla de la política en el registro de refugio. */
+.registro-politica { display: flex; align-items: flex-start; gap: var(--space-2); font-size: 0.875rem; line-height: 1.5; color: var(--ink-muted); cursor: pointer; }
+.registro-politica input { width: 18px; height: 18px; margin: 2px 0 0; flex-shrink: 0; accent-color: var(--brand-strong); }
+
+/* HU-REF-01: soportes del registro de refugio. */
+.registro-soportes { display: grid; gap: var(--space-2); margin: 0; padding: var(--space-4); border: 1px dashed var(--border); border-radius: var(--radius-md); }
+.registro-soportes legend { padding: 0 var(--space-1); font-weight: 600; }
+.registro-soportes p { margin: 0; font-size: 0.875rem; color: var(--ink-muted); }
+.registro-soportes ul { list-style: none; margin: 0; padding: 0; display: grid; gap: var(--space-1); }
+.registro-soportes li { display: flex; align-items: center; gap: var(--space-2); padding: 6px 10px; border-radius: var(--radius-sm); background: var(--surface-200); font-size: 0.875rem; }
+.registro-soportes li span { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.registro-soportes li button { display: grid; place-items: center; width: 28px; height: 28px; border: 0; border-radius: 50%; background: transparent; color: var(--ink-muted); cursor: pointer; }
+.registro-soportes li button:hover { background: var(--surface-300); color: var(--danger); }
+.registro-soportes__boton { position: relative; justify-self: start; cursor: pointer; }
+.registro-soportes__boton input { position: absolute; inset: 0; opacity: 0; cursor: pointer; }
+.registro-soportes__boton[aria-disabled='true'] { opacity: .6; pointer-events: none; }
+.registro-soportes__boton:focus-within { outline: 2px solid var(--focus); outline-offset: 2px; }
+.registro-politica__ver { padding: 0; border: 0; background: none; color: var(--brand-strong); font: inherit; font-weight: 600; text-decoration: underline; cursor: pointer; }
+.registro-politica__texto { max-height: 200px; overflow: auto; padding: var(--space-3); border-radius: var(--radius-sm); background: var(--surface-200); font-size: 0.875rem; line-height: 1.5; }
+.registro-politica__texto p { margin: var(--space-1) 0 0; white-space: pre-wrap; }

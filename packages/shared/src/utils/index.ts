@@ -11,3 +11,4 @@ export * from './multimedia';
 export * from './errores';
 
 export * from './visitas';
+export * from './notificaciones';

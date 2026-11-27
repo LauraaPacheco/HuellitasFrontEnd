@@ -3,6 +3,7 @@ import { House, List, CircleAlert, UserRound, type LucideIcon } from 'lucide-rea
 import { StyleSheet, Text, View } from 'react-native';
 import { BarraPestanas } from '@/componentes/BarraPestanas';
 import { BotonTema } from '@/componentes/BotonTema';
+import { BotonNotificaciones } from '@/componentes/BotonNotificaciones';
 import { espaciado, usarPaleta } from '@/temas';
 
 /**
@@ -47,6 +48,7 @@ export default function LayoutPrincipal() {
         // lleva junto a la cuenta en el menu), no solo en el login.
         headerRight: () => (
           <View style={estilos.derecha}>
+            <BotonNotificaciones />
             <BotonTema />
           </View>
         ),
@@ -71,7 +73,7 @@ export default function LayoutPrincipal() {
 
 const estilos = StyleSheet.create({
   titulo: { flexDirection: 'row', alignItems: 'center', gap: espaciado.s2 },
-  derecha: { paddingRight: espaciado.s4 },
+  derecha: { paddingRight: espaciado.s4, flexDirection: 'row', alignItems: 'center', gap: espaciado.s2 },
   chip: { width: 32, height: 32, borderRadius: 10, alignItems: 'center', justifyContent: 'center' },
   texto: { fontSize: 20, fontWeight: '700', letterSpacing: -0.2, flexShrink: 1 },
 });

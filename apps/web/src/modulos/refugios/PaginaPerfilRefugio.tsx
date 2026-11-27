@@ -1,6 +1,6 @@
 import { Link, useLocation, useParams } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
-import { ESTADO_VERIFICACION, EstadoVerificacion, NivelRol } from '@huellitas/shared';
+import { describirRedesSociales, ESTADO_VERIFICACION, EstadoVerificacion, NivelRol } from '@huellitas/shared';
 import { api } from '@/lib/api';
 import { useSesion } from '@/modulos/autenticacion/ContextoSesion';
 import { Boton } from '@/componentes/ui/Boton';
@@ -8,6 +8,7 @@ import { Insignia } from '@/componentes/ui/Insignia';
 import { EstadoVacio } from '@/componentes/ui/EstadoVacio';
 import { Isotipo } from '@/componentes/ui/Isotipo';
 import './refugios.css';
+import { NecesidadesPublicas, OpinionesRefugio } from './ApoyosRefugio';
 import { EstadoCargando } from '@/componentes/ui/EstadoCargando';
 
 export function PaginaPerfilRefugio() {
@@ -42,13 +43,15 @@ export function PaginaPerfilRefugio() {
         <p style={{ whiteSpace: 'pre-wrap' }}>{refugio.descripcion || 'El refugio aún no agregó una descripción.'}</p>
         <dl className="refugio-datos">
           <div><dt>Dirección</dt><dd>{refugio.direccion}</dd></div><div><dt>Teléfono</dt><dd>{refugio.telefono || 'Sin información'}</dd></div>
-          <div><dt>Correo de contacto</dt><dd>{refugio.correo || 'Sin información'}</dd></div><div><dt>Redes sociales</dt><dd>{refugio.redesSociales || 'Sin información'}</dd></div>
+          <div><dt>Correo de contacto</dt><dd>{refugio.correo || 'Sin información'}</dd></div><div><dt>Redes sociales</dt><dd>{describirRedesSociales(refugio.redesSociales) || 'Sin información'}</dd></div>
         </dl>
       </section>
       <section className="refugio-panel"><h2>Requisitos de adopción</h2>
         {refugio.requisitos.filter(r => r.activo).length ? <ol className="refugio-lista">{[...refugio.requisitos].filter(r => r.activo).sort((a,b) => a.orden-b.orden).map(r => <li key={r.id}>{r.descripcion} <strong>({r.esObligatorio ? 'Obligatorio' : 'Opcional'})</strong></li>)}</ol>
           : <p>El refugio todavía no publicó sus requisitos. Consulta sus condiciones antes de postularte.</p>}
       </section>
+      <NecesidadesPublicas refugioId={id} />
+      <OpinionesRefugio refugioId={id} />
     </>}
   </main>;
 }

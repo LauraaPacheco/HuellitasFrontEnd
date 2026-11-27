@@ -80,19 +80,18 @@ export interface Favorito extends EntidadBase {
   readonly fecha: string;
 }
 
-/** Desglose del puntaje del Match, para explicarle al adoptante por que (HU-MAS-06). */
-export interface FactorMatch {
-  readonly nombre: string;
-  readonly peso: number;
-  readonly aporte: number;
+/** HU-MAS-06: mascota recomendada con su puntaje (0-100) y por qué encaja. */
+export interface RecomendacionMascota extends MascotaResumen {
+  readonly puntajeCompatibilidad: number;
+  readonly factores: readonly string[];
 }
 
-export interface Compatibilidad extends EntidadBase {
-  readonly perfilId: number;
-  readonly mascotaId: number;
-  readonly puntaje: number;
-  readonly factores: readonly FactorMatch[];
-  readonly fechaCalculo: string;
+/** HU-MAS-08: textos e imagen listos para compartir la ficha. */
+export interface DatosCompartirMascota {
+  readonly titulo: string;
+  readonly descripcion: string;
+  readonly imagenUrl: string;
+  readonly urlFicha: string;
 }
 
 /* ---------- Filtros y DTOs ---------- */

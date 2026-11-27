@@ -7,6 +7,22 @@ import type {
   TipoNecesidad,
 } from './enums';
 
+/**
+ * Redes del refugio como pares red → usuario o enlace. El backend lo guarda
+ * como JSON (`Dictionary<string, string>`), así que se admiten claves que
+ * el front no conozca y se conservan al editar.
+ */
+export type RedesSociales = Readonly<Record<string, string>>;
+
+/** Un soporte (PDF o imagen) de la solicitud de registro (HU-REF-01). */
+export interface SoporteRefugio {
+  readonly id: number;
+  /** "PDF" o "Imagen". */
+  readonly tipo: string;
+  readonly url: string;
+  readonly fecha: string;
+}
+
 export interface Refugio extends EntidadBase {
   readonly nombre: string;
   readonly nit: string;
@@ -14,7 +30,7 @@ export interface Refugio extends EntidadBase {
   readonly telefono: string | null;
   readonly correo: string | null;
   readonly encargado: string | null;
-  readonly redesSociales: string | null;
+  readonly redesSociales: RedesSociales | null;
   readonly descripcion: string | null;
   readonly estadoVerificacion: EstadoVerificacion;
   readonly fechaVerificacion: string | null;
@@ -23,6 +39,8 @@ export interface Refugio extends EntidadBase {
   readonly promedioCalificacion: number | null;
   readonly totalAdopciones: number | null;
   readonly requisitos: readonly RequisitoAdopcion[];
+  /** Solo en la vista del administrador (GET /Refugios/pendientes). */
+  readonly soportes?: readonly SoporteRefugio[];
 }
 
 export interface RequisitoAdopcion extends EntidadBase {
@@ -70,8 +88,16 @@ export interface SolicitudRefugioDto {
   telefono: string;
   correo: string;
   encargado: string;
-  redesSociales?: string;
+  redesSociales?: RedesSociales | null;
   descripcion?: string;
+  /** URLs ya subidas (PDF o imagen) que respaldan la solicitud. */
+  soportesUrls?: readonly string[];
+}
+
+/** Registro público de un refugio: crea a la vez la cuenta del encargado y el refugio. */
+export interface RegistroRefugioDto extends SolicitudRefugioDto {
+  contrasena: string;
+  aceptaPolitica: boolean;
 }
 
 /** Datos editables; NIT y verificación solo se gestionan por su flujo específico. */
@@ -87,3 +113,52 @@ export interface CalificarDto {
   puntaje: number;
   comentario?: string;
 }
+
+/* ---------- HU-REF-03 y 04 contra el backend real (95d5da4, 49b28ea) ---------- */
+
+/** Necesidad de donación que publica el refugio. */
+export interface NecesidadRefugio {
+  readonly id: number;
+  readonly tipo: TipoNecesidad;
+  readonly descripcion: string;
+  /** Cómo donar, por ejemplo "Nequi 3001234567". */
+  readonly medioDonacion: string | null;
+  readonly estado: EstadoNecesidad;
+  readonly fechaPublicacion: string;
+}
+
+export interface GuardarNecesidadDto {
+  tipo: TipoNecesidad;
+  descripcion: string;
+  medioDonacion?: string;
+}
+
+/** Solicitud o padrinazgo vigente de una mascota. */
+export interface ApadrinamientoResumen {
+  readonly id: number;
+  readonly mascotaId: number;
+  readonly mascotaNombre: string;
+  readonly refugioNombre: string | null;
+  readonly padrinoNombre: string;
+  readonly fechaInicio: string;
+  readonly estado: EstadoApadrinamiento;
+  readonly observacion: string | null;
+}
+
+/** Opinión pública de un adoptante sobre el refugio (1 a 5). */
+export interface OpinionRefugio {
+  readonly id: number;
+  readonly autor: string;
+  readonly puntaje: number;
+  readonly comentario: string | null;
+  readonly fecha: string;
+  /** La escribió el usuario de la sesión: puede editarla o borrarla. */
+  readonly esPropia: boolean;
+}
+
+export interface CalificarRefugioDto {
+  adopcionId: number;
+  puntaje: number;
+  comentario?: string;
+}
+

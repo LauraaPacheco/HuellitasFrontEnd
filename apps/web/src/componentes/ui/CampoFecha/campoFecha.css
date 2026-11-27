@@ -1,0 +1,27 @@
+.campo-fecha { position: relative; }
+
+.campo-fecha__control {
+  display: flex; align-items: center; justify-content: space-between; gap: var(--space-3);
+  width: 100%; text-align: left; cursor: pointer; color: var(--ink);
+}
+.campo-fecha__control svg { flex-shrink: 0; color: var(--ink-muted); }
+.campo-fecha__control[aria-expanded='true'] { border-color: var(--brand); }
+.campo-fecha__control--vacio .campo-fecha__texto { color: var(--ink-muted); }
+.campo-fecha__texto { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.campo-fecha__texto::first-letter { text-transform: uppercase; }
+
+.campo-fecha__panel {
+  margin-top: var(--space-2);
+  padding: var(--space-4);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  background: var(--surface-200);
+}
+
+.campo-fecha__pie { display: flex; justify-content: flex-end; margin-top: var(--space-2); }
+.campo-fecha__hoy {
+  min-height: 36px; padding: 0 var(--space-3);
+  border: 1px solid var(--border); border-radius: var(--radius-pill);
+  background: var(--surface-100); color: var(--brand-strong); font: inherit; font-size: 0.875rem; font-weight: 600; cursor: pointer;
+}
+.campo-fecha__hoy:hover { border-color: var(--brand); }

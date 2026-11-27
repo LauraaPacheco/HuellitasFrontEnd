@@ -1,28 +1,35 @@
 import { useEffect, useRef, useState } from 'react';
 import { NavLink, Outlet, useLocation } from 'react-router-dom';
+import { PuertaPolitica } from '@/modulos/autenticacion/PuertaPolitica';
 import {
   BadgeCheck,
+  Flag,
+  MessageSquareText,
+  Settings,
   ChartColumn,
   ChevronLeft,
   ChevronRight,
   ClipboardCheck,
+  HandHeart,
+  HeartHandshake,
   House,
   Inbox,
   Megaphone,
   PawPrint,
+  ScrollText,
   UserRound,
   Users,
   X,
   type LucideIcon,
 } from 'lucide-react';
 import { NivelRol } from '@huellitas/shared';
-import { MODO_DEMO } from '@/lib/api';
 import { useSesion } from '@/modulos/autenticacion/ContextoSesion';
 import { Isotipo } from '@/componentes/ui/Isotipo';
 import { BotonTema } from '@/componentes/ui/BotonTema';
 import { AvisoDemo } from '@/componentes/ui/AvisoDemo';
 import { ContextoSeccion, ContextoTituloPagina } from './TituloPagina';
 import { BarraInferior } from './BarraInferior';
+import { CampanaNotificaciones } from '@/modulos/trazabilidad/CampanaNotificaciones';
 import './layout.css';
 
 interface ItemMenu {
@@ -47,10 +54,16 @@ const MENU: readonly ItemMenu[] = [
   { ruta: '/solicitudes', etiqueta: 'Solicitudes', icono: Inbox, niveles: [NivelRol.Refugio, NivelRol.Administrador], enBarra: true },
   { ruta: '/mascotas', etiqueta: 'Mascotas', icono: PawPrint, niveles: [NivelRol.Refugio, NivelRol.Administrador], enBarra: true },
   { ruta: '/reportes', etiqueta: 'Reportes ciudadanos', icono: Megaphone, niveles: [NivelRol.Refugio, NivelRol.Administrador], enBarra: true },
+  { ruta: '/necesidades', etiqueta: 'Necesidades', icono: HandHeart, niveles: [NivelRol.Refugio] },
+  { ruta: '/padrinos', etiqueta: 'Padrinos', icono: HeartHandshake, niveles: [NivelRol.Refugio] },
   { ruta: '/seguimientos', etiqueta: 'Seguimientos', icono: ClipboardCheck, niveles: [NivelRol.Refugio], enBarra: true },
   { ruta: '/indicadores', etiqueta: 'Indicadores', icono: ChartColumn, niveles: [NivelRol.Refugio, NivelRol.Administrador] },
-  { ruta: '/refugios', etiqueta: MODO_DEMO ? 'Verificar refugios' : 'Refugios', icono: BadgeCheck, niveles: [NivelRol.Administrador], enBarra: true },
+  { ruta: '/refugios', etiqueta: 'Verificar refugios', icono: BadgeCheck, niveles: [NivelRol.Administrador], enBarra: true },
   { ruta: '/usuarios', etiqueta: 'Usuarios', icono: Users, niveles: [NivelRol.Administrador] },
+  { ruta: '/denuncias', etiqueta: 'Denuncias', icono: Flag, niveles: [NivelRol.Administrador] },
+  { ruta: '/opiniones', etiqueta: 'Opiniones', icono: MessageSquareText, niveles: [NivelRol.Administrador] },
+  { ruta: '/configuracion', etiqueta: 'Configuración', icono: Settings, niveles: [NivelRol.Administrador] },
+  { ruta: '/auditoria', etiqueta: 'Auditoría', icono: ScrollText, niveles: [NivelRol.Administrador] },
 ];
 
 /** Preferencia del menu compacto en escritorio. Es por navegador, no por cuenta. */
@@ -161,6 +174,8 @@ export function Layout() {
             </span>
           )}
           {tituloBarra && <span className="layout__titulo-barra" aria-hidden="true">{tituloBarra}</span>}
+          {/* En celular la campana va en la barra superior, a la vista. */}
+          <CampanaNotificaciones className="layout__campana-movil" />
         </div>
 
         {/* Capa oscura detras del panel en movil: tocarla cierra el menu. */}
@@ -225,6 +240,7 @@ export function Layout() {
               <IconoSalir />
               <span className="layout__salir-texto">Cerrar sesión</span>
             </button>
+            <CampanaNotificaciones className="layout__campana-escritorio" />
             <BotonTema />
           </div>
         </div>
@@ -246,6 +262,7 @@ export function Layout() {
         <ContextoTituloPagina.Provider value={setTituloPagina}>
           <ContextoSeccion.Provider value={seccionActual}>
             <Outlet />
+            <PuertaPolitica />
           </ContextoSeccion.Provider>
         </ContextoTituloPagina.Provider>
       </main>

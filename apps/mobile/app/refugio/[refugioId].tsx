@@ -14,14 +14,17 @@ import {
   Star,
   type LucideIcon,
 } from 'lucide-react-native';
-import { EstadoVerificacion } from '@huellitas/shared';
+import { describirRedesSociales, EstadoVerificacion, TipoContenido } from '@huellitas/shared';
 import { api } from '@/lib/api';
 import { EstadoCargando } from '@/componentes/EstadoCargando';
+import { NecesidadesRefugio, OpinionesRefugio } from '@/componentes/ApoyosRefugio';
+import { BotonDenunciar } from '@/componentes/BotonDenunciar';
 import { EstadoError } from '@/componentes/EstadoError';
 import { EstadoVacio } from '@/componentes/EstadoVacio';
 import { espaciado, radios, usarPaleta } from '@/temas';
 
-type Pestana = 'informacion' | 'requisitos';
+type Pestana = 'informacion' | 'requisitos' | 'ayudar' | 'opiniones';
+const ETIQUETAS: Record<Pestana, string> = { informacion: 'Contacto', requisitos: 'Requisitos', ayudar: 'Ayudar', opiniones: 'Opiniones' };
 
 function iniciales(nombre: string) {
   return nombre
@@ -116,7 +119,7 @@ export default function PantallaRefugio() {
       </View>}
 
       <View accessibilityRole="tablist" accessibilityLabel="Información del refugio" style={[estilos.selector, { backgroundColor: paleta.surface200, borderColor: paleta.border }]}>
-        {(['informacion', 'requisitos'] as const).map((valor) => {
+        {(['informacion', 'requisitos', 'ayudar', 'opiniones'] as const).map((valor) => {
           const activa = pestana === valor;
           return (
             <Pressable
@@ -134,14 +137,18 @@ export default function PantallaRefugio() {
               ]}
             >
               <Text style={[estilos.pestanaTexto, { color: activa ? paleta.brandStrong : paleta.ink, fontWeight: activa ? '600' : '400' }]}>
-                {valor === 'informacion' ? 'Contacto' : `Requisitos · ${requisitos.length}`}
+                {ETIQUETAS[valor]}
               </Text>
             </Pressable>
           );
         })}
       </View>
 
-      {pestana === 'informacion' ? (
+      {pestana === 'ayudar' ? (
+        <NecesidadesRefugio refugioId={id} />
+      ) : pestana === 'opiniones' ? (
+        <OpinionesRefugio refugioId={id} />
+      ) : pestana === 'informacion' ? (
         <View style={[estilos.caja, { backgroundColor: paleta.surface200 }]}>
           <Contacto icono={MapPin} etiqueta="Dirección" valor={refugio.direccion} />
           <Contacto
@@ -151,7 +158,7 @@ export default function PantallaRefugio() {
             accion={telefono ? { texto: 'Llamar', abrir: () => void Linking.openURL(`tel:${telefono}`) } : undefined}
           />
           <Contacto icono={Mail} etiqueta="Correo de contacto" valor={refugio.correo} />
-          <Contacto icono={AtSign} etiqueta="Redes sociales" valor={refugio.redesSociales} />
+          <Contacto icono={AtSign} etiqueta="Redes sociales" valor={describirRedesSociales(refugio.redesSociales) || null} />
         </View>
       ) : (
         <View style={estilos.seccion}>
@@ -184,6 +191,8 @@ export default function PantallaRefugio() {
           )}
         </View>
       )}
+      {/* Fuera de las pestañas: se puede denunciar desde cualquiera. */}
+      <BotonDenunciar tipo={TipoContenido.Refugio} id={id} que="este refugio" />
     </ScrollView>
   );
 }
@@ -262,8 +271,8 @@ const estilos = StyleSheet.create({
   cifraEtiqueta: { fontSize: 12, textAlign: 'center' },
   divisor: { width: 1, alignSelf: 'stretch' },
   selector: { flexDirection: 'row', gap: espaciado.s1, padding: espaciado.s1, borderWidth: 1, borderRadius: radios.md },
-  pestana: { flex: 1, minHeight: 44, borderWidth: 1, borderRadius: radios.sm, alignItems: 'center', justifyContent: 'center', paddingHorizontal: espaciado.s2 },
-  pestanaTexto: { fontSize: 14 },
+  pestana: { flex: 1, minHeight: 44, borderWidth: 1, borderRadius: radios.sm, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 2 },
+  pestanaTexto: { fontSize: 13 },
   caja: { padding: espaciado.s3, borderRadius: radios.md, gap: espaciado.s4 },
   seccion: { gap: espaciado.s3 },
   contacto: { flexDirection: 'row', alignItems: 'center', gap: espaciado.s3 },

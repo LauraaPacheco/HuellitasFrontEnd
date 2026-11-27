@@ -366,3 +366,42 @@ a.mascota-enlace { text-decoration: none; }
 .ficha__estado .boton {
   min-height: 40px;
 }
+
+/* ---------------------------------------------------------------------
+ * Historial clínico (HU-MAS-04) en la ficha de gestión.
+ * ------------------------------------------------------------------ */
+.historial__cabecera { display: flex; flex-wrap: wrap; align-items: flex-start; justify-content: space-between; gap: var(--space-3); }
+.historial__cabecera > div { flex: 1 1 220px; min-width: 0; }
+.historial__lista { list-style: none; margin: 0; padding: 0; display: grid; gap: var(--space-2); }
+.historial__item { display: flex; gap: var(--space-3); padding: var(--space-3); border: 1px solid var(--border); border-radius: var(--radius-md); background: var(--surface-200); }
+.historial__icono { flex-shrink: 0; width: 36px; height: 36px; display: grid; place-items: center; border-radius: var(--radius-pill); background: var(--brand-tint); color: var(--brand-strong); }
+.historial__texto { min-width: 0; display: grid; gap: 2px; }
+.historial__tipo { margin: 0; font-weight: 600; display: flex; flex-wrap: wrap; align-items: baseline; gap: 0 var(--space-2); }
+.historial__fecha { font-size: 0.8125rem; font-weight: 400; color: var(--ink-muted); }
+.historial__descripcion { margin: 0; font-size: 0.875rem; }
+.historial__soporte { display: inline-flex; align-items: center; gap: 4px; font-size: 0.8125rem; }
+.historial__paginas { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: var(--space-2); font-size: 0.875rem; color: var(--ink-muted); }
+.historial__contexto { margin: 0 0 var(--space-3); font-size: 0.875rem; color: var(--ink-muted); }
+.historial__area { min-height: 88px; padding: var(--space-3); resize: vertical; font: inherit; }
+@media (max-width: 540px) {
+  .historial__cabecera > .boton { width: 100%; }
+}
+
+/* Soporte veterinario: subir archivo o pegar enlace (una sola URL). */
+.soporte { display: grid; gap: var(--space-2); }
+.soporte__zona { padding: var(--space-4); }
+.soporte__titulo { font-weight: 600; color: var(--ink); }
+.soporte__fila-enlace { display: flex; align-items: center; gap: var(--space-2); }
+.soporte__caja-enlace { position: relative; flex: 1 1 200px; min-width: 0; display: flex; align-items: center; }
+.soporte__icono-enlace { position: absolute; left: var(--space-3); color: var(--ink-muted); display: grid; pointer-events: none; }
+.soporte__caja-enlace .soporte__entrada { width: 100%; padding-left: calc(var(--space-3) + 26px); }
+.soporte__elegido { display: flex; align-items: center; gap: var(--space-3); padding: var(--space-2); border: 1px solid var(--border); border-radius: var(--radius-md); background: var(--surface-200); }
+.soporte__miniatura { width: 56px; height: 56px; flex-shrink: 0; object-fit: cover; border-radius: var(--radius-sm); background: var(--surface-300); }
+.soporte__miniatura--pdf { display: grid; place-items: center; background: var(--brand-tint); color: var(--brand-strong); }
+.soporte__enlace { flex: 1; min-width: 0; font-weight: 600; overflow-wrap: anywhere; }
+.soporte__quitar { width: 44px; height: 44px; flex-shrink: 0; display: grid; place-items: center; border: 0; border-radius: var(--radius-pill); background: transparent; color: var(--ink-muted); }
+.soporte__quitar:hover { background: var(--surface-300); color: var(--danger); }
+@media (max-width: 480px) {
+  .soporte__fila-enlace { flex-wrap: wrap; }
+  .soporte__fila-enlace > .boton { flex: 1 1 100%; }
+}

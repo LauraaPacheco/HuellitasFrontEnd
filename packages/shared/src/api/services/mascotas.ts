@@ -1,19 +1,19 @@
 import { ErrorHttp, type ClienteApi } from '../client';
-import { paginadoApi, estadoMascotaApi, sexoApi, type PaginadoApi, type ResumenMascotaApi, type DetalleMascotaApi, type FichaMascotaPublica } from '../contratosBackend';
+import { paginadoApi, paginadoGenerico, estadoMascotaApi, recomendacionApi, registroClinicoApi, sexoApi, type PaginadoApi, type RecomendacionApi, type RegistroClinicoApi, type ResumenMascotaApi, type DetalleMascotaApi, type FichaMascotaPublica } from '../contratosBackend';
 import { RUTAS } from '../rutas';
 import { validarUrlFoto } from '../../utils/multimedia';
-import type { Paginado } from '../../types/comun';
-import type { Bitacora } from '../../types/trazabilidad';
+import type { FiltroPaginado, Paginado } from '../../types/comun';
 import type {
   CambioEstadoMascotaDto,
-  Compatibilidad,
   CrearMascotaDto,
   CrearRegistroClinicoDto,
+  DatosCompartirMascota,
   EditarMascotaDto,
   FiltroMascota,
   Mascota,
   MascotaResumen,
   Multimedia,
+  RecomendacionMascota,
   RegistroClinico,
 } from '../../types/mascotas';
 
@@ -125,40 +125,56 @@ export class ServicioMascotas {
     return this.api.delete<void>(`${RUTAS.mascotas.multimedia(id)}/${multimediaId}`);
   }
 
-  agregarRegistroClinico(datos: CrearRegistroClinicoDto): Promise<RegistroClinico> {
-    return this.api.post<RegistroClinico>(
-      RUTAS.mascotas.historialClinico(datos.mascotaId),
-      datos,
-    );
+  /* ----- Historial clínico (HU-MAS-04) ----- */
+
+  /** Requiere sesión iniciada (cualquier rol). Más reciente primero, paginado. */
+  async historialClinico(mascotaId: number, filtro: FiltroPaginado = {}): Promise<Paginado<RegistroClinico>> {
+    const parametros = { pagina: filtro.pagina ?? 1, tamano: filtro.tamanoPagina ?? 10 };
+    if (this.modoDemo) return this.api.get(RUTAS.mascotas.historialClinico(mascotaId), parametros);
+    const dto = await this.api.get<PaginadoApi<RegistroClinicoApi>>(RUTAS.mascotas.historialClinico(mascotaId), parametros);
+    return paginadoGenerico(dto, (r) => registroClinicoApi(r, mascotaId));
   }
 
-  bitacora(id: number): Promise<readonly Bitacora[]> {
-    return this.api.get<readonly Bitacora[]>(RUTAS.mascotas.bitacora(id));
-  }
-
-  /* ----- Favoritos ----- */
-
-  misFavoritos(): Promise<readonly MascotaResumen[]> {
-    return this.api.get<readonly MascotaResumen[]>(RUTAS.mascotas.favoritos);
-  }
-
-  marcarFavorito(mascotaId: number): Promise<void> {
-    return this.api.post<void>(RUTAS.mascotas.favoritos, { mascotaId });
-  }
-
-  quitarFavorito(mascotaId: number): Promise<void> {
-    return this.api.delete<void>(RUTAS.mascotas.favoritoPorMascota(mascotaId));
-  }
-
-  /* ----- Match ----- */
-
-  compatibilidad(mascotaId: number): Promise<Compatibilidad> {
-    return this.api.get<Compatibilidad>(RUTAS.mascotas.compatibilidad(mascotaId));
-  }
-
-  recomendadas(cantidad = 10): Promise<readonly MascotaResumen[]> {
-    return this.api.get<readonly MascotaResumen[]>(RUTAS.mascotas.recomendadas, {
-      cantidad,
+  /** Solo el refugio dueño. La fecha va como AAAA-MM-DD (DateOnly). */
+  async agregarRegistroClinico(datos: CrearRegistroClinicoDto): Promise<void> {
+    const fecha = datos.fecha.slice(0, 10);
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(fecha) || fecha > new Date().toISOString().slice(0, 10)) {
+      throw new ErrorHttp({ titulo: 'Elige una fecha válida que no esté en el futuro.', estadoHttp: 400 });
+    }
+    const descripcion = datos.descripcion?.trim() ?? '';
+    if (!descripcion) throw new ErrorHttp({ titulo: 'Describe la atención.', estadoHttp: 400 });
+    await this.api.post(RUTAS.mascotas.historialClinico(datos.mascotaId), {
+      tipo: datos.tipo, fecha, descripcion, soporteVeterinario: datos.soporteVeterinario?.trim() || null,
     });
+  }
+
+  /* ----- Favoritos (HU-MAS-07, solo adoptante) ----- */
+
+  async misFavoritos(filtro: FiltroPaginado = {}): Promise<Paginado<MascotaResumen>> {
+    const parametros = { pagina: filtro.pagina ?? 1, tamano: filtro.tamanoPagina ?? 50 };
+    if (this.modoDemo) return this.api.get(RUTAS.mascotas.favoritos, parametros);
+    return paginadoApi(await this.api.get<PaginadoApi<ResumenMascotaApi>>(RUTAS.mascotas.favoritos, parametros));
+  }
+
+  async marcarFavorito(mascotaId: number): Promise<void> {
+    await this.api.post(RUTAS.mascotas.favoritoPorMascota(mascotaId));
+  }
+
+  async quitarFavorito(mascotaId: number): Promise<void> {
+    await this.api.delete(RUTAS.mascotas.favoritoPorMascota(mascotaId));
+  }
+
+  /* ----- Recomendaciones (HU-MAS-06, solo adoptante con perfil completo) ----- */
+
+  /** Top 10 por compatibilidad. Si el perfil de adoptante está incompleto el servidor responde 400. */
+  async recomendaciones(): Promise<readonly RecomendacionMascota[]> {
+    if (this.modoDemo) return this.api.get(RUTAS.mascotas.recomendaciones);
+    return (await this.api.get<RecomendacionApi[]>(RUTAS.mascotas.recomendaciones)).map(recomendacionApi);
+  }
+
+  /* ----- Compartir (HU-MAS-08, público) ----- */
+
+  compartir(mascotaId: number): Promise<DatosCompartirMascota> {
+    return this.api.get<DatosCompartirMascota>(RUTAS.mascotas.compartir(mascotaId));
   }
 }

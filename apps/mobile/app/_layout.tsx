@@ -3,6 +3,7 @@ import { DarkTheme, DefaultTheme, Stack, ThemeProvider } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { ProveedorSesion } from '@/lib/sesion';
+import { PuertaPolitica } from '@/componentes/PuertaPolitica';
 import { ProveedorTema, usarTema } from '@/temas';
 
 const clienteQuery = new QueryClient({
@@ -20,6 +21,7 @@ export default function LayoutRaiz() {
         <QueryClientProvider client={clienteQuery}>
           <ProveedorSesion>
             <Navegacion />
+            <PuertaPolitica />
           </ProveedorSesion>
         </QueryClientProvider>
       </SafeAreaProvider>
@@ -69,6 +71,7 @@ function Navegacion() {
         <Stack.Screen name="restablecer-contrasena" options={{ title: 'Nueva contraseña' }} />
         <Stack.Screen name="seguridad-cuenta" options={{ title: 'Seguridad de la cuenta' }} />
         <Stack.Screen name="datos-personales" options={{ title: 'Datos personales' }} />
+        <Stack.Screen name="registrar-refugio" options={{ title: 'Registrar mi refugio' }} />
         <Stack.Screen name="perfil-adoptante" options={{ title: 'Perfil de adoptante' }} />
         <Stack.Screen name="registro" options={{ title: '' }} />
         <Stack.Screen name="confirmar" options={{ title: 'Confirmar correo' }} />
@@ -79,6 +82,12 @@ function Navegacion() {
         <Stack.Screen name="refugio/[refugioId]" options={{ title: 'Perfil del refugio' }} />
         <Stack.Screen name="postular/[mascotaId]" options={{ title: 'Solicitud de adopción' }} />
         <Stack.Screen name="mascota/[mascotaId]" options={{ headerShown: false }} />
+        <Stack.Screen name="favoritos" options={{ title: 'Mis favoritos' }} />
+        <Stack.Screen name="notificaciones" options={{ title: 'Notificaciones' }} />
+        <Stack.Screen name="apadrinamientos" options={{ title: 'Mis apadrinamientos' }} />
+        <Stack.Screen name="apadrinar/[mascotaId]" options={{ title: 'Apadrinar' }} />
+        <Stack.Screen name="seguimiento/[seguimientoId]" options={{ title: 'Seguimiento' }} />
+        <Stack.Screen name="calificar/[adopcionId]" options={{ title: 'Calificar al refugio' }} />
       </Stack>
     </ThemeProvider>
   );

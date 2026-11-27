@@ -1,6 +1,6 @@
 # App móvil
 
-Expo SDK 57 + React Native 0.86 + React 19. La usan adoptantes y ciudadanos.
+Expo SDK 58 + React Native 0.88 + React 19. La usan adoptantes y ciudadanos.
 
 La guía completa para instalar, ejecutar en demo o con backend y compilar
 está en el [README de la raíz](../../README.md).
@@ -37,7 +37,8 @@ usan, que es lo que exigen las tiendas.
 ## Nota sobre el backend
 
 `localhost` no funciona desde el celular. Hay que poner la IP de la máquina
-donde corre el backend en `EXPO_PUBLIC_URL_API`.
+donde corre el backend en `EXPO_PUBLIC_URL_API`, con el perfil `http` del
+backend (`http://<IP>:5046`). En el emulador de Android es `http://10.0.2.2:5046`.
 
 ## Reglas de estilo
 

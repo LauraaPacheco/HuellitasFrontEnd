@@ -85,24 +85,24 @@
   align-items: start;
 }
 
-/* Agregar un requisito en una sola fila: campo, casilla y boton. */
-.requisitos__nuevo fieldset {
-  grid-template-columns: minmax(0, 1fr) auto auto;
-  align-items: end;
+/* Agregar un requisito: el campo a todo el ancho y debajo, la casilla a la
+ * izquierda y los botones a la derecha. La tarjeta vive en una columna
+ * angosta, asi que no se intenta meter todo en una sola fila. */
+.requisitos__pie {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
 }
 
-.requisitos__nuevo .requisitos__check {
-  height: 52px;
+.requisitos__pie .cuenta__acciones {
+  margin-left: auto;
 }
 
-.requisitos__nuevo [role='alert'],
-.requisitos__nuevo [role='status'] {
-  grid-column: 1 / -1;
-}
-
-@media (max-width: 640px) {
-  .requisitos__nuevo fieldset { grid-template-columns: minmax(0, 1fr); }
-  .requisitos__nuevo .requisitos__check { height: auto; }
+@media (max-width: 420px) {
+  .requisitos__pie .cuenta__acciones { flex: 1 1 100%; }
+  .requisitos__pie .cuenta__acciones > .boton { flex: 1 1 auto; }
 }
 
 .requisitos__item {
@@ -198,9 +198,39 @@
   display: inline-flex;
   align-items: center;
   gap: var(--space-2);
+  min-height: 44px;
   font-size: 0.875rem;
+  cursor: pointer;
+}
+
+.requisitos__check input {
+  width: 18px;
+  height: 18px;
+  margin: 0;
+  accent-color: var(--brand-strong);
 }
 
 .cuenta__acciones {
   gap: var(--space-2);
 }
+
+/* Perfil público: necesidades y opiniones (HU-REF-03 y 04). */
+.refugio-necesidades, .refugio-opiniones { list-style: none; margin: 0; padding: 0; display: grid; gap: var(--space-3); }
+.refugio-necesidades li, .refugio-opiniones li { padding: var(--space-3) var(--space-4); border: 1px solid var(--border); border-radius: var(--radius-md); background: var(--surface-200); }
+.refugio-necesidades p, .refugio-opiniones p { margin: var(--space-1) 0 0; overflow-wrap: anywhere; }
+.refugio-necesidades__tipo { display: inline-block; padding: 2px 10px; border-radius: var(--radius-pill); background: var(--brand-tint); color: var(--brand-strong); font-size: 0.8125rem; font-weight: 600; }
+.refugio-necesidades__medio { font-size: 0.875rem; color: var(--ink-muted); }
+.refugio-opiniones__resumen { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-2); margin: 0 0 var(--space-3); }
+.refugio-opiniones__resumen strong { font-size: 1.5rem; font-family: var(--fuente-display); }
+.refugio-opiniones__resumen span:last-child { color: var(--ink-muted); font-size: 0.875rem; }
+.refugio-opiniones__cabecera { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: var(--space-2); }
+.refugio-opiniones__fecha { font-size: 0.8125rem; color: var(--ink-muted); }
+.estrellas { display: inline-flex; gap: 2px; vertical-align: middle; }
+.estrellas__llena { color: #f5a524; fill: #f5a524; }
+.estrellas__vacia { color: var(--border); }
+
+.refugio-soportes { margin: var(--space-3) 0; }
+.refugio-soportes h3 { margin: 0 0 var(--space-2); font-size: 0.9375rem; }
+.refugio-soportes ul { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: var(--space-2); }
+.refugio-soportes a { display: inline-flex; align-items: center; gap: 6px; padding: 6px 12px; border: 1px solid var(--border); border-radius: var(--radius-pill); color: var(--ink); text-decoration: none; font-size: 0.875rem; }
+.refugio-soportes a:hover { border-color: var(--brand-strong); color: var(--brand-strong); }

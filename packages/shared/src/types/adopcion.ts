@@ -37,6 +37,13 @@ export interface SolicitudResumen {
   readonly estado: EstadoSolicitud;
   /** Alimenta el resaltado ambar de las solicitudes demoradas. */
   readonly diasSinRespuesta: number;
+  /**
+   * Solo en solicitudes finalizadas. El backend todavía no lo devuelve: se
+   * lee si llega (`adopcionId`) y habilita el seguimiento y la calificación.
+   */
+  readonly adopcionId?: number | null;
+  /** Refugio de la mascota, para calificarlo. Igual: se lee si el backend lo manda. */
+  readonly refugioId?: number | null;
 }
 
 export interface SolicitudAdopcion extends EntidadBase {

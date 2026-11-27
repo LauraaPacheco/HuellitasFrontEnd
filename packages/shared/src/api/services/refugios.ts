@@ -1,14 +1,21 @@
 import { ErrorHttp, type ClienteApi } from '../client';
 import { EstadoVerificacion } from '../../types/enums';
+import { leerRedesSociales, limpiarRedesSociales, normalizarRefugio, validarRefugio } from '../../utils/refugios';
 import { RUTAS } from '../rutas';
 import type { FiltroPaginado, Paginado } from '../../types/comun';
+import {
+  apadrinamientoApi, calificacionApi, necesidadApi, paginadoGenerico,
+  type ApadrinamientoApi, type CalificacionApi, type NecesidadApi, type PaginadoApi,
+} from '../contratosBackend';
 import type {
-  Apadrinamiento,
+  ApadrinamientoResumen,
+  CalificarRefugioDto,
+  RegistroRefugioDto,
   EditarRefugioDto,
-  Calificacion,
-  CalificarDto,
+  GuardarNecesidadDto,
   MotivoDto,
-  Necesidad,
+  NecesidadRefugio,
+  OpinionRefugio,
   Refugio,
   RequisitoAdopcion,
   SolicitudRefugioDto,
@@ -18,11 +25,30 @@ const BASE = '/api/v1/Refugios';
 interface RequisitoApi { requisitoId: number; descripcion: string; esObligatorio: boolean; orden: number }
 interface PerfilApi {
   nombre: string; descripcion: string; direccion: string; telefono: string | null;
-  redesSociales: string | null; requisitos: RequisitoApi[];
+  /** Objeto en mi-perfil; la ficha pública aún devuelve el JSON como texto. */
+  redesSociales: Record<string, string> | string | null; requisitos: RequisitoApi[];
 }
 interface PerfilPropioApi extends PerfilApi { estadoVerificacion: EstadoVerificacion }
 interface PublicoApi extends PerfilApi { refugioId: number; correo: string | null; verificado: boolean }
 interface ResumenApi { refugioId: number; nombre: string; direccion: string }
+interface RefugioAdminApi {
+  refugioId: number; nombre: string; nit: string; direccion: string; telefono: string | null; correo: string | null; encargado: string | null;
+  descripcion: string | null; redesSociales: Record<string, string> | null; estadoVerificacion: string; fechaCreacion: string;
+  fechaVerificacion: string | null; motivoRechazo: string | null;
+  soportes?: { soporteId: number; tipo: string; archivo: string; fechaCarga: string }[];
+}
+const ESTADO_VERIFICACION: Record<string, EstadoVerificacion> = {
+  pendiente: EstadoVerificacion.Pendiente, verificado: EstadoVerificacion.Verificado, rechazado: EstadoVerificacion.Rechazado, suspendido: EstadoVerificacion.Suspendido,
+};
+export function refugioAdminApi(r: RefugioAdminApi): Refugio {
+  return {
+    ...refugioBase(r.refugioId, r.nombre, r.direccion), nit: r.nit, telefono: r.telefono, correo: r.correo, encargado: r.encargado,
+    descripcion: r.descripcion || null, redesSociales: leerRedesSociales(r.redesSociales),
+    estadoVerificacion: ESTADO_VERIFICACION[r.estadoVerificacion.trim().toLowerCase()] ?? EstadoVerificacion.Pendiente,
+    fechaCreacion: r.fechaCreacion, fechaVerificacion: r.fechaVerificacion, motivoRechazo: r.motivoRechazo,
+    soportes: (r.soportes ?? []).map((s) => ({ id: s.soporteId, tipo: s.tipo, url: s.archivo, fecha: s.fechaCarga })),
+  };
+}
 function refugioBase(id: number, nombre: string, direccion: string): Refugio {
   return { id, nombre, direccion, nit: '', telefono: null, correo: null, encargado: null,
     descripcion: null, redesSociales: null, estadoVerificacion: EstadoVerificacion.Pendiente,
@@ -43,7 +69,7 @@ export class ServicioRefugios {
     const dto = await this.api.get<PerfilPropioApi>(`${BASE}/mi-perfil`);
     // La consulta pública sí carga los requisitos asociados; mi-perfil puede omitirlos.
     const publico = await this.obtener(refugioId);
-    return { ...publico, ...dto, id: refugioId,
+    return { ...publico, ...dto, id: refugioId, redesSociales: leerRedesSociales(dto.redesSociales),
       requisitos: publico.requisitos, estadoVerificacion: dto.estadoVerificacion };
   }
 
@@ -65,11 +91,43 @@ export class ServicioRefugios {
     if (!this.modoDemo) {
       const dto = await this.api.get<PublicoApi>(`${BASE}/${id}`);
       return { ...refugioBase(dto.refugioId, dto.nombre, dto.direccion), descripcion: dto.descripcion,
-        telefono: dto.telefono, correo: dto.correo, redesSociales: dto.redesSociales,
+        telefono: dto.telefono, correo: dto.correo, redesSociales: leerRedesSociales(dto.redesSociales),
         estadoVerificacion: dto.verificado ? EstadoVerificacion.Verificado : EstadoVerificacion.Pendiente,
         requisitos: requisitosApi(dto.requisitos, dto.refugioId) };
     }
     return this.api.get<Refugio>(RUTAS.refugios.porId(id));
+  }
+
+  /**
+   * Registro público (46c2e86): crea la cuenta del encargado y el refugio, que
+   * queda pendiente de verificación. El encargado debe confirmar su correo.
+   */
+  async registrarRefugio(datos: RegistroRefugioDto): Promise<void> {
+    if (this.modoDemo) { await this.solicitarRegistro(datos); return; }
+    const redes = limpiarRedesSociales(datos.redesSociales);
+    await this.api.post(RUTAS.autenticacion.registrarRefugio, {
+      nombreEncargado: datos.encargado, correo: datos.correo, contrasena: datos.contrasena, telefono: datos.telefono,
+      aceptaPolitica: datos.aceptaPolitica, nombreRefugio: datos.nombre, nit: datos.nit, direccion: datos.direccion,
+      descripcion: datos.descripcion?.trim() || null, redesSociales: redes ? JSON.stringify(redes) : null,
+      soportesUrls: [...(datos.soportesUrls ?? [])],
+    });
+  }
+
+  /**
+   * POST /api/v1/Refugios/solicitar (HU-REF-01): alguien que ya tiene cuenta
+   * pide registrar su refugio. Queda Pendiente y su cuenta pasa a rol Refugio,
+   * así que después debe volver a iniciar sesión.
+   */
+  async solicitarConMiCuenta(datos: SolicitudRefugioDto): Promise<void> {
+    const problema = validarRefugio(datos);
+    if (problema) throw new ErrorHttp({ titulo: problema, estadoHttp: 400 });
+    const limpios = normalizarRefugio(datos);
+    // Aquí el backend recibe las redes como diccionario, no como texto JSON.
+    await this.api.post(RUTAS.refugios.solicitarConMiCuenta, {
+      nombre: limpios.nombre, nit: limpios.nit, direccion: limpios.direccion, telefono: limpios.telefono || null,
+      correo: limpios.correo || null, encargado: limpios.encargado || null, descripcion: limpios.descripcion || null,
+      redesSociales: limpiarRedesSociales(datos.redesSociales), soportesUrls: [...(datos.soportesUrls ?? [])],
+    });
   }
 
   solicitarRegistro(datos: SolicitudRefugioDto): Promise<Refugio> {
@@ -79,8 +137,9 @@ export class ServicioRefugios {
 
   async editar(id: number, datos: EditarRefugioDto): Promise<Refugio> {
     if (!this.modoDemo) {
-      const { descripcion = '', direccion, telefono, redesSociales = '' } = datos;
-      await this.api.put(`${BASE}/mi-perfil`, { descripcion, direccion, telefono, redesSociales });
+      const { descripcion = '', direccion, telefono } = datos;
+      // El backend serializa el diccionario a JSON; null deja la columna vacía.
+      await this.api.put(`${BASE}/mi-perfil`, { descripcion, direccion, telefono, redesSociales: limpiarRedesSociales(datos.redesSociales) });
       return this.miPerfil(id);
     }
     return this.api.put<Refugio>(RUTAS.refugios.porId(id), datos);
@@ -106,9 +165,18 @@ export class ServicioRefugios {
     return this.api.post<void>(RUTAS.refugios.rechazar(id), datos);
   }
 
-  suspender(id: number, datos: MotivoDto): Promise<void> {
-    if (!this.modoDemo) this.noDisponible('La suspensión de refugios');
-    return this.api.post<void>(RUTAS.refugios.suspender(id), datos);
+  /** Solo administrador. El motivo es obligatorio. */
+  async suspender(id: number, datos: MotivoDto): Promise<void> {
+    if (!datos.motivo.trim()) throw new ErrorHttp({ titulo: 'Escribe el motivo de la suspensión.', estadoHttp: 400 });
+    await this.api.patch(RUTAS.refugios.suspender(id), { motivo: datos.motivo.trim() });
+  }
+
+  /** HU-ADM-01 / REF-01: solicitudes por verificar, con NIT, contacto y soportes (solo administrador). */
+  async pendientes(filtro: FiltroPaginado = {}): Promise<Paginado<Refugio>> {
+    const consulta = { pagina: filtro.pagina ?? 1, tamano: filtro.tamanoPagina ?? 10 };
+    if (this.modoDemo) return this.api.get(RUTAS.refugios.pendientes, consulta);
+    const dto = await this.api.get<{ items: RefugioAdminApi[]; pagina: number; tamanoPagina: number; totalRegistros: number; totalPaginas: number }>(RUTAS.refugios.pendientes, consulta);
+    return { items: dto.items.map(refugioAdminApi), pagina: dto.pagina, tamanoPagina: dto.tamanoPagina, total: dto.totalRegistros, totalPaginas: dto.totalPaginas };
   }
 
   async requisitos(id: number): Promise<readonly RequisitoAdopcion[]> {
@@ -132,25 +200,90 @@ export class ServicioRefugios {
     });
   }
 
-  necesidades(refugioId?: number): Promise<readonly Necesidad[]> {
-    return this.api.get<readonly Necesidad[]>(RUTAS.refugios.necesidades, {
-      refugioId,
-    });
+  /* ----- Necesidades de donación (HU-REF-03) ----- */
+
+  /** Públicas: cualquiera ve lo que necesita un refugio. */
+  async necesidades(refugioId: number, filtro: FiltroPaginado = {}): Promise<Paginado<NecesidadRefugio>> {
+    const parametros = { pagina: filtro.pagina ?? 1, tamano: filtro.tamanoPagina ?? 20 };
+    if (this.modoDemo) return this.api.get(RUTAS.necesidades.porRefugio(refugioId), parametros);
+    return paginadoGenerico(await this.api.get<PaginadoApi<NecesidadApi>>(RUTAS.necesidades.porRefugio(refugioId), parametros), necesidadApi);
   }
 
-  apadrinar(mascotaId: number): Promise<Apadrinamiento> {
-    return this.api.post<Apadrinamiento>(RUTAS.refugios.apadrinamientos, {
-      mascotaId,
-    });
+  private datosNecesidad(datos: GuardarNecesidadDto) {
+    const descripcion = datos.descripcion.trim();
+    if (!descripcion) throw new ErrorHttp({ titulo: 'Describe qué necesita el refugio.', estadoHttp: 400 });
+    return { tipo: datos.tipo, descripcion, medioDonacion: datos.medioDonacion?.trim() || null };
   }
 
-  calificaciones(refugioId: number): Promise<readonly Calificacion[]> {
-    return this.api.get<readonly Calificacion[]>(
-      RUTAS.refugios.calificacionesPorRefugio(refugioId),
-    );
+  async publicarNecesidad(datos: GuardarNecesidadDto): Promise<void> {
+    await this.api.post(RUTAS.necesidades.base, this.datosNecesidad(datos));
   }
 
-  calificar(datos: CalificarDto): Promise<Calificacion> {
-    return this.api.post<Calificacion>(RUTAS.refugios.calificaciones, datos);
+  async editarNecesidad(id: number, datos: GuardarNecesidadDto): Promise<void> {
+    await this.api.put(RUTAS.necesidades.porId(id), this.datosNecesidad(datos));
+  }
+
+  async marcarNecesidadCubierta(id: number): Promise<void> {
+    await this.api.patch(RUTAS.necesidades.cubrir(id));
+  }
+
+  async eliminarNecesidad(id: number): Promise<void> {
+    await this.api.delete(RUTAS.necesidades.porId(id));
+  }
+
+  /* ----- Apadrinamientos (HU-REF-03) ----- */
+
+  /** El adoptante pide ser padrino; el refugio lo acepta o lo rechaza. */
+  async apadrinar(mascotaId: number, observacion?: string): Promise<void> {
+    await this.api.post(RUTAS.apadrinamientos.base, { mascotaId, observacion: observacion?.trim() || null });
+  }
+
+  async misApadrinamientos(filtro: FiltroPaginado = {}): Promise<Paginado<ApadrinamientoResumen>> {
+    const parametros = { pagina: filtro.pagina ?? 1, tamano: filtro.tamanoPagina ?? 20 };
+    if (this.modoDemo) return this.api.get(RUTAS.apadrinamientos.mios, parametros);
+    return paginadoGenerico(await this.api.get<PaginadoApi<ApadrinamientoApi>>(RUTAS.apadrinamientos.mios, parametros), apadrinamientoApi);
+  }
+
+  async apadrinamientosRefugio(filtro: FiltroPaginado = {}): Promise<Paginado<ApadrinamientoResumen>> {
+    const parametros = { pagina: filtro.pagina ?? 1, tamano: filtro.tamanoPagina ?? 20 };
+    if (this.modoDemo) return this.api.get(RUTAS.apadrinamientos.refugio, parametros);
+    return paginadoGenerico(await this.api.get<PaginadoApi<ApadrinamientoApi>>(RUTAS.apadrinamientos.refugio, parametros), apadrinamientoApi);
+  }
+
+  async gestionarApadrinamiento(id: number, aceptar: boolean, observacion?: string): Promise<void> {
+    await this.api.patch(RUTAS.apadrinamientos.gestionar(id), { aceptar, observacion: observacion?.trim() || null });
+  }
+
+  async cancelarApadrinamiento(id: number): Promise<void> {
+    await this.api.patch(RUTAS.apadrinamientos.cancelar(id));
+  }
+
+  /* ----- Calificaciones (HU-REF-04) ----- */
+
+  /** Públicas, más recientes primero. */
+  async opiniones(refugioId: number, filtro: FiltroPaginado = {}): Promise<Paginado<OpinionRefugio>> {
+    const parametros = { pagina: filtro.pagina ?? 1, tamano: filtro.tamanoPagina ?? 10 };
+    if (this.modoDemo) return this.api.get(RUTAS.refugios.calificaciones(refugioId), parametros);
+    return paginadoGenerico(await this.api.get<PaginadoApi<CalificacionApi>>(RUTAS.refugios.calificaciones(refugioId), parametros), calificacionApi);
+  }
+
+  /** Requiere el ID de la adopción finalizada (llega en la solicitud desde 46c2e86) y el del refugio. */
+  async calificar(refugioId: number, datos: CalificarRefugioDto): Promise<void> {
+    if (!Number.isInteger(datos.puntaje) || datos.puntaje < 1 || datos.puntaje > 5) {
+      throw new ErrorHttp({ titulo: 'Elige de 1 a 5 estrellas.', estadoHttp: 400 });
+    }
+    await this.api.post(RUTAS.refugios.calificaciones(refugioId), { adopcionId: datos.adopcionId, puntaje: datos.puntaje, comentario: datos.comentario?.trim() || null });
+  }
+
+  /** Solo la propia (OpinionRefugio.esPropia). */
+  async editarCalificacion(refugioId: number, calificacionId: number, datos: { puntaje: number; comentario?: string }): Promise<void> {
+    if (!Number.isInteger(datos.puntaje) || datos.puntaje < 1 || datos.puntaje > 5) {
+      throw new ErrorHttp({ titulo: 'Elige de 1 a 5 estrellas.', estadoHttp: 400 });
+    }
+    await this.api.put(RUTAS.refugios.calificacion(refugioId, calificacionId), { puntaje: datos.puntaje, comentario: datos.comentario?.trim() || null });
+  }
+
+  async eliminarCalificacion(refugioId: number, calificacionId: number): Promise<void> {
+    await this.api.delete(RUTAS.refugios.calificacion(refugioId, calificacionId));
   }
 }

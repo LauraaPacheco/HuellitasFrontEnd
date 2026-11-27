@@ -95,3 +95,64 @@ export interface FiltroAuditoria extends FiltroPaginado {
   desde?: string;
   hasta?: string;
 }
+
+/* ---------- HU-TRA-01 a 06 contra el backend real (a00d0cc) ---------- */
+
+/** Un cambio de estado de la solicitud, con quién lo hizo (TRA-01). */
+export interface EventoSolicitud {
+  readonly estadoAnterior: string | null;
+  readonly estadoNuevo: string;
+  readonly observacion: string | null;
+  readonly responsable: string;
+  readonly fecha: string;
+}
+
+/** Un evento de la bitácora pública de la mascota (TRA-02). */
+export interface EventoMascota {
+  readonly tipo: TipoEvento;
+  readonly descripcion: string;
+  readonly fecha: string;
+}
+
+export interface NotificacionUsuario {
+  readonly id: number;
+  readonly mensaje: string;
+  readonly leida: boolean;
+  readonly fecha: string;
+}
+
+export interface EntradaAuditoria {
+  readonly id: number;
+  readonly accion: string;
+  readonly entidad: string;
+  readonly idEntidad: number | null;
+  readonly valorAnterior: string | null;
+  readonly valorNuevo: string | null;
+  readonly responsable: string;
+  readonly fecha: string;
+}
+
+/** Plan de seguimiento post-adopción: 3 reportes a 1, 3 y 6 meses (TRA-05). */
+export interface PlanSeguimientoAdopcion {
+  readonly id: number;
+  readonly adopcionId: number;
+  readonly seguimientos: readonly SeguimientoAdopcion[];
+}
+
+export interface SeguimientoAdopcion {
+  readonly id: number;
+  readonly numero: number;
+  readonly fechaProgramada: string;
+  readonly fechaEnvio: string | null;
+  readonly estado: EstadoSeguimiento;
+  readonly resultado: ResultadoSeguimiento | null;
+  readonly fotos: readonly string[];
+}
+
+export interface ReporteSeguimientoAdopcionDto {
+  estadoSalud: string;
+  adaptacion: string;
+  comentarios: string;
+  fotosUrls: string[];
+}
+

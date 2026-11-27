@@ -1,3 +1,6 @@
+import { SeguimientoAdopcion } from '@/componentes/SeguimientoAdopcion';
+import { HistorialSolicitud } from '@/componentes/HistorialSolicitud';
+import { useEspacioBarraPestanas } from '@/componentes/BarraPestanas';
 import { VisitaSolicitud } from '@/componentes/VisitaSolicitud';
 import { visitaVigente } from '@huellitas/shared';
 import { MODO_DEMO } from '@/lib/api';
@@ -24,6 +27,7 @@ const POR_PAGINA = 20;
 
 export default function PantallaSolicitudes() {
   const paleta = usarPaleta();
+  const espacioBarra = useEspacioBarraPestanas();
   const activa = usePantallaActiva();
   const { usuario } = useSesion();
   const router = useRouter();
@@ -67,7 +71,7 @@ export default function PantallaSolicitudes() {
   return (
     <FlatList
       style={{ backgroundColor: paleta.surface100 }}
-      contentContainerStyle={estilos.lista}
+      contentContainerStyle={[estilos.lista, { paddingBottom: espacioBarra }]}
       data={data?.items ?? []}
       keyExtractor={(solicitud) => String(solicitud.id)}
       refreshing={isRefetching}
@@ -110,6 +114,8 @@ export default function PantallaSolicitudes() {
           {!MODO_DEMO && item.estado === EstadoSolicitud.EntrevistaVisita && visitas.isPending && <Text style={{ color: paleta.inkMuted }}>Cargando datos de la visita…</Text>}
           {item.estado === EstadoSolicitud.EntrevistaVisita && visitas.isError && <><Text accessibilityRole="alert" style={{ color: paleta.danger }}>No pudimos cargar los datos de la visita.</Text><Boton titulo="Reintentar visita" variante="secundario" alPresionar={() => void visitas.refetch()} /></>}
           <AccionesAdopcion solicitud={item} />
+          {item.estado === EstadoSolicitud.Finalizada && <SeguimientoAdopcion solicitud={item} />}
+          <HistorialSolicitud solicitudId={item.id} />
         </View>
       )}
       ListFooterComponent={

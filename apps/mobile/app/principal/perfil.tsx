@@ -1,8 +1,9 @@
+import { useEspacioBarraPestanas } from '@/componentes/BarraPestanas';
 import { EstadoCargando } from '@/componentes/EstadoCargando';
 import { useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useRouter } from 'expo-router';
-import { ChevronRight, CircleCheck, LogOut, Moon, ShieldCheck, Sun, UserRound, type LucideIcon } from 'lucide-react-native';
+import { ChevronRight, CircleCheck, Heart, HeartHandshake, House, LogOut, Moon, ShieldCheck, Sun, UserRound, type LucideIcon } from 'lucide-react-native';
 import { ESTADO_USUARIO, NivelRol, tokens } from '@huellitas/shared';
 import { useSesion } from '@/lib/sesion';
 import { AvisoSesion } from '@/componentes/AvisoSesion';
@@ -12,6 +13,7 @@ import { usarTema } from '@/temas';
 
 export default function PantallaPerfil() {
   const { paleta, tema, alternarTema } = usarTema();
+  const espacioBarra = useEspacioBarraPestanas();
   const router = useRouter();
   const { usuario, cerrarSesion, cargando } = useSesion();
   const [saliendo, setSaliendo] = useState(false);
@@ -25,7 +27,7 @@ export default function PantallaPerfil() {
     setSaliendo(true); setError('');
     try { await cerrarSesion(); } catch { setError('No pudimos cerrar la sesión. Intenta de nuevo.'); } finally { setSaliendo(false); }
   }
-  return <ScrollView style={{ backgroundColor: paleta.surface100 }} contentContainerStyle={estilos.contenido}>
+  return <ScrollView style={{ backgroundColor: paleta.surface100 }} contentContainerStyle={[estilos.contenido, { paddingBottom: espacioBarra }]}>
     <View style={estilos.identidad}>
       <View accessibilityElementsHidden importantForAccessibility="no-hide-descendants" style={[estilos.avatar, { backgroundColor: paleta.brandStrong }]}><Text style={{ color: paleta.onBrand, fontSize: 20, fontWeight: '700' }}>{iniciales}</Text></View>
       <View style={estilos.datos}>
@@ -41,9 +43,14 @@ export default function PantallaPerfil() {
       <View style={estilos.estado}>{completitud === 100 && <CircleCheck size={16} color={paleta.brandStrong} />}<Text style={{ color: paleta.inkMuted, fontSize: 13 }}>{completitud}% completo</Text></View>
       <Boton titulo={completitud === 100 ? 'Ver mi perfil de adoptante' : 'Completar mi perfil'} alPresionar={() => router.push('/perfil-adoptante')} />
     </View>}
+    {usuario.rol.nivel === NivelRol.Adoptante && <View style={[estilos.grupo, { backgroundColor: paleta.surface200 }]}>
+      <Fila icono={Heart} titulo="Mis favoritos" detalle="Las mascotas que guardaste" alPresionar={() => router.push('/favoritos')} borde />
+      <Fila icono={HeartHandshake} titulo="Mis apadrinamientos" detalle="Mascotas que apoyas sin adoptar" alPresionar={() => router.push('/apadrinamientos')} />
+    </View>}
     <View><Text style={[estilos.seccion, { color: paleta.inkMuted }]}>CUENTA</Text><View style={[estilos.grupo, { backgroundColor: paleta.surface200 }]}>
       <Fila icono={UserRound} titulo="Datos personales" detalle="Nombre y teléfono" alPresionar={() => router.push('/datos-personales')} borde />
-      <Fila icono={ShieldCheck} titulo="Seguridad" detalle="Contraseña, correo y cuenta" alPresionar={() => router.push('/seguridad-cuenta')} />
+      <Fila icono={ShieldCheck} titulo="Seguridad" detalle="Contraseña, correo y cuenta" alPresionar={() => router.push('/seguridad-cuenta')} borde={!usuario.refugioId} />
+      {!usuario.refugioId && <Fila icono={House} titulo="¿Tienes un refugio?" detalle="Regístralo con esta misma cuenta" alPresionar={() => router.push('/registrar-refugio')} />}
     </View></View>
     <View><Text style={[estilos.seccion, { color: paleta.inkMuted }]}>PREFERENCIAS</Text><View style={[estilos.grupo, { backgroundColor: paleta.surface200 }]}><Fila icono={tema === 'oscuro' ? Moon : Sun} titulo="Apariencia" valor={tokens.nombreTema(tema)} alPresionar={alternarTema} /></View></View>
     <View style={[estilos.grupo, { backgroundColor: paleta.surface200 }]}><Fila icono={LogOut} titulo={saliendo ? 'Cerrando sesión…' : 'Cerrar sesión'} alPresionar={() => void salir()} deshabilitado={saliendo} /></View>

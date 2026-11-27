@@ -9,7 +9,6 @@
     "jsx": "react-jsx",
     "noEmit": true,
     "allowImportingTsExtensions": false,
-    "baseUrl": ".",
     "paths": {
       "@/*": [
         "./src/*"

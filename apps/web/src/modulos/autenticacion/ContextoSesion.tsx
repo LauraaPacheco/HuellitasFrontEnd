@@ -25,6 +25,8 @@ interface ValorSesion {
   readonly cerrarSesion: () => Promise<void>;
   readonly guardarDatosPersonales: (datos: EditarPerfilDto) => Promise<void>;
   readonly tieneNivel: (...niveles: NivelRol[]) => boolean;
+  /** HU-ADM-03: acepta la política vigente que el login marcó como pendiente. */
+  readonly aceptarPolitica: () => Promise<void>;
 }
 
 const ContextoSesion = createContext<ValorSesion | null>(null);
@@ -96,6 +98,13 @@ export function ProveedorSesion({ children }: { children: ReactNode }) {
     setUsuario(sesion.usuario);
   }, []);
 
+  const aceptarPolitica = useCallback(async () => {
+    if (!usuario?.politicaPendiente) return;
+    await api.administracion.aceptarPolitica(usuario.politicaPendiente);
+    const sesion = await api.cliente.actualizarUsuarioSesion({ ...usuario, politicaPendiente: null });
+    setUsuario(sesion.usuario);
+  }, [usuario]);
+
   const tieneNivel = useCallback(
     (...niveles: NivelRol[]) =>
       usuario !== null && niveles.includes(usuario.rol.nivel),
@@ -103,8 +112,8 @@ export function ProveedorSesion({ children }: { children: ReactNode }) {
   );
 
   const valor = useMemo<ValorSesion>(
-    () => ({ usuario, cargando, iniciarSesion, cerrarSesion, guardarDatosPersonales, tieneNivel }),
-    [usuario, cargando, iniciarSesion, cerrarSesion, guardarDatosPersonales, tieneNivel],
+    () => ({ usuario, cargando, iniciarSesion, cerrarSesion, guardarDatosPersonales, tieneNivel, aceptarPolitica }),
+    [usuario, cargando, iniciarSesion, cerrarSesion, guardarDatosPersonales, tieneNivel, aceptarPolitica],
   );
 
   return <ContextoSesion.Provider value={valor}>{children}</ContextoSesion.Provider>;

@@ -1,7 +1,8 @@
 import { useState } from 'react';
+import { FileText, ImageIcon } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { ErrorHttp, EstadoVerificacion, ESTADO_VERIFICACION, type Refugio } from '@huellitas/shared';
+import { describirRedesSociales, ErrorHttp, EstadoVerificacion, ESTADO_VERIFICACION, type Refugio } from '@huellitas/shared';
 import { api, MODO_DEMO } from '@/lib/api';
 import { Encabezado } from '@/componentes/layout/Encabezado';
 import { Boton } from '@/componentes/ui/Boton';
@@ -12,17 +13,34 @@ import { Modal } from '@/componentes/ui/Modal/Modal';
 import { Campo } from '@/componentes/ui/Campo';
 import '@/estilos/tabla.css';
 import './refugios.css';
+import '@/modulos/apoyos/apoyos.css';
 import { EstadoCargando } from '@/componentes/ui/EstadoCargando';
 
+type Lista = 'pendientes' | 'verificados';
+
+/**
+ * HU-REF-01 y ADM-01: el administrador revisa las solicitudes pendientes
+ * (con NIT, contacto y soportes) y puede suspender un refugio verificado.
+ */
 export function PaginaVerificacionRefugios() {
   const cliente = useQueryClient();
+  const [lista, setLista] = useState<Lista>('pendientes');
   const [pagina, setPagina] = useState(1);
   const [seleccion, setSeleccion] = useState<Refugio | null>(null);
   const [decision, setDecision] = useState<'verificar' | 'rechazar' | 'suspender' | null>(null);
   const [motivo, setMotivo] = useState('');
   const [mensaje, setMensaje] = useState('');
   const [errorLocal, setErrorLocal] = useState('');
-  const consulta = useQuery({ queryKey: ['refugios', 'revision', pagina], queryFn: () => api.refugios.listar({ pagina, tamanoPagina: 10 }), retry: false });
+  const consulta = useQuery({
+    queryKey: ['refugios', 'revision', lista, pagina],
+    queryFn: async () => {
+      if (lista === 'pendientes') return api.refugios.pendientes({ pagina, tamanoPagina: 10 });
+      const r = await api.refugios.listar({ pagina, tamanoPagina: 10 });
+      // En demo el listado trae todos; aquí solo interesan los ya revisados.
+      return MODO_DEMO ? { ...r, items: r.items.filter((x) => x.estadoVerificacion !== EstadoVerificacion.Pendiente) } : r;
+    },
+    retry: false,
+  });
   const guardar = useMutation({
     mutationFn: async () => {
       if (!seleccion || !decision) throw new Error('Selecciona una decisión.');
@@ -38,22 +56,29 @@ export function PaginaVerificacionRefugios() {
     },
   });
   async function elegir(refugio: Refugio) {
-    try { setSeleccion(MODO_DEMO ? refugio : await api.refugios.obtener(refugio.id)); }
+    // Los pendientes ya traen todo (NIT, contacto, soportes); los verificados se consultan.
+    try { setSeleccion(MODO_DEMO || lista === 'pendientes' ? refugio : await api.refugios.obtener(refugio.id)); }
     catch { setMensaje('No pudimos consultar el refugio. Inténtalo nuevamente.'); return; }
     setDecision(null); setMotivo(''); setErrorLocal(''); setMensaje(''); guardar.reset();
   }
   return <>
-    <Encabezado titulo={MODO_DEMO ? "Verificación de refugios" : "Refugios verificados"} resumen={MODO_DEMO ? "Revisa la información antes de habilitar la publicación de mascotas." : "Consulta los refugios y su información pública."} />
-    {!MODO_DEMO && <p className="cuenta__aviso">Las solicitudes pendientes de verificación aún no están disponibles en este listado.</p>}
+    <Encabezado titulo="Verificación de refugios" resumen="Revisa la información y los soportes antes de habilitar la publicación de mascotas." />
+    <div className="apoyos-pestanas" role="group" aria-label="Qué refugios ver">
+      {(['pendientes', 'verificados'] as const).map((l) => (
+        <button key={l} type="button" className="apoyos-pestana" aria-pressed={lista === l} onClick={() => { setLista(l); setPagina(1); setSeleccion(null); setMensaje(''); }}>
+          {l === 'pendientes' ? 'Por verificar' : 'Verificados'}
+        </button>
+      ))}
+    </div>
     {mensaje && <p role="status">{mensaje}</p>}
     {consulta.isPending && <EstadoCargando mensaje="Cargando refugios…" />}
     {consulta.isError && <EstadoError titulo="No pudimos cargar los refugios" error={consulta.error} alReintentar={() => void consulta.refetch()} reintentando={consulta.isFetching} />}
-    {consulta.data && consulta.data.items.length === 0 && <EstadoVacio titulo={MODO_DEMO ? "Sin solicitudes de refugios" : "Sin refugios verificados"} descripcion={MODO_DEMO ? "Las solicitudes de registro aparecerán aquí para su revisión." : "Los refugios aparecerán cuando estén verificados."} />}
+    {consulta.data && consulta.data.items.length === 0 && <EstadoVacio titulo={lista === 'pendientes' ? 'No hay solicitudes por verificar' : 'Sin refugios verificados'} descripcion={lista === 'pendientes' ? 'Las solicitudes de registro aparecerán aquí para su revisión.' : 'Los refugios aparecerán cuando estén verificados.'} />}
     {!!consulta.data?.items.length && <div className="refugio-tabla"><table className="tabla tabla--tarjetas">
       <thead><tr><th scope="col">Refugio</th><th scope="col">Dirección</th><th scope="col">Estado</th><th scope="col">Acción</th></tr></thead>
       <tbody>{consulta.data.items.map(refugio => <tr key={refugio.id}>
         <td className="tabla__c-titulo"><span className="tabla__nombre">{refugio.nombre}</span></td><td className="tabla__c-dato" data-etiqueta="Dirección">{refugio.direccion}</td><td className="tabla__c-estado"><Insignia estado={ESTADO_VERIFICACION[refugio.estadoVerificacion]} /></td>
-        <td className="tabla__c-accion"><Boton variante="primario" className="refugio-revisar" aria-label={`Revisar ${refugio.nombre}`} disabled={guardar.isPending} onClick={() => elegir(refugio)}>{MODO_DEMO ? "Revisar" : "Consultar"} <span aria-hidden="true">↗</span></Boton></td>
+        <td className="tabla__c-accion"><Boton variante="primario" className="refugio-revisar" aria-label={`Revisar ${refugio.nombre}`} disabled={guardar.isPending} onClick={() => elegir(refugio)}>{lista === 'pendientes' ? 'Revisar' : 'Consultar'} <span aria-hidden="true">↗</span></Boton></td>
       </tr>)}</tbody>
     </table></div>}
     {consulta.data && consulta.data.totalPaginas > 1 && <div className="refugio-acciones">
@@ -66,9 +91,24 @@ export function PaginaVerificacionRefugios() {
       <dl className="refugio-datos">
         {seleccion.nit && <div><dt>NIT</dt><dd>{seleccion.nit}</dd></div>}<div><dt>Persona encargada</dt><dd>{seleccion.encargado ?? 'Sin información'}</dd></div>
         <div><dt>Dirección</dt><dd>{seleccion.direccion}</dd></div><div><dt>Teléfono</dt><dd>{seleccion.telefono ?? 'Sin información'}</dd></div>
-        <div><dt>Correo</dt><dd>{seleccion.correo ?? 'Sin información'}</dd></div><div><dt>Redes sociales</dt><dd>{seleccion.redesSociales || 'Sin información'}</dd></div>
+        <div><dt>Correo</dt><dd>{seleccion.correo ?? 'Sin información'}</dd></div><div><dt>Redes sociales</dt><dd>{describirRedesSociales(seleccion.redesSociales) || 'Sin información'}</dd></div>
         <div><dt>Descripción</dt><dd>{seleccion.descripcion || 'Sin descripción'}</dd></div>
       </dl>
+      {seleccion.soportes && (
+        <section className="refugio-soportes" aria-label="Soportes de la solicitud">
+          <h3>Soportes</h3>
+          {seleccion.soportes.length === 0 ? <p>La solicitud no trae soportes.</p> : (
+            <ul>{seleccion.soportes.map((s, i) => (
+              <li key={s.id}>
+                <a href={s.url} target="_blank" rel="noreferrer">
+                  {s.tipo === 'PDF' ? <FileText size={16} strokeWidth={1.75} aria-hidden="true" /> : <ImageIcon size={16} strokeWidth={1.75} aria-hidden="true" />}
+                  Soporte {i + 1} ({s.tipo}) <span aria-hidden="true">↗</span>
+                </a>
+              </li>
+            ))}</ul>
+          )}
+        </section>
+      )}
       {seleccion.motivoRechazo && <p>Motivo registrado: {seleccion.motivoRechazo}</p>}
       <div className="refugio-acciones"><Link className="boton boton--secundario refugio-enlace" to={`/refugios/${seleccion.id}`} state={{ volverA: '/refugios' }}>Ver perfil completo <span aria-hidden="true">↗</span></Link></div>
       {seleccion.estadoVerificacion === EstadoVerificacion.Pendiente && <>
@@ -77,7 +117,7 @@ export function PaginaVerificacionRefugios() {
           <Boton variante="peligro" disabled={guardar.isPending} onClick={() => { setDecision('rechazar'); guardar.reset(); setErrorLocal(''); }}>Rechazar solicitud</Boton>
         </div>
       </>}
-      {MODO_DEMO && seleccion.estadoVerificacion === EstadoVerificacion.Verificado && <div className="refugio-acciones">
+      {seleccion.estadoVerificacion === EstadoVerificacion.Verificado && <div className="refugio-acciones">
         <Boton variante="peligro" onClick={() => { setDecision('suspender'); setMotivo(''); guardar.reset(); setErrorLocal(''); }}>Suspender refugio</Boton>
       </div>}
       {seleccion.estadoVerificacion === EstadoVerificacion.Suspendido && <p>El refugio está suspendido. La reactivación requiere un flujo definido con el equipo.</p>}

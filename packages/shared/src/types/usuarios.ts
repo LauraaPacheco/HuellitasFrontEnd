@@ -11,6 +11,8 @@ export interface Usuario extends EntidadBase {
   readonly fotoUrl?: string | null;
   readonly politicaAceptada?: string | null;
   readonly fechaAceptacionPolitica?: string | null;
+  /** Política vigente que falta aceptar (llega en el login); null si está al día. */
+  readonly politicaPendiente?: { readonly id: number | null; readonly version: string | null } | null;
   readonly rolId: number;
   readonly rol: Rol;
   readonly refugioId: number | null;
